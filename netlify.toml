@@ -1,41 +1,14 @@
-# This file configures Netlify builds and deploys
-# Learn more at: https://docs.netlify.com/configure-builds/file-based-configuration/
+# Netlify Configuration for YouTube Automation Platform
 
 [build]
-  # Directory to change to before starting a build
-  base = "/"
-  
-  # Directory that contains the deploy-ready HTML files and assets
+  command = "npm install @radix-ui/react-accordion @radix-ui/react-alert-dialog @radix-ui/react-aspect-ratio @radix-ui/react-avatar @radix-ui/react-checkbox @radix-ui/react-collapsible @radix-ui/react-context-menu @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-hover-card @radix-ui/react-label @radix-ui/react-menubar @radix-ui/react-navigation-menu @radix-ui/react-popover @radix-ui/react-progress @radix-ui/react-radio-group @radix-ui/react-scroll-area @radix-ui/react-select @radix-ui/react-separator @radix-ui/react-slider @radix-ui/react-slot @radix-ui/react-switch @radix-ui/react-tabs @radix-ui/react-toast @radix-ui/react-toggle @radix-ui/react-toggle-group @radix-ui/react-tooltip embla-carousel-react recharts react-day-picker react-helmet && npm run build"
   publish = ".next"
-  
-  # Default build command - simplified to ensure successful deployment
-  command = "npm install && npm install @radix-ui/react-alert-dialog @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-label @radix-ui/react-select @radix-ui/react-slot @radix-ui/react-toast embla-carousel-react && npm run build"
 
-# Environment variables
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 [build.environment]
-  NODE_VERSION = "18"
-  NPM_VERSION = "9"
+  SKIP_TYPESCRIPT_CHECK = "true"
   NEXT_TELEMETRY_DISABLED = "1"
-  # Disable TypeScript checking during build
-  NEXT_TYPESCRIPT_CHECK = "false"
-  # Disable ESLint checking during build
-  NEXT_LINT_CHECK = "false"
-  # Disable SWC minification
-  NEXT_SWC_MINIFY = "false"
-
-# Redirects and rewrites
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-# Headers to return with requests for the specified paths
-[[headers]]
-  # Define which paths this specific [[headers]] block will cover
-  for = "/*"
-    [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'"
+  NODE_VERSION = "18"
+  NPM_FLAGS = "--legacy-peer-deps"
