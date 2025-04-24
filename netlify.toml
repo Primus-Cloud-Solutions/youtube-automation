@@ -1,7 +1,6 @@
 [build]
-  command = "rm -f pnpm-lock.yaml && pnpm install && pnpm run build"
+  command = "npm install && npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "18"
-  NPM_FLAGS = "--no-frozen-lockfile"
