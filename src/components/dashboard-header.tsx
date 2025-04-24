@@ -5,7 +5,8 @@ interface DashboardHeaderProps {
   activeTab: string;
 }
 
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({ activeTab }) => {
+// Export as named export to match import syntax in pages
+export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ activeTab }) => {
   return (
     <header className="flex justify-between items-center">
       <h1 className="text-2xl font-bold">Dashboard</h1>
@@ -17,4 +18,5 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ activeTab }) => {
   );
 };
 
+// Also include default export for compatibility
 export default DashboardHeader;
