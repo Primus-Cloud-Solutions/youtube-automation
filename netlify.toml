@@ -4,7 +4,7 @@
 
 [build.environment]
   NEXT_PUBLIC_SUPABASE_URL = "https://eurztwdqjncuypqbrcmw.supabase.co"
-  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1cnp0d2Rxam5jdXlwcWJyY213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU0NTQ2MDksImV4cCI6MjA2MTAzMDYwOX0.9dlhNAi8VobOt8zHmSToQnSadAtvTXaqNy-SwnkSt6Q"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-supabase-anon-key"
   SKIP_TYPESCRIPT_CHECK = "true"
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
@@ -12,23 +12,10 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Force clear cache on each build to avoid stale files
-[build.processing]
-  skip_processing = false
-
-# Handle SPA routing
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
-  conditions = {Role = ["admin"]}
-
-# Add custom headers for security
 [[headers]]
   for = "/*"
   [headers.values]
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"

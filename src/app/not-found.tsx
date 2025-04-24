@@ -1,21 +1,25 @@
-// This file is used to handle page not found errors
-// It provides a fallback UI when routes don't match
+'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function NotFound() {
+  const router = useRouter();
+  
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-5 text-center">
-      <div className="glass-card p-8 max-w-md w-full">
-        <h1 className="text-4xl font-bold mb-4">404</h1>
-        <h2 className="text-2xl font-semibold mb-6">Page Not Found</h2>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+      <div className="text-center max-w-md px-4">
+        <h1 className="text-6xl font-bold text-primary mb-4">404</h1>
+        <h2 className="text-2xl font-semibold mb-4">Page Not Found</h2>
         <p className="text-muted-foreground mb-8">
           The page you are looking for doesn't exist or has been moved.
         </p>
-        <Link href="/" className="btn">
-          Return to Home
-        </Link>
+        <button 
+          onClick={() => router.push('/dashboard')}
+          className="px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+        >
+          Go to Dashboard
+        </button>
       </div>
     </div>
   );

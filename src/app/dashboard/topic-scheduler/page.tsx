@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/auth-context';
 import { useContent } from '../../context/content-context';
 import withAuth from '../../utils/with-auth';
-import DashboardHeader from '../../app/components/dashboard-header';
+import DashboardHeader from '../../components/dashboard-header';
 
 function TopicSchedulerPage() {
   const { user } = useAuth();
