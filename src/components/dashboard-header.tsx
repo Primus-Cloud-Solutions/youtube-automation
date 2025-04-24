@@ -1,9 +1,16 @@
-"use client";
+'use client';
 
 import React from 'react';
 import Link from 'next/link';
+import { useAuth } from '../app/context/auth-context';
 
 export default function DashboardHeader() {
+  const { user, signOut } = useAuth();
+  
+  const handleSignOut = async () => {
+    await signOut();
+  };
+  
   return (
     <header className="dashboard-header">
       <div className="container">
@@ -22,13 +29,15 @@ export default function DashboardHeader() {
           </nav>
           
           <div className="flex items-center gap-4">
+            {user && (
+              <div className="hidden md:block text-sm">
+                <span className="text-muted-foreground mr-2">Signed in as:</span>
+                <span className="font-medium">{user.email}</span>
+              </div>
+            )}
             <button 
               className="btn btn-outline"
-              onClick={() => {
-                localStorage.removeItem('isAuthenticated');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
-              }}
+              onClick={handleSignOut}
             >
               Sign Out
             </button>

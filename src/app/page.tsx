@@ -1,161 +1,380 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function LandingPage() {
-  return (
-    <div>
-      {/* Header */}
-      <header className="header container">
-        <Link href="/" className="logo">
-          <span className="logo-icon">📹</span>
-          TubeAutomator
-        </Link>
-        <nav className="nav">
-          <Link href="#features" className="nav-item">Features</Link>
-          <Link href="#pricing" className="nav-item">Pricing</Link>
-          <Link href="#faq" className="nav-item">FAQ</Link>
-          <Link href="/login" className="nav-item">Login</Link>
-          <Link href="/signup" className="button primary">Get Started</Link>
-        </nav>
-      </header>
+  const router = useRouter();
 
+  return (
+    <div className="landing-page">
       {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
-          <h1 className="gradient-text">Automate Your YouTube Success</h1>
-          <p>Create, schedule, and publish engaging YouTube videos with AI-powered automation</p>
-          <div className="flex gap-4 justify-between">
-            <Link href="/signup" className="btn">Start Free Trial</Link>
-            <Link href="#pricing" className="btn btn-outline">View Pricing</Link>
+      <section className="hero-section">
+        <div className="container">
+          <div className="hero-content">
+            <h1 className="hero-title">Automate Your YouTube Content Creation</h1>
+            <p className="hero-subtitle">
+              Create, schedule, and publish engaging YouTube videos with AI-powered automation.
+              Save time and grow your channel faster than ever before.
+            </p>
+            <div className="flex gap-4 justify-center">
+              <button 
+                className="hero-cta"
+                onClick={() => router.push('/signup')}
+              >
+                Get Started Free
+              </button>
+              <button 
+                className="btn btn-outline"
+                onClick={() => router.push('/login')}
+              >
+                Sign In
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="features" id="features">
+      <section className="feature-section">
         <div className="container">
-          <h2 className="section-title gradient-text">Powerful YouTube Automation</h2>
-          <p className="section-subtitle">Everything you need to grow your channel without the hassle</p>
-          
-          <div className="grid">
-            <div className="card feature-card">
+          <h2 className="text-3xl font-bold text-center mb-12 gradient-text">Powerful Features</h2>
+          <div className="feature-grid">
+            <div className="feature-card">
               <div className="feature-icon">🤖</div>
-              <h3>AI Content Generation</h3>
-              <p>Generate video scripts, descriptions, and titles using advanced AI technology</p>
+              <h3 className="feature-title">AI Content Generation</h3>
+              <p>Generate engaging video scripts, titles, and descriptions using advanced AI. Our platform creates content that resonates with your audience.</p>
             </div>
-            <div className="card feature-card">
+            
+            <div className="feature-card">
+              <div className="feature-icon">🗣️</div>
+              <h3 className="feature-title">Natural Voice Synthesis</h3>
+              <p>Convert your scripts into natural-sounding voiceovers with our advanced voice synthesis technology. Choose from a variety of voices and styles.</p>
+            </div>
+            
+            <div className="feature-card">
               <div className="feature-icon">📅</div>
-              <h3>Smart Scheduling</h3>
-              <p>Schedule videos for optimal posting times to maximize views and engagement</p>
+              <h3 className="feature-title">Smart Scheduling</h3>
+              <p>Schedule your videos for optimal publishing times. Our platform analyzes your audience's behavior to maximize views and engagement.</p>
             </div>
-            <div className="card feature-card">
+            
+            <div className="feature-card">
               <div className="feature-icon">📊</div>
-              <h3>Performance Analytics</h3>
-              <p>Track your channel growth with detailed analytics and actionable insights</p>
+              <h3 className="feature-title">Performance Analytics</h3>
+              <p>Track your videos' performance with comprehensive analytics. Understand what works and optimize your content strategy.</p>
             </div>
-            <div className="card feature-card">
+            
+            <div className="feature-card">
               <div className="feature-icon">🔍</div>
-              <h3>Trend Analysis</h3>
-              <p>Discover trending topics in your niche to stay ahead of the competition</p>
+              <h3 className="feature-title">Trend Analysis</h3>
+              <p>Discover trending topics in your niche. Our platform identifies popular content ideas to help you stay ahead of the curve.</p>
+            </div>
+            
+            <div className="feature-card">
+              <div className="feature-icon">🔄</div>
+              <h3 className="feature-title">Seamless Integration</h3>
+              <p>Connect directly with YouTube. Our platform handles the entire process from content creation to publishing with just a few clicks.</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section className="pricing" id="pricing">
+      <section className="pricing-section">
         <div className="container">
-          <h2 className="section-title gradient-text">Simple, Transparent Pricing</h2>
-          <p className="section-subtitle">Choose the plan that fits your needs</p>
-          
-          <div className="grid">
-            <div className="card pricing-card">
-              <h3>Starter</h3>
-              <div className="price">$5<span>/month</span></div>
-              <ul className="pricing-features">
-                <li>5 videos per month</li>
-                <li>Basic analytics</li>
-                <li>Standard video quality</li>
-                <li>Email support</li>
-              </ul>
-              <Link href="/signup?plan=starter" className="btn btn-outline">Get Started</Link>
+          <h2 className="text-3xl font-bold text-center mb-12 gradient-text">Simple, Transparent Pricing</h2>
+          <div className="pricing-grid">
+            <div className="pricing-card">
+              <div className="pricing-header">
+                <div className="pricing-name">Starter</div>
+                <div className="pricing-price">$19<span className="text-sm font-normal">/month</span></div>
+                <div className="pricing-description">Perfect for content creators just getting started</div>
+              </div>
+              <div className="pricing-features">
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>5 AI-generated videos per month</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Basic voice synthesis</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Standard scheduling</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Basic analytics</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Email support</span>
+                </div>
+              </div>
+              <button 
+                className="btn pricing-cta"
+                onClick={() => router.push('/signup?plan=starter')}
+              >
+                Get Started
+              </button>
             </div>
             
-            <div className="card pricing-card popular">
-              <div className="popular-badge">Most Popular</div>
-              <h3>Professional</h3>
-              <div className="price">$15<span>/month</span></div>
-              <ul className="pricing-features">
-                <li>20 videos per month</li>
-                <li>Advanced analytics</li>
-                <li>HD video quality</li>
-                <li>Priority support</li>
-                <li>Custom thumbnails</li>
-              </ul>
-              <Link href="/signup?plan=professional" className="btn">Get Started</Link>
+            <div className="pricing-card popular">
+              <div className="pricing-header">
+                <div className="pricing-name">Professional</div>
+                <div className="pricing-price">$49<span className="text-sm font-normal">/month</span></div>
+                <div className="pricing-description">For serious creators looking to scale</div>
+              </div>
+              <div className="pricing-features">
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>20 AI-generated videos per month</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Advanced voice synthesis</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Smart scheduling</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Comprehensive analytics</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Priority support</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Trend analysis</span>
+                </div>
+              </div>
+              <button 
+                className="btn pricing-cta"
+                onClick={() => router.push('/signup?plan=professional')}
+              >
+                Get Started
+              </button>
             </div>
             
-            <div className="card pricing-card">
-              <h3>Enterprise</h3>
-              <div className="price">$29<span>/month</span></div>
-              <ul className="pricing-features">
-                <li>Unlimited videos</li>
-                <li>Premium analytics</li>
-                <li>4K video quality</li>
-                <li>Dedicated support</li>
-                <li>Custom thumbnails</li>
-                <li>Multi-channel management</li>
-              </ul>
-              <Link href="/signup?plan=enterprise" className="btn btn-outline">Get Started</Link>
+            <div className="pricing-card">
+              <div className="pricing-header">
+                <div className="pricing-name">Enterprise</div>
+                <div className="pricing-price">$99<span className="text-sm font-normal">/month</span></div>
+                <div className="pricing-description">For teams and professional studios</div>
+              </div>
+              <div className="pricing-features">
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Unlimited AI-generated videos</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Premium voice synthesis</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Advanced scheduling</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Advanced analytics & reporting</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Dedicated account manager</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>API access</span>
+                </div>
+                <div className="pricing-feature">
+                  <span className="pricing-feature-icon">✓</span>
+                  <span>Custom integrations</span>
+                </div>
+              </div>
+              <button 
+                className="btn pricing-cta"
+                onClick={() => router.push('/signup?plan=enterprise')}
+              >
+                Get Started
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="testimonial-section">
+        <div className="container">
+          <h2 className="text-3xl font-bold text-center mb-12 gradient-text">What Our Users Say</h2>
+          <div className="testimonial-grid">
+            <div className="testimonial-card">
+              <div className="testimonial-content">
+                TubeAutomator has completely transformed my content creation process. I've been able to triple my output while maintaining high quality. The AI-generated scripts are surprisingly good!
+              </div>
+              <div className="testimonial-author">
+                <div className="testimonial-avatar">JD</div>
+                <div>
+                  <div className="testimonial-name">John Doe</div>
+                  <div className="testimonial-title">Tech YouTuber, 500K subscribers</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="testimonial-card">
+              <div className="testimonial-content">
+                As a small channel, I couldn't afford a content team. TubeAutomator has been a game-changer, helping me create consistent, high-quality content that my audience loves.
+              </div>
+              <div className="testimonial-author">
+                <div className="testimonial-avatar">AS</div>
+                <div>
+                  <div className="testimonial-name">Alice Smith</div>
+                  <div className="testimonial-title">Fitness Creator, 50K subscribers</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="testimonial-card">
+              <div className="testimonial-content">
+                The analytics features alone are worth the price. Being able to see what content performs best and then automatically generate more of it has helped my channel grow exponentially.
+              </div>
+              <div className="testimonial-author">
+                <div className="testimonial-avatar">RJ</div>
+                <div>
+                  <div className="testimonial-name">Robert Johnson</div>
+                  <div className="testimonial-title">Gaming Channel, 1.2M subscribers</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className="features" id="faq">
+      <section className="faq-section">
         <div className="container">
-          <h2 className="section-title gradient-text">Frequently Asked Questions</h2>
-          
-          <div className="grid" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))'}}>
-            <div className="card">
-              <h3 className="text-xl font-bold mb-2">How does the AI content generation work?</h3>
-              <p>Our AI analyzes trending topics in your niche and generates original scripts, titles, and descriptions based on your channel's style and audience preferences.</p>
+          <h2 className="text-3xl font-bold text-center mb-12 gradient-text">Frequently Asked Questions</h2>
+          <div className="max-w-3xl mx-auto">
+            <div className="faq-item">
+              <div className="faq-question">
+                How does the AI content generation work?
+              </div>
+              <div className="faq-answer">
+                Our platform uses advanced AI models to generate video scripts, titles, and descriptions based on your chosen topics and preferences. You can customize the style, tone, and length to match your channel's voice.
+              </div>
             </div>
             
-            <div className="card">
-              <h3 className="text-xl font-bold mb-2">Do I need technical skills to use TubeAutomator?</h3>
-              <p>Not at all! Our platform is designed to be user-friendly with an intuitive interface. If you can use YouTube, you can use TubeAutomator.</p>
+            <div className="faq-item">
+              <div className="faq-question">
+                Do I need technical skills to use TubeAutomator?
+              </div>
+              <div className="faq-answer">
+                Not at all! TubeAutomator is designed to be user-friendly. Our intuitive interface guides you through the entire process, from content creation to publishing, without requiring any technical expertise.
+              </div>
             </div>
             
-            <div className="card">
-              <h3 className="text-xl font-bold mb-2">Can I cancel my subscription anytime?</h3>
-              <p>Yes, you can cancel your subscription at any time with no questions asked. We don't believe in long-term contracts or hidden fees.</p>
+            <div className="faq-item">
+              <div className="faq-question">
+                Can I customize the AI-generated content?
+              </div>
+              <div className="faq-answer">
+                Absolutely! While our AI creates high-quality content, you have full control to edit, modify, or enhance any part of the generated scripts, titles, or descriptions before publishing.
+              </div>
             </div>
             
-            <div className="card">
-              <h3 className="text-xl font-bold mb-2">Will my audience know the content is AI-generated?</h3>
-              <p>Our AI is trained to create natural, engaging content that matches your voice and style. Most creators report that their audience can't tell the difference.</p>
+            <div className="faq-item">
+              <div className="faq-question">
+                How does the voice synthesis sound?
+              </div>
+              <div className="faq-answer">
+                Our voice synthesis technology produces natural-sounding voiceovers that are often indistinguishable from human narration. You can choose from various voices, accents, and styles to match your content.
+              </div>
+            </div>
+            
+            <div className="faq-item">
+              <div className="faq-question">
+                Can I cancel my subscription anytime?
+              </div>
+              <div className="faq-answer">
+                Yes, you can cancel your subscription at any time. We don't lock you into long-term contracts. If you decide to cancel, you'll continue to have access until the end of your billing period.
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="hero">
+      <section className="cta-section">
         <div className="container">
-          <div className="text-center">
-            <h2 className="section-title gradient-text">Ready to Revolutionize Your YouTube Channel?</h2>
-            <p className="section-subtitle">Join thousands of content creators who are saving time and growing their audience with TubeAutomator</p>
-            <Link href="/signup" className="btn">Start Your Free Trial</Link>
-            <p className="text-sm mt-4">No credit card required • 14-day free trial</p>
-          </div>
+          <h2 className="cta-title">Ready to Transform Your YouTube Channel?</h2>
+          <p className="cta-description">
+            Join thousands of content creators who are saving time and growing their channels with TubeAutomator.
+          </p>
+          <button 
+            className="hero-cta"
+            onClick={() => router.push('/signup')}
+          >
+            Get Started Today
+          </button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="p-4 text-center">
-        <p className="text-sm">© 2025 TubeAutomator. All rights reserved.</p>
+      <footer className="footer">
+        <div className="container">
+          <div className="footer-grid">
+            <div>
+              <div className="footer-logo">TubeAutomator</div>
+              <p className="footer-description">
+                AI-powered YouTube content creation and automation platform for creators of all sizes.
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="footer-heading">Product</h3>
+              <div className="footer-links">
+                <Link href="/features" className="footer-link">Features</Link>
+                <Link href="/pricing" className="footer-link">Pricing</Link>
+                <Link href="/testimonials" className="footer-link">Testimonials</Link>
+                <Link href="/faq" className="footer-link">FAQ</Link>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="footer-heading">Company</h3>
+              <div className="footer-links">
+                <Link href="/about" className="footer-link">About Us</Link>
+                <Link href="/blog" className="footer-link">Blog</Link>
+                <Link href="/careers" className="footer-link">Careers</Link>
+                <Link href="/contact" className="footer-link">Contact</Link>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="footer-heading">Legal</h3>
+              <div className="footer-links">
+                <Link href="/terms" className="footer-link">Terms of Service</Link>
+                <Link href="/privacy" className="footer-link">Privacy Policy</Link>
+                <Link href="/cookies" className="footer-link">Cookie Policy</Link>
+              </div>
+            </div>
+          </div>
+          
+          <div className="footer-bottom">
+            <div>© 2025 TubeAutomator. All rights reserved.</div>
+            <div className="footer-social">
+              <a href="#" className="footer-social-link">Twitter</a>
+              <a href="#" className="footer-social-link">Facebook</a>
+              <a href="#" className="footer-social-link">Instagram</a>
+              <a href="#" className="footer-social-link">YouTube</a>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );

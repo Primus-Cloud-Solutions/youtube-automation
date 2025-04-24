@@ -1,13 +1,24 @@
-"use client";
+'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/auth-context';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { signIn, signInWithGoogle, user } = useAuth();
+  const router = useRouter();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,20 +26,26 @@ export default function Login() {
     setError('');
 
     try {
-      // For demo purposes, we'll just simulate a successful login
-      // In a real app, you would make an API call to authenticate
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await signIn(email, password);
       
-      // For demo, any email/password combination works
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('user', JSON.stringify({ email }));
-      
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
+      if (!result.success) {
+        setError(result.error || 'Invalid email or password');
+      }
     } catch (err) {
-      setError('Invalid email or password');
+      setError('An unexpected error occurred. Please try again.');
+      console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      // Redirect happens in the signInWithGoogle function
+    } catch (err) {
+      setError('Failed to sign in with Google. Please try again.');
+      console.error(err);
     }
   };
 
@@ -60,6 +77,7 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               required
+              disabled={loading}
             />
           </div>
 
@@ -72,6 +90,7 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+              disabled={loading}
             />
           </div>
 
@@ -92,14 +111,15 @@ export default function Login() {
           <button 
             className="btn flex-1"
             style={{ backgroundColor: '#4285F4' }}
-            onClick={() => alert('Google authentication would be implemented here')}
+            onClick={handleGoogleSignIn}
+            disabled={loading}
           >
             Google
           </button>
           <button 
             className="btn flex-1"
             style={{ backgroundColor: '#333' }}
-            onClick={() => alert('GitHub authentication would be implemented here')}
+            disabled={true}
           >
             GitHub
           </button>

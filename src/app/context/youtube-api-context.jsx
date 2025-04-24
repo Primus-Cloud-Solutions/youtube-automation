@@ -1,168 +1,202 @@
-'use client'
+'use client';
 
-import { createContext, useContext, useState } from 'react'
-import { useAuth } from './auth-context'
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './auth-context';
 
 // Create YouTube API context
-const YouTubeApiContext = createContext(null)
+const YouTubeApiContext = createContext(null);
 
 export function YouTubeApiProvider({ children }) {
-  const { user, profile } = useAuth()
-  const [loading, setLoading] = useState(false)
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [apiKeys, setApiKeys] = useState({
     youtube: '',
     openai: '',
     elevenlabs: ''
-  })
+  });
+  
+  // Load API keys when user changes
+  useEffect(() => {
+    if (user) {
+      loadApiKeys();
+    } else {
+      setApiKeys({
+        youtube: '',
+        openai: '',
+        elevenlabs: ''
+      });
+    }
+  }, [user]);
   
   // Save API keys
   const saveApiKeys = async (keys) => {
-    if (!user) return { success: false, error: 'Not authenticated' }
+    if (!user) return { success: false, error: 'Not authenticated' };
     
     try {
-      setLoading(true)
+      setLoading(true);
       
-      // Update API keys in user profile
-      const response = await fetch('/api/save-api-keys', {
+      const response = await fetch('/api/api-keys', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'save',
+          userId: user.id,
           youtubeApiKey: keys.youtube,
           openaiApiKey: keys.openai,
           elevenlabsApiKey: keys.elevenlabs
         }),
-      })
+      });
       
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Failed to save API keys')
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to save API keys');
       }
       
       // Update local state
-      setApiKeys(keys)
+      setApiKeys(keys);
       
-      return { success: true }
+      return { success: true };
     } catch (error) {
-      console.error('Error saving API keys:', error)
-      return { success: false, error: error.message }
+      console.error('Error saving API keys:', error);
+      return { success: false, error: error.message };
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
   
   // Load API keys
   const loadApiKeys = async () => {
-    if (!user) return { success: false, error: 'Not authenticated' }
+    if (!user) return { success: false, error: 'Not authenticated' };
     
     try {
-      setLoading(true)
+      setLoading(true);
       
-      const response = await fetch('/api/get-api-keys')
+      const response = await fetch(`/api/api-keys?userId=${user.id}`);
       
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Failed to load API keys')
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to load API keys');
       }
       
-      const data = await response.json()
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load API keys');
+      }
       
       setApiKeys({
         youtube: data.youtubeApiKey || '',
         openai: data.openaiApiKey || '',
         elevenlabs: data.elevenlabsApiKey || ''
-      })
+      });
       
-      return { success: true, keys: data }
+      return { success: true, keys: data };
     } catch (error) {
-      console.error('Error loading API keys:', error)
-      return { success: false, error: error.message }
+      console.error('Error loading API keys:', error);
+      return { success: false, error: error.message };
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
   
   // Test YouTube API key
   const testYouTubeApiKey = async (key) => {
     try {
-      setLoading(true)
+      setLoading(true);
       
-      const response = await fetch('/api/test-youtube-api', {
+      const response = await fetch('/api/api-keys', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ apiKey: key || apiKeys.youtube }),
-      })
+        body: JSON.stringify({ 
+          action: 'test-youtube', 
+          apiKey: key || apiKeys.youtube,
+          userId: user?.id
+        }),
+      });
       
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'YouTube API key test failed')
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'YouTube API key test failed');
       }
       
-      return { success: true }
+      return { success: true };
     } catch (error) {
-      console.error('YouTube API key test error:', error)
-      return { success: false, error: error.message }
+      console.error('YouTube API key test error:', error);
+      return { success: false, error: error.message };
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
   
   // Test OpenAI API key
   const testOpenAIApiKey = async (key) => {
     try {
-      setLoading(true)
+      setLoading(true);
       
-      const response = await fetch('/api/test-openai-api', {
+      const response = await fetch('/api/api-keys', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ apiKey: key || apiKeys.openai }),
-      })
+        body: JSON.stringify({ 
+          action: 'test-openai', 
+          apiKey: key || apiKeys.openai,
+          userId: user?.id
+        }),
+      });
       
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'OpenAI API key test failed')
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'OpenAI API key test failed');
       }
       
-      return { success: true }
+      return { success: true };
     } catch (error) {
-      console.error('OpenAI API key test error:', error)
-      return { success: false, error: error.message }
+      console.error('OpenAI API key test error:', error);
+      return { success: false, error: error.message };
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
   
   // Test ElevenLabs API key
   const testElevenLabsApiKey = async (key) => {
     try {
-      setLoading(true)
+      setLoading(true);
       
-      const response = await fetch('/api/test-elevenlabs-api', {
+      const response = await fetch('/api/api-keys', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ apiKey: key || apiKeys.elevenlabs }),
-      })
+        body: JSON.stringify({ 
+          action: 'test-elevenlabs', 
+          apiKey: key || apiKeys.elevenlabs,
+          userId: user?.id
+        }),
+      });
       
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'ElevenLabs API key test failed')
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'ElevenLabs API key test failed');
       }
       
-      return { success: true }
+      return { success: true };
     } catch (error) {
-      console.error('ElevenLabs API key test error:', error)
-      return { success: false, error: error.message }
+      console.error('ElevenLabs API key test error:', error);
+      return { success: false, error: error.message };
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
   
   // YouTube API context value
   const value = {
@@ -173,16 +207,16 @@ export function YouTubeApiProvider({ children }) {
     testYouTubeApiKey,
     testOpenAIApiKey,
     testElevenLabsApiKey
-  }
+  };
   
-  return <YouTubeApiContext.Provider value={value}>{children}</YouTubeApiContext.Provider>
+  return <YouTubeApiContext.Provider value={value}>{children}</YouTubeApiContext.Provider>;
 }
 
 // YouTube API hook
 export function useYouTubeApi() {
-  const context = useContext(YouTubeApiContext)
+  const context = useContext(YouTubeApiContext);
   if (!context) {
-    throw new Error('useYouTubeApi must be used within a YouTubeApiProvider')
+    throw new Error('useYouTubeApi must be used within a YouTubeApiProvider');
   }
-  return context
+  return context;
 }

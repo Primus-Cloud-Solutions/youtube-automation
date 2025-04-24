@@ -1,19 +1,11 @@
-// This file completely disables TypeScript checking
-// Place this in the project root as next.config.js
-
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
+module.exports = {
   typescript: {
     // !! WARN !!
-    // Completely disables TypeScript checks during build
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    // !! WARN !!
     ignoreBuildErrors: true,
   },
-  eslint: {
-    // Also disable ESLint during build
-    ignoreDuringBuilds: true,
-  },
-}
-
-module.exports = nextConfig
+  output: 'standalone',
+  swcMinify: false,
+};

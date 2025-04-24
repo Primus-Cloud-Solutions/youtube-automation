@@ -1,58 +1,24 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { useAuth } from '../context/auth-context';
 import DashboardHeader from '../../components/dashboard-header';
+import withAuth from '../utils/with-auth';
+import { useRouter } from 'next/navigation';
+import { useContent } from '../context/content-context';
 
-export default function Dashboard() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+function Dashboard() {
+  const { user, loading: authLoading } = useAuth();
+  const { scheduledVideos, loadScheduledVideos, loading: contentLoading } = useContent();
+  const router = useRouter();
 
   useEffect(() => {
-    // Check if user is authenticated
-    const isAuthenticated = localStorage.getItem('isAuthenticated');
-    const userData = localStorage.getItem('user');
-    
-    if (!isAuthenticated) {
-      // Redirect to login if not authenticated
-      window.location.href = '/login';
-      return;
+    if (user) {
+      loadScheduledVideos();
     }
-    
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-    
-    setLoading(false);
-    
-    // Create stars background
-    const createStars = () => {
-      const stars = document.getElementById('stars');
-      if (!stars) return;
-      
-      const count = 100;
-      
-      for (let i = 0; i < count; i++) {
-        const star = document.createElement('div');
-        star.classList.add('star');
-        
-        // Random position
-        star.style.left = `${Math.random() * 100}%`;
-        star.style.top = `${Math.random() * 100}%`;
-        
-        // Random size
-        const size = Math.random() * 2 + 1;
-        star.style.width = `${size}px`;
-        star.style.height = `${size}px`;
-        
-        // Random animation delay
-        star.style.animationDelay = `${Math.random() * 4}s`;
-        
-        stars.appendChild(star);
-      }
-    };
-    
-    createStars();
-  }, []);
+  }, [user, loadScheduledVideos]);
+
+  const loading = authLoading || contentLoading;
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -94,16 +60,28 @@ export default function Dashboard() {
           <div>
             <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
             <div className="flex flex-col gap-4">
-              <button className="btn flex items-center justify-center gap-2">
+              <button 
+                className="btn flex items-center justify-center gap-2"
+                onClick={() => router.push('/dashboard/topic-scheduler')}
+              >
                 <span>📹</span> Create Video
               </button>
-              <button className="btn flex items-center justify-center gap-2">
+              <button 
+                className="btn flex items-center justify-center gap-2"
+                onClick={() => router.push('/dashboard/topic-scheduler')}
+              >
                 <span>📅</span> Schedule Content
               </button>
-              <button className="btn flex items-center justify-center gap-2">
+              <button 
+                className="btn flex items-center justify-center gap-2"
+                onClick={() => router.push('/dashboard/analytics')}
+              >
                 <span>📊</span> View Analytics
               </button>
-              <button className="btn flex items-center justify-center gap-2">
+              <button 
+                className="btn flex items-center justify-center gap-2"
+                onClick={() => router.push('/dashboard/api-keys')}
+              >
                 <span>🔑</span> Manage API Keys
               </button>
             </div>
@@ -113,37 +91,45 @@ export default function Dashboard() {
           <div>
             <h2 className="text-xl font-bold mb-4">Upcoming Videos</h2>
             <div className="flex flex-col gap-4">
-              <div className="card">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold">Future of AI in Healthcare</h3>
-                    <p className="text-sm text-muted-foreground">Scheduled for Apr 25, 2025</p>
+              {scheduledVideos && scheduledVideos.length > 0 ? (
+                scheduledVideos.map((video) => (
+                  <div className="card" key={video.id}>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold">{video.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Scheduled for {new Date(video.scheduled_time).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <button 
+                        className="btn btn-outline btn-sm"
+                        onClick={() => router.push(`/dashboard/topic-scheduler?edit=${video.id}`)}
+                      >
+                        Edit
+                      </button>
+                    </div>
                   </div>
-                  <button className="btn btn-outline btn-sm">Edit</button>
+                ))
+              ) : (
+                <div className="card">
+                  <p>No upcoming videos scheduled. Create your first video!</p>
+                  <button 
+                    className="btn btn-outline mt-4"
+                    onClick={() => router.push('/dashboard/topic-scheduler')}
+                  >
+                    Schedule Your First Video
+                  </button>
                 </div>
-              </div>
+              )}
               
-              <div className="card">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold">Quantum Computing Breakthroughs</h3>
-                    <p className="text-sm text-muted-foreground">Scheduled for Apr 27, 2025</p>
-                  </div>
-                  <button className="btn btn-outline btn-sm">Edit</button>
-                </div>
-              </div>
-              
-              <div className="card">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold">Elden Ring DLC Review</h3>
-                    <p className="text-sm text-muted-foreground">Scheduled for Apr 30, 2025</p>
-                  </div>
-                  <button className="btn btn-outline btn-sm">Edit</button>
-                </div>
-              </div>
-              
-              <button className="btn btn-outline">View All Scheduled Content</button>
+              {scheduledVideos && scheduledVideos.length > 0 && (
+                <button 
+                  className="btn btn-outline"
+                  onClick={() => router.push('/dashboard/topic-scheduler')}
+                >
+                  View All Scheduled Content
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -151,3 +137,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+export default withAuth(Dashboard);

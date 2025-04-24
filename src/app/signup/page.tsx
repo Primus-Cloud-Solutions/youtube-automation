@@ -1,14 +1,26 @@
-"use client";
+'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/auth-context';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { signUp, signInWithGoogle, user } = useAuth();
+  const router = useRouter();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,20 +34,26 @@ export default function Signup() {
     }
 
     try {
-      // For demo purposes, we'll just simulate a successful signup
-      // In a real app, you would make an API call to create an account
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await signUp(email, password, fullName);
       
-      // For demo, we'll just store in localStorage
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('user', JSON.stringify({ email }));
-      
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
+      if (!result.success) {
+        setError(result.error || 'Failed to create account');
+      }
     } catch (err) {
-      setError('Failed to create account');
+      setError('An unexpected error occurred. Please try again.');
+      console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      // Redirect happens in the signInWithGoogle function
+    } catch (err) {
+      setError('Failed to sign in with Google. Please try again.');
+      console.error(err);
     }
   };
 
@@ -59,6 +77,19 @@ export default function Signup() {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
+            <label htmlFor="fullName">Full Name</label>
+            <input
+              id="fullName"
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="John Doe"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="mb-4">
             <label htmlFor="email">Email</label>
             <input
               id="email"
@@ -67,6 +98,7 @@ export default function Signup() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               required
+              disabled={loading}
             />
           </div>
 
@@ -79,7 +111,12 @@ export default function Signup() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+              disabled={loading}
+              minLength={8}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Password must be at least 8 characters long
+            </p>
           </div>
 
           <div className="mb-4">
@@ -91,6 +128,7 @@ export default function Signup() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
               required
+              disabled={loading}
             />
           </div>
 
@@ -111,14 +149,15 @@ export default function Signup() {
           <button 
             className="btn flex-1"
             style={{ backgroundColor: '#4285F4' }}
-            onClick={() => alert('Google authentication would be implemented here')}
+            onClick={handleGoogleSignIn}
+            disabled={loading}
           >
             Google
           </button>
           <button 
             className="btn flex-1"
             style={{ backgroundColor: '#333' }}
-            onClick={() => alert('GitHub authentication would be implemented here')}
+            disabled={true}
           >
             GitHub
           </button>

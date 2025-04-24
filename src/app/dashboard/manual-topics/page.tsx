@@ -1,166 +1,283 @@
-"use client";
+'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/auth-context';
+import { useContent } from '../../context/content-context';
+import withAuth from '../../utils/with-auth';
 import DashboardHeader from '../../components/dashboard-header';
 
-export default function ManualTopics() {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [keywords, setKeywords] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+function ManualTopicsPage() {
+  const { user } = useAuth();
+  const { generateScript, scheduleVideo, loading } = useContent();
   
-  // Sample created topics
-  const [createdTopics, setCreatedTopics] = useState([
-    { id: 1, title: 'How AI is Changing Software Development', content: 'This video explores the impact of artificial intelligence on modern software development practices and tools.', keywords: 'AI, software development, programming, machine learning', date: '2025-04-20' },
-    { id: 2, title: 'Top 10 Web Development Trends in 2025', content: 'A comprehensive look at the most important web development technologies and practices to watch in 2025.', keywords: 'web development, trends, 2025, javascript, frameworks', date: '2025-04-15' }
-  ]);
-
-  const handleSubmit = (e) => {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [script, setScript] = useState('');
+  const [tags, setTags] = useState('');
+  const [currentTag, setCurrentTag] = useState('');
+  const [tagsList, setTagsList] = useState([]);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
+  const [scheduling, setScheduling] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  // Handle tag input
+  const handleAddTag = () => {
+    if (currentTag.trim() && !tagsList.includes(currentTag.trim())) {
+      setTagsList([...tagsList, currentTag.trim()]);
+      setCurrentTag('');
+    }
+  };
+  
+  const handleRemoveTag = (tagToRemove) => {
+    setTagsList(tagsList.filter(tag => tag !== tagToRemove));
+  };
+  
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
+  
+  // Update tags string when tagsList changes
+  useEffect(() => {
+    setTags(tagsList.join(', '));
+  }, [tagsList]);
+  
+  const handleScheduleVideo = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setError('');
+    setSuccess('');
+    setScheduling(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      // Add new topic to the list
-      const newTopic = {
-        id: createdTopics.length + 1,
+    if (!title || !description || !script || !scheduledDate || !scheduledTime) {
+      setError('Please fill in all required fields');
+      setScheduling(false);
+      return;
+    }
+    
+    try {
+      const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+      
+      if (isNaN(scheduledDateTime.getTime())) {
+        setError('Invalid date or time');
+        setScheduling(false);
+        return;
+      }
+      
+      const result = await scheduleVideo({
         title,
-        content,
-        keywords,
-        date: new Date().toISOString().split('T')[0]
-      };
+        description,
+        tags: tagsList,
+        scheduledTime: scheduledDateTime.toISOString()
+      });
       
-      setCreatedTopics([newTopic, ...createdTopics]);
-      
-      // Reset form
-      setTitle('');
-      setContent('');
-      setKeywords('');
-      setLoading(false);
-      setSuccess(true);
-      
-      // Hide success message after 3 seconds
-      setTimeout(() => setSuccess(false), 3000);
-    }, 1000);
+      if (result.success) {
+        setSuccess('Video scheduled successfully!');
+        // Reset form
+        setTitle('');
+        setDescription('');
+        setScript('');
+        setTags('');
+        setTagsList([]);
+        setScheduledDate('');
+        setScheduledTime('');
+      } else {
+        setError(result.error || 'Failed to schedule video');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error(err);
+    } finally {
+      setScheduling(false);
+    }
   };
 
   return (
     <div>
       <DashboardHeader />
       
-      <main className="container mt-4">
-        <div className="mb-4">
+      <main className="container mt-4 fade-in">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold">Manual Topic Submission</h1>
-          <p>Create custom video topics with your own content</p>
+          <p className="text-muted-foreground">Create and schedule custom content for your YouTube channel</p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Create New Topic Form */}
-          <div>
-            <div className="card">
-              <h2 className="text-xl font-bold mb-4">Create New Topic</h2>
-              
-              {success && (
-                <div className="card mb-4" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: '#10b981' }}>
-                  <p style={{ color: '#10b981' }}>Topic created successfully!</p>
-                </div>
-              )}
-              
-              <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <label htmlFor="title">Video Title</label>
+        {error && (
+          <div className="glass-card p-4 mb-6 border border-destructive/30 bg-destructive/10">
+            <p className="text-destructive">{error}</p>
+          </div>
+        )}
+        
+        {success && (
+          <div className="glass-card p-4 mb-6 border border-green-500/30 bg-green-500/10">
+            <p className="text-green-400">{success}</p>
+          </div>
+        )}
+        
+        <div className="glass-card p-6">
+          <h2 className="text-xl font-semibold mb-6">Create Custom Video</h2>
+          
+          <form onSubmit={handleScheduleVideo}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <div>
+                  <label htmlFor="title" className="block text-sm font-medium mb-2">
+                    Video Title <span className="text-destructive">*</span>
+                  </label>
                   <input
                     id="title"
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter video title"
+                    placeholder="Enter your video title"
+                    className="w-full p-2.5 bg-muted border border-border rounded-md"
+                    disabled={scheduling || loading}
                     required
                   />
                 </div>
                 
-                <div className="mb-4">
-                  <label htmlFor="content">Video Content</label>
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium mb-2">
+                    Video Description <span className="text-destructive">*</span>
+                  </label>
                   <textarea
-                    id="content"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Describe what you want in your video"
-                    rows={6}
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Enter your video description"
+                    className="w-full p-2.5 bg-muted border border-border rounded-md h-32"
+                    disabled={scheduling || loading}
                     required
                   />
                 </div>
                 
-                <div className="mb-4">
-                  <label htmlFor="keywords">Keywords (comma separated)</label>
-                  <input
-                    id="keywords"
-                    type="text"
-                    value={keywords}
-                    onChange={(e) => setKeywords(e.target.value)}
-                    placeholder="e.g., technology, AI, tutorial"
-                    required
-                  />
-                </div>
-                
-                <button 
-                  type="submit" 
-                  className="btn w-full"
-                  disabled={loading}
-                >
-                  {loading ? 'Creating...' : 'Create Topic'}
-                </button>
-              </form>
-            </div>
-          </div>
-          
-          {/* Created Topics List */}
-          <div>
-            <h2 className="text-xl font-bold mb-4">Your Topics</h2>
-            
-            {createdTopics.length === 0 ? (
-              <div className="card">
-                <p>No topics created yet.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {createdTopics.map((item) => (
-                  <div className="card" key={item.id}>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold">{item.title}</h3>
-                        <p className="text-sm mb-2">{item.content}</p>
-                        <p className="text-sm mb-2">
-                          <span className="text-muted-foreground">Keywords: </span>
-                          {item.keywords}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Created on {new Date(item.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="btn btn-outline btn-sm">Edit</button>
-                        <button 
-                          className="btn btn-sm" 
-                          style={{ backgroundColor: 'var(--destructive)' }}
-                          onClick={() => {
-                            if (confirm('Are you sure you want to delete this topic?')) {
-                              setCreatedTopics(createdTopics.filter(t => t.id !== item.id));
-                            }
-                          }}
+                <div>
+                  <label htmlFor="tags" className="block text-sm font-medium mb-2">
+                    Tags
+                  </label>
+                  <div className="flex mb-2">
+                    <input
+                      id="currentTag"
+                      type="text"
+                      value={currentTag}
+                      onChange={(e) => setCurrentTag(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Add a tag and press Enter"
+                      className="flex-1 p-2.5 bg-muted border border-border rounded-l-md"
+                      disabled={scheduling || loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddTag}
+                      className="px-4 py-2.5 bg-primary text-primary-foreground rounded-r-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={scheduling || loading || !currentTag.trim()}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {tagsList.map((tag, index) => (
+                      <div 
+                        key={index}
+                        className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm flex items-center"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="ml-2 text-primary hover:text-primary-foreground"
                         >
-                          Delete
+                          ×
                         </button>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                  
+                  <p className="text-xs text-muted-foreground">
+                    Tags help viewers find your video. Add relevant keywords separated by Enter.
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <label htmlFor="script" className="block text-sm font-medium mb-2">
+                    Video Script <span className="text-destructive">*</span>
+                  </label>
+                  <textarea
+                    id="script"
+                    value={script}
+                    onChange={(e) => setScript(e.target.value)}
+                    placeholder="Enter your video script"
+                    className="w-full p-2.5 bg-muted border border-border rounded-md h-40"
+                    disabled={scheduling || loading}
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="scheduledDate" className="block text-sm font-medium mb-2">
+                      Scheduled Date <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      id="scheduledDate"
+                      type="date"
+                      value={scheduledDate}
+                      onChange={(e) => setScheduledDate(e.target.value)}
+                      className="w-full p-2.5 bg-muted border border-border rounded-md"
+                      disabled={scheduling || loading}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="scheduledTime" className="block text-sm font-medium mb-2">
+                      Scheduled Time <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      id="scheduledTime"
+                      type="time"
+                      value={scheduledTime}
+                      onChange={(e) => setScheduledTime(e.target.value)}
+                      className="w-full p-2.5 bg-muted border border-border rounded-md"
+                      disabled={scheduling || loading}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="bg-muted/30 border border-border rounded-md p-4">
+                  <h3 className="text-sm font-medium mb-3">Tips for Creating Great Content</h3>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li>• Keep titles under 60 characters for optimal display</li>
+                    <li>• Include keywords in your title and description</li>
+                    <li>• Write scripts with clear sections: intro, main points, conclusion</li>
+                    <li>• Use tags that are specific to your content niche</li>
+                    <li>• Schedule videos when your audience is most active</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <button
+                type="submit"
+                disabled={scheduling || loading || !title || !description || !script || !scheduledDate || !scheduledTime}
+                className="btn w-full py-3"
+              >
+                {scheduling ? 'Scheduling...' : 'Schedule Video'}
+              </button>
+            </div>
+          </form>
         </div>
       </main>
     </div>
   );
 }
+
+export default withAuth(ManualTopicsPage);

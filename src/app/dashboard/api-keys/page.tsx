@@ -1,164 +1,339 @@
-"use client";
+'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+import { useAuth } from '../../context/auth-context';
+import { useYouTubeApi } from '../../context/youtube-api-context';
+import withAuth from '../../utils/with-auth';
 import DashboardHeader from '../../components/dashboard-header';
 
-export default function ApiKeys() {
-  const [apiKey, setApiKey] = useState('');
-  const [channelId, setChannelId] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+function ApiKeysPage() {
+  const { user } = useAuth();
+  const { 
+    apiKeys, 
+    saveApiKeys, 
+    testYouTubeApiKey, 
+    testOpenAIApiKey, 
+    testElevenLabsApiKey,
+    loading 
+  } = useYouTubeApi();
   
-  // Sample API keys
-  const [savedKeys, setSavedKeys] = useState([
-    { id: 1, name: 'Main Channel', apiKey: 'AIza...XdQ', channelId: 'UC1a...3kQ', status: 'Active', lastUsed: '2025-04-22' }
-  ]);
+  const [youtubeApiKey, setYoutubeApiKey] = React.useState(apiKeys.youtube || '');
+  const [openaiApiKey, setOpenaiApiKey] = React.useState(apiKeys.openai || '');
+  const [elevenlabsApiKey, setElevenlabsApiKey] = React.useState(apiKeys.elevenlabs || '');
+  
+  const [testingYoutube, setTestingYoutube] = React.useState(false);
+  const [testingOpenai, setTestingOpenai] = React.useState(false);
+  const [testingElevenlabs, setTestingElevenlabs] = React.useState(false);
+  
+  const [youtubeStatus, setYoutubeStatus] = React.useState({ success: false, message: '' });
+  const [openaiStatus, setOpenaiStatus] = React.useState({ success: false, message: '' });
+  const [elevenlabsStatus, setElevenlabsStatus] = React.useState({ success: false, message: '' });
+  
+  const [saveSuccess, setSaveSuccess] = React.useState(false);
+  const [saveError, setSaveError] = React.useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleSaveKeys = async () => {
+    setSaveSuccess(false);
+    setSaveError('');
     
-    // Simulate API call
-    setTimeout(() => {
-      // Add new API key to the list
-      const newKey = {
-        id: savedKeys.length + 1,
-        name: 'YouTube API Key',
-        apiKey: apiKey.substring(0, 4) + '...' + apiKey.substring(apiKey.length - 3),
-        channelId: channelId,
-        status: 'Active',
-        lastUsed: new Date().toISOString().split('T')[0]
-      };
+    try {
+      const result = await saveApiKeys({
+        youtube: youtubeApiKey,
+        openai: openaiApiKey,
+        elevenlabs: elevenlabsApiKey
+      });
       
-      setSavedKeys([...savedKeys, newKey]);
+      if (result.success) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        setSaveError(result.error || 'Failed to save API keys');
+      }
+    } catch (error) {
+      setSaveError('An unexpected error occurred');
+      console.error(error);
+    }
+  };
+  
+  const handleTestYouTubeKey = async () => {
+    setTestingYoutube(true);
+    setYoutubeStatus({ success: false, message: '' });
+    
+    try {
+      const result = await testYouTubeApiKey(youtubeApiKey);
       
-      // Reset form
-      setApiKey('');
-      setChannelId('');
-      setLoading(false);
-      setSuccess(true);
+      if (result.success) {
+        setYoutubeStatus({ success: true, message: 'YouTube API key is valid!' });
+      } else {
+        setYoutubeStatus({ success: false, message: result.error || 'Failed to validate YouTube API key' });
+      }
+    } catch (error) {
+      setYoutubeStatus({ success: false, message: 'An unexpected error occurred' });
+      console.error(error);
+    } finally {
+      setTestingYoutube(false);
+    }
+  };
+  
+  const handleTestOpenAIKey = async () => {
+    setTestingOpenai(true);
+    setOpenaiStatus({ success: false, message: '' });
+    
+    try {
+      const result = await testOpenAIApiKey(openaiApiKey);
       
-      // Hide success message after 3 seconds
-      setTimeout(() => setSuccess(false), 3000);
-    }, 1000);
+      if (result.success) {
+        setOpenaiStatus({ success: true, message: 'OpenAI API key is valid!' });
+      } else {
+        setOpenaiStatus({ success: false, message: result.error || 'Failed to validate OpenAI API key' });
+      }
+    } catch (error) {
+      setOpenaiStatus({ success: false, message: 'An unexpected error occurred' });
+      console.error(error);
+    } finally {
+      setTestingOpenai(false);
+    }
+  };
+  
+  const handleTestElevenLabsKey = async () => {
+    setTestingElevenlabs(true);
+    setElevenlabsStatus({ success: false, message: '' });
+    
+    try {
+      const result = await testElevenLabsApiKey(elevenlabsApiKey);
+      
+      if (result.success) {
+        setElevenlabsStatus({ success: true, message: 'ElevenLabs API key is valid!' });
+      } else {
+        setElevenlabsStatus({ success: false, message: result.error || 'Failed to validate ElevenLabs API key' });
+      }
+    } catch (error) {
+      setElevenlabsStatus({ success: false, message: 'An unexpected error occurred' });
+      console.error(error);
+    } finally {
+      setTestingElevenlabs(false);
+    }
   };
 
   return (
     <div>
       <DashboardHeader />
       
-      <main className="container mt-4">
-        <div className="mb-4">
+      <main className="container mt-4 fade-in">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold">API Keys Management</h1>
-          <p>Manage your YouTube API keys for channel integration</p>
+          <p className="text-muted-foreground">Configure your API keys to enable video automation</p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Add New API Key Form */}
-          <div>
-            <div className="card">
-              <h2 className="text-xl font-bold mb-4">Add New API Key</h2>
-              
-              {success && (
-                <div className="card mb-4" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: '#10b981' }}>
-                  <p style={{ color: '#10b981' }}>API key added successfully!</p>
-                </div>
-              )}
-              
-              <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <label htmlFor="apiKey">YouTube API Key</label>
+        {saveSuccess && (
+          <div className="glass-card p-4 mb-6 border border-green-500/30 bg-green-500/10">
+            <p className="text-green-400">API keys saved successfully!</p>
+          </div>
+        )}
+        
+        {saveError && (
+          <div className="glass-card p-4 mb-6 border border-destructive/30 bg-destructive/10">
+            <p className="text-destructive">{saveError}</p>
+          </div>
+        )}
+        
+        <div className="space-y-6">
+          {/* YouTube API Key */}
+          <div className="glass-card p-6">
+            <h2 className="text-xl font-semibold mb-6 flex items-center">
+              <span className="text-red-500 mr-2">▶️</span>
+              YouTube API Key
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="youtubeApiKey" className="block text-sm font-medium mb-2">
+                  API Key
+                </label>
+                <div className="flex space-x-2">
                   <input
-                    id="apiKey"
+                    id="youtubeApiKey"
                     type="text"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
+                    value={youtubeApiKey}
+                    onChange={(e) => setYoutubeApiKey(e.target.value)}
                     placeholder="Enter your YouTube API key"
-                    required
+                    className="flex-1 p-2.5 bg-muted border border-border rounded-md font-mono text-sm"
+                    disabled={loading || testingYoutube}
                   />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-primary">
-                      How to get an API key
-                    </a>
-                  </p>
+                  <button
+                    onClick={handleTestYouTubeKey}
+                    disabled={loading || testingYoutube || !youtubeApiKey.trim()}
+                    className="px-4 py-2.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {testingYoutube ? 'Testing...' : 'Test Key'}
+                  </button>
                 </div>
                 
-                <div className="mb-4">
-                  <label htmlFor="channelId">YouTube Channel ID</label>
-                  <input
-                    id="channelId"
-                    type="text"
-                    value={channelId}
-                    onChange={(e) => setChannelId(e.target.value)}
-                    placeholder="Enter your YouTube channel ID"
-                    required
-                  />
-                </div>
+                {youtubeStatus.message && (
+                  <div className={`mt-2 text-sm ${youtubeStatus.success ? 'text-green-400' : 'text-destructive'}`}>
+                    {youtubeStatus.message}
+                  </div>
+                )}
                 
-                <button 
-                  type="submit" 
-                  className="btn w-full"
-                  disabled={loading}
-                >
-                  {loading ? 'Adding...' : 'Add API Key'}
-                </button>
-              </form>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Required for accessing YouTube data and uploading videos.{' '}
+                  <a 
+                    href="https://console.cloud.google.com/apis/credentials" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-primary hover:underline"
+                  >
+                    Get a YouTube API key
+                  </a>
+                </p>
+              </div>
+              
+              <div className="bg-muted/30 border border-border rounded-md p-4">
+                <h3 className="text-sm font-medium mb-3">Required YouTube API Permissions</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground list-disc list-inside">
+                  <li>YouTube Data API v3</li>
+                  <li>YouTube Analytics API</li>
+                  <li>YouTube Reporting API</li>
+                </ul>
+              </div>
             </div>
           </div>
           
-          {/* Saved API Keys List */}
-          <div>
-            <h2 className="text-xl font-bold mb-4">Your API Keys</h2>
+          {/* OpenAI API Key */}
+          <div className="glass-card p-6">
+            <h2 className="text-xl font-semibold mb-6 flex items-center">
+              <span className="text-green-500 mr-2">🧠</span>
+              OpenAI API Key
+            </h2>
             
-            {savedKeys.length === 0 ? (
-              <div className="card">
-                <p>No API keys added yet.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {savedKeys.map((item) => (
-                  <div className="card" key={item.id}>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold">{item.name}</h3>
-                        <p className="text-sm mb-1">
-                          <span className="text-muted-foreground">API Key: </span>
-                          {item.apiKey}
-                        </p>
-                        <p className="text-sm mb-1">
-                          <span className="text-muted-foreground">Channel ID: </span>
-                          {item.channelId}
-                        </p>
-                        <p className="text-sm mb-1">
-                          <span className="text-muted-foreground">Status: </span>
-                          <span className="text-green-500">{item.status}</span>
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Last used on {item.lastUsed}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="btn btn-outline btn-sm">Test</button>
-                        <button 
-                          className="btn btn-sm" 
-                          style={{ backgroundColor: 'var(--destructive)' }}
-                          onClick={() => {
-                            if (confirm('Are you sure you want to delete this API key?')) {
-                              setSavedKeys(savedKeys.filter(k => k.id !== item.id));
-                            }
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="openaiApiKey" className="block text-sm font-medium mb-2">
+                  API Key
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    id="openaiApiKey"
+                    type="text"
+                    value={openaiApiKey}
+                    onChange={(e) => setOpenaiApiKey(e.target.value)}
+                    placeholder="Enter your OpenAI API key"
+                    className="flex-1 p-2.5 bg-muted border border-border rounded-md font-mono text-sm"
+                    disabled={loading || testingOpenai}
+                  />
+                  <button
+                    onClick={handleTestOpenAIKey}
+                    disabled={loading || testingOpenai || !openaiApiKey.trim()}
+                    className="px-4 py-2.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {testingOpenai ? 'Testing...' : 'Test Key'}
+                  </button>
+                </div>
+                
+                {openaiStatus.message && (
+                  <div className={`mt-2 text-sm ${openaiStatus.success ? 'text-green-400' : 'text-destructive'}`}>
+                    {openaiStatus.message}
                   </div>
-                ))}
+                )}
+                
+                <p className="text-xs text-muted-foreground mt-2">
+                  Required for generating video scripts, titles, and descriptions.{' '}
+                  <a 
+                    href="https://platform.openai.com/account/api-keys" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-primary hover:underline"
+                  >
+                    Get an OpenAI API key
+                  </a>
+                </p>
               </div>
-            )}
+              
+              <div className="bg-muted/30 border border-border rounded-md p-4">
+                <h3 className="text-sm font-medium mb-3">OpenAI Models Used</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground list-disc list-inside">
+                  <li>GPT-4 for script generation</li>
+                  <li>GPT-3.5 Turbo for titles and descriptions</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          {/* ElevenLabs API Key */}
+          <div className="glass-card p-6">
+            <h2 className="text-xl font-semibold mb-6 flex items-center">
+              <span className="text-blue-500 mr-2">🔊</span>
+              ElevenLabs API Key
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="elevenlabsApiKey" className="block text-sm font-medium mb-2">
+                  API Key
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    id="elevenlabsApiKey"
+                    type="text"
+                    value={elevenlabsApiKey}
+                    onChange={(e) => setElevenlabsApiKey(e.target.value)}
+                    placeholder="Enter your ElevenLabs API key"
+                    className="flex-1 p-2.5 bg-muted border border-border rounded-md font-mono text-sm"
+                    disabled={loading || testingElevenlabs}
+                  />
+                  <button
+                    onClick={handleTestElevenLabsKey}
+                    disabled={loading || testingElevenlabs || !elevenlabsApiKey.trim()}
+                    className="px-4 py-2.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {testingElevenlabs ? 'Testing...' : 'Test Key'}
+                  </button>
+                </div>
+                
+                {elevenlabsStatus.message && (
+                  <div className={`mt-2 text-sm ${elevenlabsStatus.success ? 'text-green-400' : 'text-destructive'}`}>
+                    {elevenlabsStatus.message}
+                  </div>
+                )}
+                
+                <p className="text-xs text-muted-foreground mt-2">
+                  Required for generating natural-sounding voiceovers.{' '}
+                  <a 
+                    href="https://elevenlabs.io/app/api-key" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-primary hover:underline"
+                  >
+                    Get an ElevenLabs API key
+                  </a>
+                </p>
+              </div>
+              
+              <div className="bg-muted/30 border border-border rounded-md p-4">
+                <h3 className="text-sm font-medium mb-3">Voice Synthesis Features</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground list-disc list-inside">
+                  <li>Natural-sounding voices</li>
+                  <li>Multiple voice options</li>
+                  <li>Adjustable speaking styles</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          {/* Save Button */}
+          <div className="flex justify-end">
+            <button
+              onClick={handleSaveKeys}
+              disabled={loading}
+              className="btn py-3 px-6 text-lg"
+            >
+              {loading ? 'Saving...' : 'Save All API Keys'}
+            </button>
           </div>
         </div>
       </main>
     </div>
   );
 }
+
+export default withAuth(ApiKeysPage);

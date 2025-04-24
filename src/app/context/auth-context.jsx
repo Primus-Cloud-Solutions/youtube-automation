@@ -1,212 +1,202 @@
-'use client'
+'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { auth, userProfiles } from '../../../supabase-auth-setup'
-import { useRouter } from 'next/navigation'
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Create auth context
-const AuthContext = createContext(null)
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const router = useRouter();
 
   // Initialize auth state
   useEffect(() => {
-    const initAuth = async () => {
+    const checkSession = async () => {
       try {
-        // Check for existing session
-        const session = await auth.getSession()
+        setLoading(true);
+        const response = await fetch('/api/auth?action=session');
+        const data = await response.json();
         
-        if (session?.session) {
-          const userData = await auth.getUser()
-          setUser(userData)
-          
-          // Get user profile
-          if (userData) {
-            const userProfile = await userProfiles.getProfile(userData.id)
-            setProfile(userProfile)
-          }
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    
-    initAuth()
-    
-    // Set up auth state listener
-    const { data: authListener } = supabaseClient.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session) {
-          const userData = await auth.getUser()
-          setUser(userData)
-          
-          // Get user profile
-          if (userData) {
-            const userProfile = await userProfiles.getProfile(userData.id)
-            setProfile(userProfile)
-          }
+        if (data.success && data.user) {
+          setUser(data.user);
         } else {
-          setUser(null)
-          setProfile(null)
+          setUser(null);
         }
-        setLoading(false)
+      } catch (err) {
+        console.error('Session check error:', err);
+        setError('Failed to check authentication status');
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-    )
+    };
     
-    return () => {
-      authListener?.subscription.unsubscribe()
-    }
-  }, [])
+    checkSession();
+  }, []);
   
   // Sign up function
   const signUp = async (email, password, fullName) => {
     try {
-      const { user: newUser } = await auth.signUp(email, password)
+      setLoading(true);
+      setError(null);
       
-      if (newUser) {
-        // Create user profile
-        await userProfiles.createProfile(newUser.id, { full_name: fullName })
-        
-        // Get updated user and profile
-        const userData = await auth.getUser()
-        setUser(userData)
-        
-        if (userData) {
-          const userProfile = await userProfiles.getProfile(userData.id)
-          setProfile(userProfile)
-        }
-        
-        return { success: true, user: newUser }
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'signup',
+          email,
+          password,
+          fullName
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to sign up');
       }
-    } catch (error) {
-      console.error('Sign up error:', error)
-      return { success: false, error: error.message }
+      
+      setUser(data.user);
+      router.push('/dashboard');
+      return { success: true, user: data.user };
+    } catch (err) {
+      console.error('Sign up error:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
     }
-  }
+  };
   
   // Sign in function
   const signIn = async (email, password) => {
     try {
-      const { user: signedInUser } = await auth.signIn(email, password)
+      setLoading(true);
+      setError(null);
       
-      if (signedInUser) {
-        // Get user profile
-        const userProfile = await userProfiles.getProfile(signedInUser.id)
-        setProfile(userProfile)
-        
-        return { success: true, user: signedInUser }
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'signin',
+          email,
+          password
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to sign in');
       }
-    } catch (error) {
-      console.error('Sign in error:', error)
-      return { success: false, error: error.message }
+      
+      setUser(data.user);
+      router.push('/dashboard');
+      return { success: true, user: data.user };
+    } catch (err) {
+      console.error('Sign in error:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+  
+  // Sign in with Google
+  const signInWithGoogle = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'google'
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to sign in with Google');
+      }
+      
+      // Redirect to Google OAuth URL
+      window.location.href = data.url;
+      return { success: true };
+    } catch (err) {
+      console.error('Google sign in error:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Sign out function
   const signOut = async () => {
     try {
-      await auth.signOut()
-      router.push('/login')
-      return { success: true }
-    } catch (error) {
-      console.error('Sign out error:', error)
-      return { success: false, error: error.message }
-    }
-  }
-  
-  // Check if user has active subscription
-  const hasActiveSubscription = async () => {
-    if (!user) return false
-    
-    try {
-      return await userProfiles.hasActiveSubscription(user.id)
-    } catch (error) {
-      console.error('Subscription check error:', error)
-      return false
-    }
-  }
-  
-  // Check if user is admin
-  const isAdmin = async () => {
-    if (!user) return false
-    
-    try {
-      return profile?.role === 'admin'
-    } catch (error) {
-      console.error('Admin check error:', error)
-      return false
-    }
-  }
-  
-  // Update user profile
-  const updateUserProfile = async (updates) => {
-    if (!user) return { success: false, error: 'Not authenticated' }
-    
-    try {
-      await userProfiles.updateProfile(user.id, updates)
+      setLoading(true);
+      setError(null);
       
-      // Get updated profile
-      const updatedProfile = await userProfiles.getProfile(user.id)
-      setProfile(updatedProfile)
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'signout'
+        }),
+      });
       
-      return { success: true, profile: updatedProfile }
-    } catch (error) {
-      console.error('Profile update error:', error)
-      return { success: false, error: error.message }
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to sign out');
+      }
+      
+      setUser(null);
+      router.push('/login');
+      return { success: true };
+    } catch (err) {
+      console.error('Sign out error:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
     }
-  }
-  
-  // Reset password
-  const resetPassword = async (email) => {
-    try {
-      await auth.resetPassword(email)
-      return { success: true }
-    } catch (error) {
-      console.error('Password reset error:', error)
-      return { success: false, error: error.message }
-    }
-  }
-  
-  // Update password
-  const updatePassword = async (newPassword) => {
-    try {
-      await auth.updatePassword(newPassword)
-      return { success: true }
-    } catch (error) {
-      console.error('Password update error:', error)
-      return { success: false, error: error.message }
-    }
-  }
+  };
   
   // Auth context value
   const value = {
     user,
-    profile,
     loading,
+    error,
     signUp,
     signIn,
-    signOut,
-    hasActiveSubscription,
-    isAdmin,
-    updateUserProfile,
-    resetPassword,
-    updatePassword
-  }
+    signInWithGoogle,
+    signOut
+  };
   
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 // Auth hook
 export function useAuth() {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
+  return context;
 }
