@@ -10,6 +10,40 @@ frontend:
         - pnpm add @radix-ui/react-avatar @radix-ui/react-slot class-variance-authority clsx tailwind-merge
         - echo "Installing additional required dependencies..."
         - pnpm add next-themes lucide-react tailwindcss-animate
+        - echo "Creating fixed layout.tsx file..."
+        - mkdir -p /tmp/fixed-files
+        - echo 'import type { Metadata } from "next";' > /tmp/fixed-files/layout.tsx
+        - echo 'import { Inter, Roboto_Mono } from "next/font/google";' >> /tmp/fixed-files/layout.tsx
+        - echo 'import "./globals.css";' >> /tmp/fixed-files/layout.tsx
+        - echo '' >> /tmp/fixed-files/layout.tsx
+        - echo '// Using Inter as a replacement for Geist' >> /tmp/fixed-files/layout.tsx
+        - echo 'const inter = Inter({' >> /tmp/fixed-files/layout.tsx
+        - echo '  variable: "--font-geist-sans",' >> /tmp/fixed-files/layout.tsx
+        - echo '  subsets: ["latin"]' >> /tmp/fixed-files/layout.tsx
+        - echo '});' >> /tmp/fixed-files/layout.tsx
+        - echo '' >> /tmp/fixed-files/layout.tsx
+        - echo '// Using Roboto Mono as a replacement for Geist Mono' >> /tmp/fixed-files/layout.tsx
+        - echo 'const robotoMono = Roboto_Mono({' >> /tmp/fixed-files/layout.tsx
+        - echo '  variable: "--font-geist-mono",' >> /tmp/fixed-files/layout.tsx
+        - echo '  subsets: ["latin"]' >> /tmp/fixed-files/layout.tsx
+        - echo '});' >> /tmp/fixed-files/layout.tsx
+        - echo '' >> /tmp/fixed-files/layout.tsx
+        - echo 'export const metadata: Metadata = {' >> /tmp/fixed-files/layout.tsx
+        - echo '  title: "YouTube Automation System",' >> /tmp/fixed-files/layout.tsx
+        - echo '  description: "Advanced YouTube content automation with AI-powered scheduling and trending topic detection"' >> /tmp/fixed-files/layout.tsx
+        - echo '};' >> /tmp/fixed-files/layout.tsx
+        - echo '' >> /tmp/fixed-files/layout.tsx
+        - echo 'export default function RootLayout({' >> /tmp/fixed-files/layout.tsx
+        - echo '  children' >> /tmp/fixed-files/layout.tsx
+        - echo '}: Readonly<{' >> /tmp/fixed-files/layout.tsx
+        - echo '  children: React.ReactNode' >> /tmp/fixed-files/layout.tsx
+        - echo '}>) {' >> /tmp/fixed-files/layout.tsx
+        - echo '  return (' >> /tmp/fixed-files/layout.tsx
+        - echo '    <html lang="en" className="dark">' >> /tmp/fixed-files/layout.tsx
+        - echo '      <body className={`${inter.variable} ${robotoMono.variable} antialiased space-bg planet-bg`}>{children}</body>' >> /tmp/fixed-files/layout.tsx
+        - echo '    </html>' >> /tmp/fixed-files/layout.tsx
+        - echo '  );' >> /tmp/fixed-files/layout.tsx
+        - echo '}' >> /tmp/fixed-files/layout.tsx
         - echo "Verifying installations..."
         - pnpm list @radix-ui/react-avatar
         - pnpm list @radix-ui/react-slot
@@ -18,41 +52,8 @@ frontend:
     build:
       commands:
         - echo "Applying font fixes before build..."
-        - cp -f src/app/layout.tsx src/app/layout.tsx.backup
-        - cat > src/app/layout.tsx << 'EOL'
-        - import type { Metadata } from 'next'
-        - import { Inter, Roboto_Mono } from 'next/font/google'
-        - import './globals.css'
-        - 
-        - // Using Inter as a replacement for Geist
-        - const inter = Inter({
-        -   variable: '--font-geist-sans',
-        -   subsets: ['latin']
-        - })
-        - 
-        - // Using Roboto Mono as a replacement for Geist Mono
-        - const robotoMono = Roboto_Mono({
-        -   variable: '--font-geist-mono',
-        -   subsets: ['latin']
-        - })
-        - 
-        - export const metadata: Metadata = {
-        -   title: 'YouTube Automation System',
-        -   description: 'Advanced YouTube content automation with AI-powered scheduling and trending topic detection'
-        - }
-        - 
-        - export default function RootLayout({
-        -   children
-        - }: Readonly<{
-        -   children: React.ReactNode
-        - }>) {
-        -   return (
-        -     <html lang="en" className="dark">
-        -       <body className={`${inter.variable} ${robotoMono.variable} antialiased space-bg planet-bg`}>{children}</body>
-        -     </html>
-        -   )
-        - }
-        - EOL
+        - cp -f src/app/layout.tsx src/app/layout.tsx.backup || true
+        - cp -f /tmp/fixed-files/layout.tsx src/app/layout.tsx
         - echo "Building the application..."
         - NODE_OPTIONS="--max_old_space_size=4096" pnpm run build
   artifacts:
