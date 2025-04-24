@@ -7,6 +7,7 @@ frontend:
         - pnpm install
     build:
       commands:
+        - echo "Extending build timeout..."
         - pnpm run build
   artifacts:
     baseDirectory: .next
@@ -16,7 +17,6 @@ frontend:
     paths:
       - node_modules/**/*
       - .pnpm-store/**/*
-
   customHeaders:
     - pattern: '**/*'
       headers:
