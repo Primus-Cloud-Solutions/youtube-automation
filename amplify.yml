@@ -6,11 +6,53 @@ frontend:
         - npm install -g pnpm
         - echo "Installing all dependencies with no frozen lockfile..."
         - pnpm install --no-frozen-lockfile
+        - echo "Installing missing UI component dependencies..."
+        - pnpm add @radix-ui/react-avatar @radix-ui/react-slot class-variance-authority clsx tailwind-merge
+        - echo "Installing additional required dependencies..."
+        - pnpm add next-themes lucide-react tailwindcss-animate
         - echo "Verifying installations..."
-        - pnpm list styled-jsx
+        - pnpm list @radix-ui/react-avatar
+        - pnpm list @radix-ui/react-slot
+        - pnpm list class-variance-authority
         - node -v
     build:
       commands:
+        - echo "Applying font fixes before build..."
+        - cp -f src/app/layout.tsx src/app/layout.tsx.backup
+        - cat > src/app/layout.tsx << 'EOL'
+        - import type { Metadata } from 'next'
+        - import { Inter, Roboto_Mono } from 'next/font/google'
+        - import './globals.css'
+        - 
+        - // Using Inter as a replacement for Geist
+        - const inter = Inter({
+        -   variable: '--font-geist-sans',
+        -   subsets: ['latin']
+        - })
+        - 
+        - // Using Roboto Mono as a replacement for Geist Mono
+        - const robotoMono = Roboto_Mono({
+        -   variable: '--font-geist-mono',
+        -   subsets: ['latin']
+        - })
+        - 
+        - export const metadata: Metadata = {
+        -   title: 'YouTube Automation System',
+        -   description: 'Advanced YouTube content automation with AI-powered scheduling and trending topic detection'
+        - }
+        - 
+        - export default function RootLayout({
+        -   children
+        - }: Readonly<{
+        -   children: React.ReactNode
+        - }>) {
+        -   return (
+        -     <html lang="en" className="dark">
+        -       <body className={`${inter.variable} ${robotoMono.variable} antialiased space-bg planet-bg`}>{children}</body>
+        -     </html>
+        -   )
+        - }
+        - EOL
         - echo "Building the application..."
         - NODE_OPTIONS="--max_old_space_size=4096" pnpm run build
   artifacts:
