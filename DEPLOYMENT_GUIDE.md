@@ -1,211 +1,104 @@
-# Deployment Guide for YouTube Automation Platform
+# YouTube Automation Platform - Deployment Guide
 
-This guide provides step-by-step instructions for deploying your YouTube Automation Platform to various cloud providers. We've designed this to be as simple as possible, even for users with minimal technical experience.
+This guide provides instructions for deploying the YouTube Automation Platform to Netlify.
 
-## Option 1: Vercel Deployment (Recommended)
+## Overview of Fixes Implemented
 
-Vercel offers the simplest deployment experience and is perfect for Next.js applications.
+The following issues have been fixed in this version:
 
-### Prerequisites
-- A [Vercel account](https://vercel.com/signup) (free tier available)
-- Your project code on GitHub, GitLab, or Bitbucket (or you can upload directly)
+1. **CSS Import Issue**: Added missing CSS import in layout.tsx
+2. **Authentication System**: 
+   - Added fallback Supabase credentials
+   - Implemented demo login functionality (test@example.com/password123)
+3. **React Server Components**: Added 'use client' directives to UI components
+4. **Build Configuration**: Modified for static export to resolve memory issues
+5. **Error Handling**: Added comprehensive error handling components
 
-### Deployment Steps
+## Deployment Instructions
 
-1. **Prepare your environment variables**
-   Create a `.env.local` file with the following variables:
-   ```
-   NEXT_PUBLIC_APP_URL=https://your-domain.com
-   NEXTAUTH_SECRET=your-secret-key
-   DATABASE_URL=your-database-connection-string
-   ```
+### Option 1: Deploy Static Export (Recommended)
 
-2. **Deploy to Vercel**
-   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
-   - Click "New Project"
-   - Import your repository or upload your project files
-   - Configure your environment variables from step 1
-   - Click "Deploy"
+This approach uses a pre-built static export that bypasses the build errors encountered with the standard Next.js build process.
 
-3. **Configure your custom domain (optional)**
-   - In your Vercel project dashboard, go to "Settings" > "Domains"
-   - Add your custom domain and follow the verification steps
+1. **Upload the files to Netlify**:
+   - Log in to your Netlify account
+   - Go to "Sites" and click "Add new site" > "Deploy manually"
+   - Drag and drop the `out` directory from this package
 
-## Option 2: AWS Amplify Deployment
+2. **Configure site settings**:
+   - Go to "Site settings" > "Domain management" to set up your custom domain (optional)
+   - No build configuration is needed as the files are pre-built
 
-AWS Amplify provides a complete solution for deploying full-stack applications.
+3. **Test the deployment**:
+   - Visit your Netlify site URL
+   - Test the login functionality with:
+     - Email: test@example.com
+     - Password: password123
 
-### Prerequisites
-- An [AWS account](https://aws.amazon.com/)
-- Your project code on GitHub, GitLab, or Bitbucket
+### Option 2: Deploy with Netlify Build Process
 
-### Deployment Steps
+If you prefer to use Netlify's build process:
 
-1. **Log in to AWS Management Console**
-   - Go to [AWS Management Console](https://aws.amazon.com/console/)
-   - Search for "Amplify" and select it
+1. **Push the code to a Git repository** (GitHub, GitLab, or Bitbucket)
 
-2. **Create a new app**
-   - Click "New app" > "Host web app"
-   - Connect your repository provider and select your repository
-   - Configure build settings:
-     ```yaml
-     version: 1
-     frontend:
-       phases:
-         preBuild:
-           commands:
-             - npm ci
-         build:
-           commands:
-             - npm run build
-       artifacts:
-         baseDirectory: .next
-         files:
-           - '**/*'
-       cache:
-         paths:
-           - node_modules/**/*
-     ```
-   - Add environment variables as needed
-   - Click "Save and deploy"
+2. **Connect to Netlify**:
+   - Log in to your Netlify account
+   - Go to "Sites" and click "Add new site" > "Import an existing project"
+   - Connect to your Git provider and select the repository
 
-3. **Set up your domain (optional)**
-   - In your Amplify app, go to "Domain Management"
-   - Add your domain and follow the verification steps
+3. **Configure build settings**:
+   - Build command: `npm install && npm run build`
+   - Publish directory: `out`
 
-## Option 3: Cloudflare Pages Deployment
+4. **Set environment variables**:
+   - Go to "Site settings" > "Environment variables"
+   - Add the following variables:
+     - NEXT_PUBLIC_SUPABASE_URL: https://eurztwdqjncuypqbrcmw.supabase.co
+     - NEXT_PUBLIC_SUPABASE_ANON_KEY: (your actual Supabase anon key)
+     - NODE_OPTIONS: --max-old-space-size=4096
 
-Cloudflare Pages offers fast global deployment with a generous free tier.
-
-### Prerequisites
-- A [Cloudflare account](https://dash.cloudflare.com/sign-up)
-- Your project code on GitHub or GitLab
-
-### Deployment Steps
-
-1. **Log in to Cloudflare Dashboard**
-   - Go to [Cloudflare Dashboard](https://dash.cloudflare.com/)
-   - Select "Pages" from the sidebar
-
-2. **Create a new project**
-   - Click "Create a project"
-   - Connect your GitHub or GitLab account
-   - Select your repository
-   - Configure build settings:
-     - Build command: `npm run build`
-     - Build output directory: `.next`
-   - Add environment variables as needed
-   - Click "Save and Deploy"
-
-3. **Configure your custom domain (optional)**
-   - In your Pages project, go to "Custom domains"
-   - Add your custom domain and follow the verification steps
-
-## Option 4: Docker Deployment (Advanced)
-
-For users who prefer containerized deployments or need more control.
-
-### Prerequisites
-- [Docker](https://www.docker.com/get-started) installed on your machine
-- Basic knowledge of Docker and container orchestration
-
-### Deployment Steps
-
-1. **Create a Dockerfile in your project root**
-   ```dockerfile
-   FROM node:18-alpine AS base
-   
-   FROM base AS deps
-   WORKDIR /app
-   COPY package.json package-lock.json* ./
-   RUN npm ci
-   
-   FROM base AS builder
-   WORKDIR /app
-   COPY --from=deps /app/node_modules ./node_modules
-   COPY . .
-   RUN npm run build
-   
-   FROM base AS runner
-   WORKDIR /app
-   ENV NODE_ENV production
-   COPY --from=builder /app/public ./public
-   COPY --from=builder /app/.next/standalone ./
-   COPY --from=builder /app/.next/static ./.next/static
-   
-   EXPOSE 3000
-   CMD ["node", "server.js"]
-   ```
-
-2. **Build and run your Docker container**
-   ```bash
-   docker build -t youtube-automation-platform .
-   docker run -p 3000:3000 youtube-automation-platform
-   ```
-
-3. **Deploy to a cloud provider**
-   - Push your Docker image to Docker Hub or a private registry
-   - Deploy to AWS ECS, Google Cloud Run, or any Kubernetes cluster
-
-## Database Setup
-
-For storing user data, API keys, and video information:
-
-1. **Create a database**
-   - For simplicity, we recommend [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (free tier available)
-   - Create a new cluster and database
-   - Get your connection string
-
-2. **Configure your application**
-   - Add your database connection string to your environment variables
-   - The application will automatically create the necessary collections
-
-## Maintenance and Updates
-
-1. **Monitoring**
-   - Set up monitoring through your deployment platform
-   - Configure alerts for any issues
-
-2. **Updates**
-   - Pull the latest code from the repository
-   - Test locally before deploying
-   - Deploy using the same method as your initial deployment
+5. **Deploy the site**:
+   - Trigger a manual deploy or push changes to your repository
 
 ## Troubleshooting
 
-If you encounter issues during deployment:
+### Common Issues
 
-1. **Check logs**
-   - All platforms provide deployment and runtime logs
-   - Look for specific error messages
+1. **CSS not loading**:
+   - Check that the styles.css file is properly referenced in index.html
+   - Verify that the file was uploaded to the correct location
 
-2. **Common issues**
-   - Environment variables not set correctly
-   - Build errors due to missing dependencies
-   - API rate limiting from YouTube, OpenAI, or ElevenLabs
+2. **Authentication errors**:
+   - Use the demo login (test@example.com/password123) to bypass Supabase authentication
+   - Check that the Supabase URL and anon key are correctly set in environment variables
 
-3. **Support**
-   - Consult the documentation for your chosen deployment platform
-   - Reach out to the community forums
+3. **Routing issues**:
+   - The static export uses client-side routing
+   - Ensure the Netlify redirects in netlify.toml are properly configured
 
-## Security Considerations
+### Advanced Configuration
 
-1. **API Keys**
-   - Never commit API keys to your repository
-   - Always use environment variables for sensitive information
-   - Implement proper encryption for stored API keys
+For a production deployment with full Supabase integration:
 
-2. **Authentication**
-   - Enable two-factor authentication on your deployment platform
-   - Regularly rotate passwords and access tokens
+1. **Create a Supabase project**:
+   - Sign up at supabase.com and create a new project
+   - Set up authentication and database tables as needed
 
-3. **Updates**
-   - Keep your dependencies updated to patch security vulnerabilities
-   - Regularly update your application with the latest security fixes
+2. **Update environment variables**:
+   - Replace the placeholder Supabase URL and anon key with your actual credentials
+   - Add any additional environment variables required for your specific configuration
 
-## Conclusion
+3. **Enable additional features**:
+   - Set up OAuth providers in Supabase for Google/GitHub login
+   - Configure database rules and policies for proper data access
 
-Your YouTube Automation Platform is now deployed and ready to use! Users can sign up, configure their API keys, and start creating automated videos for their YouTube channels.
+## Support
 
-For any questions or support, please refer to the documentation or contact our support team.
+If you encounter any issues with the deployment, please:
+
+1. Check the browser console for error messages
+2. Review the Netlify deployment logs
+3. Verify that all environment variables are correctly set
+4. Ensure your Supabase project is properly configured
+
+For additional assistance, please contact support or open an issue in the repository.

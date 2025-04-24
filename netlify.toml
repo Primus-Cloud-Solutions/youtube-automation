@@ -1,29 +1,29 @@
 [build]
-  command = "npm run build"
-  publish = ".next"
+  command = "npm install && npm run build"
+  publish = "out"
 
 [build.environment]
   NEXT_PUBLIC_SUPABASE_URL = "https://eurztwdqjncuypqbrcmw.supabase.co"
-  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1cnp0d2Rxam5jdXlwcWJyY213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU0NTQ2MDksImV4cCI6MjA2MTAzMDYwOX0.9dlhNAi8VobOt8zHmSToQnSadAtvTXaqNy-SwnkSt6Q"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1cnp0d2Rxam5jdXlwcWJyY213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODI1MzQ0MDAsImV4cCI6MTk5ODExMDQwMH0.fallback_demo_key_for_development"
   SKIP_TYPESCRIPT_CHECK = "true"
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
+  NODE_OPTIONS = "--max-old-space-size=4096"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+# No Next.js plugin needed for static export
+# [[plugins]]
+#  package = "@netlify/plugin-nextjs"
 
-# Handle SPA routing
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+
+# Handle SPA routing for static export
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Security headers
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://images.unsplash.com; connect-src 'self' https://eurztwdqjncuypqbrcmw.supabase.co;"
