@@ -3,11 +3,20 @@ frontend:
   phases:
     preBuild:
       commands:
-        - chmod +x ./build.sh
-        - ./build.sh
+        - npm install -g pnpm
+        - echo "Installing all dependencies..."
+        - pnpm install
+        - echo "Installing styled-jsx explicitly..."
+        - pnpm add styled-jsx
+        - echo "Installing other critical dependencies..."
+        - pnpm add @supabase/supabase-js stripe lucide-react tailwindcss postcss autoprefixer
+        - echo "Verifying installations..."
+        - pnpm list styled-jsx
+        - node -v
     build:
       commands:
-        - echo "Build completed in previous step"
+        - echo "Building the application..."
+        - NODE_OPTIONS="--max_old_space_size=4096" pnpm run build
   artifacts:
     baseDirectory: .next
     files:
