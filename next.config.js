@@ -14,4 +14,12 @@ module.exports = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  // Disable SWC minify to avoid any potential issues
+  swcMinify: false,
+  // Ensure we're using the correct output directory
+  distDir: '.next',
+  // Disable image optimization to avoid any potential issues
+  images: {
+    unoptimized: true,
+  }
 }
