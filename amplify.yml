@@ -5,6 +5,7 @@ frontend:
       commands:
         - npm install -g pnpm
         - pnpm install
+        - pnpm add styled-jsx
     build:
       commands:
         - pnpm run build
