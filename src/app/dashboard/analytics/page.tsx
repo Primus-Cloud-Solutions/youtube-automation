@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/auth-context';
 import withAuth from '../../utils/with-auth';
-import DashboardHeader from '../../components/dashboard-header';
+import DashboardHeader from '../../app/components/dashboard-header';
 
 function AnalyticsPage() {
   const { user } = useAuth();
@@ -334,82 +334,6 @@ function AnalyticsPage() {
                             </div>
                           </div>
                         ))}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Audience Demographics</h3>
-                    <div className="bg-muted/30 border border-border rounded-md p-4">
-                      <div className="mb-4">
-                        <div className="text-sm mb-2">Age Groups</div>
-                        <div className="space-y-2">
-                          {videoStats.demographics.ageGroups.map((age, index) => (
-                            <div key={index}>
-                              <div className="flex justify-between text-sm mb-1">
-                                <span>{age.group}</span>
-                                <span>{age.percentage}%</span>
-                              </div>
-                              <div className="w-full bg-muted rounded-full h-2.5">
-                                <div 
-                                  className="bg-gradient-to-r from-primary to-secondary h-2.5 rounded-full" 
-                                  style={{ width: `${age.percentage}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <div className="text-sm mb-2">Gender</div>
-                        <div className="flex gap-4">
-                          <div className="text-center flex-1">
-                            <div className="text-lg font-semibold">{videoStats.demographics.genderSplit.male}%</div>
-                            <div className="text-xs text-muted-foreground">Male</div>
-                          </div>
-                          <div className="text-center flex-1">
-                            <div className="text-lg font-semibold">{videoStats.demographics.genderSplit.female}%</div>
-                            <div className="text-xs text-muted-foreground">Female</div>
-                          </div>
-                          <div className="text-center flex-1">
-                            <div className="text-lg font-semibold">{videoStats.demographics.genderSplit.other}%</div>
-                            <div className="text-xs text-muted-foreground">Other</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Audience Retention</h3>
-                    <div className="bg-muted/30 border border-border rounded-md p-4">
-                      <div className="flex justify-between mb-4">
-                        <div>
-                          <div className="text-sm text-muted-foreground">Average View Duration</div>
-                          <div className="text-lg font-semibold">{videoStats.retention.averageViewDuration}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-muted-foreground">Retention Rate</div>
-                          <div className="text-lg font-semibold">{videoStats.retention.retentionRate}%</div>
-                        </div>
-                      </div>
-                      
-                      <div className="h-32">
-                        <div className="h-full flex items-end">
-                          {videoStats.retention.retentionGraph.map((retention, index) => (
-                            <div 
-                              key={index} 
-                              className="flex-1 bg-gradient-to-t from-primary to-secondary rounded-t mx-0.5"
-                              style={{ height: `${retention}%` }}
-                            ></div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                        <span>0%</span>
-                        <span>Video Duration</span>
-                        <span>100%</span>
                       </div>
                     </div>
                   </div>

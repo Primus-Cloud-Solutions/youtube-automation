@@ -1,6 +1,6 @@
 // api/youtube-api.js
 import { google } from 'googleapis';
-import { supabaseClient } from '../../../supabase-auth-setup';
+import { supabase } from '../../supabase-auth-setup';
 
 // Initialize YouTube API client
 export const initializeYouTubeClient = (apiKey) => {
@@ -149,7 +149,7 @@ export const youtubeApi = {
   scheduleVideo: async (userId, videoData) => {
     try {
       // Save video schedule to database
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('scheduled_videos')
         .insert({
           user_id: userId,
