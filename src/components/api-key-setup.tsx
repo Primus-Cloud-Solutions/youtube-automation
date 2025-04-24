@@ -1,215 +1,174 @@
-'use client'
+import React from 'react';
+import { Key, RefreshCw, Save } from 'lucide-react';
 
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { useState } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+interface ApiKeySetupProps {}
 
-export function ApiKeySetup() {
-  const [youtubeKey, setYoutubeKey] = useState('')
-  const [openaiKey, setOpenaiKey] = useState('')
-  const [elevenLabsKey, setElevenLabsKey] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
+export const ApiKeySetup: React.FC<ApiKeySetupProps> = () => {
+  const [apiKey, setApiKey] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
   
-  const handleSave = () => {
-    setIsSaving(true)
+  const handleSaveKey = () => {
+    if (!apiKey.trim()) return;
+    
+    setIsLoading(true);
     // Simulate API call
     setTimeout(() => {
-      setIsSaving(false)
-    }, 1500)
-  }
+      setIsLoading(false);
+      // Show success message or handle accordingly
+    }, 1500);
+  };
   
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">API Settings</h2>
-        <p className="text-muted-foreground">
-          Configure your API keys to enable automated video creation and uploads
-        </p>
+    <div className="space-y-8 fade-in">
+      <div className="glass-card p-6">
+        <h2 className="text-xl font-semibold mb-6 flex items-center">
+          <Key className="h-5 w-5 mr-2 text-blue-400" />
+          YouTube API Configuration
+        </h2>
+        
+        <div className="space-y-6">
+          <div>
+            <label htmlFor="apiKey" className="block text-sm font-medium mb-2">
+              YouTube API Key
+            </label>
+            <div className="flex space-x-2">
+              <input
+                id="apiKey"
+                type="text"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter your YouTube API key"
+                className="flex-1 p-2.5 bg-muted border border-border rounded-md font-mono text-sm"
+              />
+              <button
+                onClick={handleSaveKey}
+                disabled={isLoading || !apiKey.trim()}
+                className="px-4 py-2.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {isLoading ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Your API key is stored securely and used to interact with the YouTube API.
+            </p>
+          </div>
+          
+          <div className="bg-muted/30 border border-border rounded-md p-4">
+            <h3 className="text-sm font-medium mb-3">How to get a YouTube API Key</h3>
+            <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+              <li>Go to the <a href="https://console.developers.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Developers Console</a></li>
+              <li>Create a new project or select an existing one</li>
+              <li>Enable the YouTube Data API v3</li>
+              <li>Create credentials for an API key</li>
+              <li>Copy the API key and paste it above</li>
+            </ol>
+          </div>
+        </div>
       </div>
       
-      <Tabs defaultValue="youtube" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="youtube">YouTube API</TabsTrigger>
-          <TabsTrigger value="openai">OpenAI</TabsTrigger>
-          <TabsTrigger value="elevenlabs">ElevenLabs</TabsTrigger>
-        </TabsList>
+      <div className="glass-card p-6">
+        <h2 className="text-xl font-semibold mb-6">API Usage & Quotas</h2>
         
-        <TabsContent value="youtube" className="space-y-4">
-          <Card className="p-6 space-bg">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-medium">YouTube API Configuration</h3>
-                <p className="text-sm text-muted-foreground">
-                  Your YouTube API key is required for uploading videos and accessing your channel
-                </p>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="youtube-api-key">API Key</Label>
-                  <Input
-                    id="youtube-api-key"
-                    type="password"
-                    placeholder="Enter your YouTube API key"
-                    value={youtubeKey}
-                    onChange={(e) => setYoutubeKey(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="youtube-client-id">Client ID</Label>
-                  <Input
-                    id="youtube-client-id"
-                    placeholder="Enter your YouTube Client ID"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="youtube-client-secret">Client Secret</Label>
-                  <Input
-                    id="youtube-client-secret"
-                    type="password"
-                    placeholder="Enter your YouTube Client Secret"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Button onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save YouTube API Settings'}
-                </Button>
-              </div>
-              
-              <div className="text-sm text-muted-foreground">
-                <p>Don't have a YouTube API key?</p>
-                <a 
-                  href="https://developers.google.com/youtube/v3/getting-started" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-accent hover:underline"
-                >
-                  Learn how to create one
-                </a>
-              </div>
+        <div className="space-y-6">
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium">Daily Quota Usage</span>
+              <span className="text-sm text-muted-foreground">3,450 / 10,000 units</span>
             </div>
-          </Card>
-        </TabsContent>
+            <div className="w-full bg-muted rounded-full h-2.5">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-2.5 rounded-full" style={{ width: '34.5%' }}></div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              YouTube API has a daily quota limit. Monitor your usage to avoid disruptions.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-muted/30 border border-border rounded-md p-4">
+              <div className="text-2xl font-semibold mb-1">3,450</div>
+              <div className="text-sm text-muted-foreground">Units used today</div>
+            </div>
+            
+            <div className="bg-muted/30 border border-border rounded-md p-4">
+              <div className="text-2xl font-semibold mb-1">6,550</div>
+              <div className="text-sm text-muted-foreground">Units remaining</div>
+            </div>
+            
+            <div className="bg-muted/30 border border-border rounded-md p-4">
+              <div className="text-2xl font-semibold mb-1">10,000</div>
+              <div className="text-sm text-muted-foreground">Daily quota limit</div>
+            </div>
+          </div>
+          
+          <div className="pt-4">
+            <button className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-md font-medium hover:opacity-90 transition-opacity flex items-center justify-center">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Quota Status
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="glass-card p-6">
+        <h2 className="text-xl font-semibold mb-6">OAuth Configuration</h2>
         
-        <TabsContent value="openai" className="space-y-4">
-          <Card className="p-6 space-bg">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-medium">OpenAI API Configuration</h3>
-                <p className="text-sm text-muted-foreground">
-                  Your OpenAI API key is used for generating video scripts and content
-                </p>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="openai-api-key">API Key</Label>
-                  <Input
-                    id="openai-api-key"
-                    type="password"
-                    placeholder="Enter your OpenAI API key"
-                    value={openaiKey}
-                    onChange={(e) => setOpenaiKey(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="openai-model">Default Model</Label>
-                  <select
-                    id="openai-model"
-                    className="w-full p-2 rounded-md bg-muted/50 border border-border"
-                  >
-                    <option value="gpt-4">GPT-4 (Recommended)</option>
-                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div>
-                <Button onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save OpenAI Settings'}
-                </Button>
-              </div>
-              
-              <div className="text-sm text-muted-foreground">
-                <p>Don't have an OpenAI API key?</p>
-                <a 
-                  href="https://platform.openai.com/account/api-keys" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-accent hover:underline"
-                >
-                  Get one from OpenAI
-                </a>
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="elevenlabs" className="space-y-4">
-          <Card className="p-6 space-bg">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-medium">ElevenLabs API Configuration</h3>
-                <p className="text-sm text-muted-foreground">
-                  Your ElevenLabs API key is used for generating natural-sounding voiceovers
-                </p>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="elevenlabs-api-key">API Key</Label>
-                  <Input
-                    id="elevenlabs-api-key"
-                    type="password"
-                    placeholder="Enter your ElevenLabs API key"
-                    value={elevenLabsKey}
-                    onChange={(e) => setElevenLabsKey(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="elevenlabs-voice">Default Voice</Label>
-                  <select
-                    id="elevenlabs-voice"
-                    className="w-full p-2 rounded-md bg-muted/50 border border-border"
-                  >
-                    <option value="adam">Adam (Male)</option>
-                    <option value="rachel">Rachel (Female)</option>
-                    <option value="antoni">Antoni (Male)</option>
-                    <option value="elli">Elli (Female)</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div>
-                <Button onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save ElevenLabs Settings'}
-                </Button>
-              </div>
-              
-              <div className="text-sm text-muted-foreground">
-                <p>Don't have an ElevenLabs API key?</p>
-                <a 
-                  href="https://elevenlabs.io/app/api-key" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-accent hover:underline"
-                >
-                  Get one from ElevenLabs
-                </a>
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        <div className="space-y-6">
+          <div>
+            <label htmlFor="clientId" className="block text-sm font-medium mb-2">
+              OAuth Client ID
+            </label>
+            <input
+              id="clientId"
+              type="text"
+              placeholder="Enter your OAuth Client ID"
+              className="w-full p-2.5 bg-muted border border-border rounded-md font-mono text-sm"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="clientSecret" className="block text-sm font-medium mb-2">
+              OAuth Client Secret
+            </label>
+            <input
+              id="clientSecret"
+              type="password"
+              placeholder="Enter your OAuth Client Secret"
+              className="w-full p-2.5 bg-muted border border-border rounded-md font-mono text-sm"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="redirectUri" className="block text-sm font-medium mb-2">
+              Redirect URI
+            </label>
+            <input
+              id="redirectUri"
+              type="text"
+              value="https://video-automation.netlify.app/oauth/callback"
+              readOnly
+              className="w-full p-2.5 bg-muted/50 border border-border rounded-md font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Use this URL as the authorized redirect URI in your Google OAuth settings.
+            </p>
+          </div>
+          
+          <div className="pt-4">
+            <button className="w-full py-2.5 bg-secondary/80 text-white rounded-md font-medium hover:bg-secondary transition-colors">
+              Save OAuth Configuration
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
+
+export default ApiKeySetup;
