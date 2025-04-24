@@ -1,119 +1,162 @@
-'use client'
+import React from 'react';
+import Link from 'next/link';
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { ArrowRight, Youtube, Sparkles } from 'lucide-react'
-
-export default function Home() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  
+export default function LandingPage() {
   return (
-    <div className="auth-container fade-in">
-      <div className="auth-form slide-in-up">
-        <div className="auth-logo">
-          <div className="flex items-center justify-center mb-2">
-            <Youtube className="h-8 w-8 text-primary mr-2" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              TubeAutomator
-            </h1>
-          </div>
-          <p className="text-muted-foreground text-sm flex items-center justify-center">
-            <Sparkles className="h-3 w-3 mr-1" />
-            AI-Powered YouTube Automation
-            <Sparkles className="h-3 w-3 ml-1" />
-          </p>
-        </div>
-        
-        <h2 className="text-xl font-semibold mb-6 text-center">Sign In</h2>
-        
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="your@email.com"
-              className="auth-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              className="auth-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          
-          <Link href="/dashboard" className="block">
-            <button className="auth-button glow-sm">
-              Sign In
-            </button>
-          </Link>
-          
-          <div className="text-center mt-4">
-            <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Link href="/dashboard" className="auth-link">
-                Sign Up
-              </Link>
-            </p>
-          </div>
-          
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border"></div>
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-card px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors">
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-                <path fill="none" d="M1 1h22v22H1z" />
-              </svg>
-              Google
-            </button>
-            <button className="flex items-center justify-center px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-              </svg>
-              GitHub
-            </button>
+    <div>
+      {/* Header */}
+      <header className="header container">
+        <Link href="/" className="logo">
+          <span className="logo-icon">📹</span>
+          TubeAutomator
+        </Link>
+        <nav className="nav">
+          <Link href="#features" className="nav-item">Features</Link>
+          <Link href="#pricing" className="nav-item">Pricing</Link>
+          <Link href="#faq" className="nav-item">FAQ</Link>
+          <Link href="/login" className="nav-item">Login</Link>
+          <Link href="/signup" className="button primary">Get Started</Link>
+        </nav>
+      </header>
+
+      {/* Hero Section */}
+      <section className="hero">
+        <div className="hero-content">
+          <h1 className="gradient-text">Automate Your YouTube Success</h1>
+          <p>Create, schedule, and publish engaging YouTube videos with AI-powered automation</p>
+          <div className="flex gap-4 justify-between">
+            <Link href="/signup" className="btn">Start Free Trial</Link>
+            <Link href="#pricing" className="btn btn-outline">View Pricing</Link>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="features" id="features">
+        <div className="container">
+          <h2 className="section-title gradient-text">Powerful YouTube Automation</h2>
+          <p className="section-subtitle">Everything you need to grow your channel without the hassle</p>
+          
+          <div className="grid">
+            <div className="card feature-card">
+              <div className="feature-icon">🤖</div>
+              <h3>AI Content Generation</h3>
+              <p>Generate video scripts, descriptions, and titles using advanced AI technology</p>
+            </div>
+            <div className="card feature-card">
+              <div className="feature-icon">📅</div>
+              <h3>Smart Scheduling</h3>
+              <p>Schedule videos for optimal posting times to maximize views and engagement</p>
+            </div>
+            <div className="card feature-card">
+              <div className="feature-icon">📊</div>
+              <h3>Performance Analytics</h3>
+              <p>Track your channel growth with detailed analytics and actionable insights</p>
+            </div>
+            <div className="card feature-card">
+              <div className="feature-icon">🔍</div>
+              <h3>Trend Analysis</h3>
+              <p>Discover trending topics in your niche to stay ahead of the competition</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="pricing" id="pricing">
+        <div className="container">
+          <h2 className="section-title gradient-text">Simple, Transparent Pricing</h2>
+          <p className="section-subtitle">Choose the plan that fits your needs</p>
+          
+          <div className="grid">
+            <div className="card pricing-card">
+              <h3>Starter</h3>
+              <div className="price">$5<span>/month</span></div>
+              <ul className="pricing-features">
+                <li>5 videos per month</li>
+                <li>Basic analytics</li>
+                <li>Standard video quality</li>
+                <li>Email support</li>
+              </ul>
+              <Link href="/signup?plan=starter" className="btn btn-outline">Get Started</Link>
+            </div>
+            
+            <div className="card pricing-card popular">
+              <div className="popular-badge">Most Popular</div>
+              <h3>Professional</h3>
+              <div className="price">$15<span>/month</span></div>
+              <ul className="pricing-features">
+                <li>20 videos per month</li>
+                <li>Advanced analytics</li>
+                <li>HD video quality</li>
+                <li>Priority support</li>
+                <li>Custom thumbnails</li>
+              </ul>
+              <Link href="/signup?plan=professional" className="btn">Get Started</Link>
+            </div>
+            
+            <div className="card pricing-card">
+              <h3>Enterprise</h3>
+              <div className="price">$29<span>/month</span></div>
+              <ul className="pricing-features">
+                <li>Unlimited videos</li>
+                <li>Premium analytics</li>
+                <li>4K video quality</li>
+                <li>Dedicated support</li>
+                <li>Custom thumbnails</li>
+                <li>Multi-channel management</li>
+              </ul>
+              <Link href="/signup?plan=enterprise" className="btn btn-outline">Get Started</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="features" id="faq">
+        <div className="container">
+          <h2 className="section-title gradient-text">Frequently Asked Questions</h2>
+          
+          <div className="grid" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))'}}>
+            <div className="card">
+              <h3 className="text-xl font-bold mb-2">How does the AI content generation work?</h3>
+              <p>Our AI analyzes trending topics in your niche and generates original scripts, titles, and descriptions based on your channel's style and audience preferences.</p>
+            </div>
+            
+            <div className="card">
+              <h3 className="text-xl font-bold mb-2">Do I need technical skills to use TubeAutomator?</h3>
+              <p>Not at all! Our platform is designed to be user-friendly with an intuitive interface. If you can use YouTube, you can use TubeAutomator.</p>
+            </div>
+            
+            <div className="card">
+              <h3 className="text-xl font-bold mb-2">Can I cancel my subscription anytime?</h3>
+              <p>Yes, you can cancel your subscription at any time with no questions asked. We don't believe in long-term contracts or hidden fees.</p>
+            </div>
+            
+            <div className="card">
+              <h3 className="text-xl font-bold mb-2">Will my audience know the content is AI-generated?</h3>
+              <p>Our AI is trained to create natural, engaging content that matches your voice and style. Most creators report that their audience can't tell the difference.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="hero">
+        <div className="container">
+          <div className="text-center">
+            <h2 className="section-title gradient-text">Ready to Revolutionize Your YouTube Channel?</h2>
+            <p className="section-subtitle">Join thousands of content creators who are saving time and growing their audience with TubeAutomator</p>
+            <Link href="/signup" className="btn">Start Your Free Trial</Link>
+            <p className="text-sm mt-4">No credit card required • 14-day free trial</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="p-4 text-center">
+        <p className="text-sm">© 2025 TubeAutomator. All rights reserved.</p>
+      </footer>
     </div>
-  )
+  );
 }

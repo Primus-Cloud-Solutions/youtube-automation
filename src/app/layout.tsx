@@ -1,53 +1,57 @@
-import type { Metadata } from 'next'
-import { Inter, Roboto_Mono } from 'next/font/google'
-import './globals.css'
+import React from 'react';
+import '../styles/globals.css';
 
-// Using Inter as a replacement for Geist
-const inter = Inter({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-  display: 'swap'
-})
-
-// Using Roboto Mono as a replacement for Geist Mono
-const robotoMono = Roboto_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-  display: 'swap'
-})
-
-export const metadata: Metadata = {
-  title: 'YouTube Automation Platform',
-  description: 'Advanced YouTube content automation with AI-powered scheduling and trending topic detection'
-}
-
-export default function RootLayout({
-  children
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} ${robotoMono.variable} antialiased`}>
-        {/* Stars animation container */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          {Array.from({ length: 50 }).map((_, i) => (
-            <div 
-              key={i}
-              className="star"
-              style={{
-                width: `${Math.random() * 2 + 1}px`,
-                height: `${Math.random() * 2 + 1}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animationDuration: `${Math.random() * 3 + 2}s`,
-                animationDelay: `${Math.random() * 5}s`
-              }}
-            />
-          ))}
-        </div>
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>TubeAutomator - YouTube Automation Platform</title>
+        <meta name="description" content="Create, schedule, and publish engaging YouTube videos with AI-powered automation" />
+        <link rel="icon" href="/favicon.ico" />
+      </head>
+      <body>
+        {/* Stars background animation */}
+        <div className="stars" id="stars"></div>
+        
+        {/* Main content */}
         {children}
+        
+        {/* Stars animation script */}
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            function createStars() {
+              const stars = document.getElementById('stars');
+              if (!stars) return;
+              
+              const count = 100;
+              
+              for (let i = 0; i < count; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                
+                // Random position
+                star.style.left = \`\${Math.random() * 100}%\`;
+                star.style.top = \`\${Math.random() * 100}%\`;
+                
+                // Random size
+                const size = Math.random() * 2 + 1;
+                star.style.width = \`\${size}px\`;
+                star.style.height = \`\${size}px\`;
+                
+                // Random animation delay
+                star.style.animationDelay = \`\${Math.random() * 4}s\`;
+                
+                stars.appendChild(star);
+              }
+            }
+            
+            // Run on page load
+            document.addEventListener('DOMContentLoaded', createStars);
+          `
+        }} />
       </body>
     </html>
-  )
+  );
 }
