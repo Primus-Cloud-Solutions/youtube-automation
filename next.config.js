@@ -22,7 +22,6 @@ const nextConfig = {
   // Configure image domains if needed
   images: {
     domains: ['i.ytimg.com'],
-    unoptimized: true, // Required for static export
   },
   // Explicitly set the page extensions to avoid duplicate page detection
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
@@ -30,8 +29,6 @@ const nextConfig = {
   swcMinify: false,
   // Disable source maps in production to reduce bundle size
   productionBrowserSourceMaps: false,
-  // Enable static export
-  output: 'export',
   // Add support for importing SVGs as React components
   webpack(config) {
     config.module.rules.push({

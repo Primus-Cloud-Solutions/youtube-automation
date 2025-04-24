@@ -1,6 +1,6 @@
 [build]
-  command = "npm install && npm run build && npm run export"
-  publish = "out"
+  command = "npm install && npm run build"
+  publish = ".next"
 
 [build.environment]
   NEXT_PUBLIC_SUPABASE_URL = "https://eurztwdqjncuypqbrcmw.supabase.co"
@@ -9,11 +9,9 @@
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
   NODE_OPTIONS = "--max-old-space-size=4096"
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
-# Disable Next.js plugin since we're using static export
-# [[plugins]]
-#  package = "@netlify/plugin-nextjs"
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [[headers]]
   for = "/*"
@@ -23,24 +21,20 @@
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
 
-# Add correct MIME types for Next.js static assets
-[[headers]]
-  for = "/_next/static/css/*"
-  [headers.values]
-    Content-Type = "text/css"
-
-[[headers]]
-  for = "/_next/static/js/*"
-  [headers.values]
-    Content-Type = "application/javascript"
-
-[[headers]]
-  for = "/_next/static/chunks/*"
-  [headers.values]
-    Content-Type = "application/javascript"
-
-# Handle SPA routing for client-side navigation
+# These redirects ensure that API routes work correctly
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# These redirects ensure that Next.js data fetching works correctly
+[[redirects]]
+  from = "/_next/data/*"
+  to = "/_next/data/:splat"
+  status = 200
+
+# These redirects ensure that static assets are served correctly
+[[redirects]]
+  from = "/_next/static/*"
+  to = "/_next/static/:splat"
   status = 200
