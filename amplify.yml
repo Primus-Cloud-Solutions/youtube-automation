@@ -3,34 +3,11 @@ frontend:
   phases:
     preBuild:
       commands:
-        - npm install -g pnpm
-        - echo "Installing all dependencies..."
-        - pnpm install
-        - echo "Installing styled-jsx explicitly..."
-        - pnpm add styled-jsx
-        - echo "Installing other critical dependencies..."
-        - pnpm add @supabase/supabase-js stripe lucide-react tailwindcss postcss autoprefixer
-        - echo "Verifying installations..."
-        - pnpm list styled-jsx
-        - node -v
+        - npm install
     build:
       commands:
-        - echo "Building the application..."
-        - NODE_OPTIONS="--max_old_space_size=4096" pnpm run build
+        - npm run build
   artifacts:
     baseDirectory: .next
     files:
       - '**/*'
-  cache:
-    paths:
-      - node_modules/**/*
-      - .pnpm-store/**/*
-  customHeaders:
-    - pattern: '**/*'
-      headers:
-        - key: 'Strict-Transport-Security'
-          value: 'max-age=31536000; includeSubDomains'
-        - key: 'X-Content-Type-Options'
-          value: 'nosniff'
-        - key: 'X-XSS-Protection'
-          value: '1; mode=block'
