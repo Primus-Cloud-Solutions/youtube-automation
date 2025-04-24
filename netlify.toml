@@ -1,8 +1,7 @@
 [build]
-  command = "npm install && npm run build"
+  command = "npm install @radix-ui/react-accordion @radix-ui/react-dropdown-menu @radix-ui/react-label @radix-ui/react-select @radix-ui/react-slider @radix-ui/react-switch @radix-ui/react-tabs recharts react-day-picker && npm run build --no-lint"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "18"
-  NPM_FLAGS = "--legacy-peer-deps"
   NETLIFY_USE_NPM = "true"
