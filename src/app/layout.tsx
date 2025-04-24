@@ -1,3 +1,5 @@
+'use client';
+
 import './globals.css';
 import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
