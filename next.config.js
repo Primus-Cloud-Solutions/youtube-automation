@@ -22,7 +22,6 @@ const nextConfig = {
   // Configure image domains if needed
   images: {
     domains: ['i.ytimg.com'],
-    unoptimized: true, // Disable image optimization to reduce memory usage
   },
   // Explicitly set the page extensions to avoid duplicate page detection
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
@@ -30,13 +29,8 @@ const nextConfig = {
   swcMinify: false,
   // Disable source maps in production to reduce bundle size
   productionBrowserSourceMaps: false,
-  // Set output to 'export' for static HTML generation
-  output: 'export',
   // Add support for importing SVGs as React components
   webpack(config) {
-    // Reduce memory usage during build
-    config.optimization.minimize = false;
-    
     config.module.rules.push({
       test: /\.svg$/,
       use: ['@svgr/webpack'],

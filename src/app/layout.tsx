@@ -1,11 +1,12 @@
 'use client';
 
-import './globals.css';
 import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider } from './context/auth-context';
 import { YouTubeApiProvider } from './context/youtube-api-context';
 import { ContentProvider } from './context/content-context';
+import './globals.css';
+import ErrorBoundary from './components/error-boundary';
 
 export default function RootLayout({ children }) {
   const router = useRouter();
@@ -67,14 +68,16 @@ export default function RootLayout({ children }) {
         <div className="stars" id="stars"></div>
         
         {/* Context providers */}
-        <AuthProvider>
-          <YouTubeApiProvider>
-            <ContentProvider>
-              {/* Main content */}
-              {children}
-            </ContentProvider>
-          </YouTubeApiProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <YouTubeApiProvider>
+              <ContentProvider>
+                {/* Main content */}
+                {children}
+              </ContentProvider>
+            </YouTubeApiProvider>
+          </AuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

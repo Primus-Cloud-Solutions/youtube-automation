@@ -1,3 +1,5 @@
+"use client"
+
 import React from 'react';
 
 // Simplified carousel component with proper TypeScript types

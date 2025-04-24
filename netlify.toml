@@ -1,6 +1,6 @@
 [build]
   command = "npm install && npm run build"
-  publish = "out"
+  publish = ".next"
 
 [build.environment]
   NEXT_PUBLIC_SUPABASE_URL = "https://eurztwdqjncuypqbrcmw.supabase.co"
@@ -10,9 +10,24 @@
   NODE_VERSION = "18"
   NODE_OPTIONS = "--max-old-space-size=4096"
 
-# No Next.js plugin needed for static export
-# [[plugins]]
-#  package = "@netlify/plugin-nextjs"
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# These redirects ensure that client-side routing works correctly
+[[redirects]]
+  from = "/_next/static/*"
+  to = "/_next/static/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/_next/data/*"
+  to = "/_next/data/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
 
 [[headers]]
   for = "/*"
@@ -21,9 +36,3 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
-
-# Handle SPA routing for static export
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
