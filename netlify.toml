@@ -4,7 +4,7 @@
 
 [build.environment]
   NEXT_PUBLIC_SUPABASE_URL = "https://eurztwdqjncuypqbrcmw.supabase.co"
-  NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-supabase-anon-key"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1cnp0d2Rxam5jdXlwcWJyY213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU0NTQ2MDksImV4cCI6MjA2MTAzMDYwOX0.9dlhNAi8VobOt8zHmSToQnSadAtvTXaqNy-SwnkSt6Q"
   SKIP_TYPESCRIPT_CHECK = "true"
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
