@@ -1,10 +1,12 @@
-// This is a simplified version without Cloudflare integration
-// Replace your existing open-next.config.ts with this file
-
-const config = {
-  default: {
-    // Default configuration without Cloudflare KV cache
+/**
+ * @type {import('next').NextConfig}
+ */
+const nextConfig = {
+  output: 'export',
+  reactStrictMode: true,
+  images: {
+    unoptimized: true
   }
-};
+}
 
-export default config;
+module.exports = nextConfig
