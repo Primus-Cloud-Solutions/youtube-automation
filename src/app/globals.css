@@ -1,197 +1,195 @@
+/* globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 252 87% 67%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+  --radius: 0.5rem;
+}
+
 body {
-  font-family: 'Geist', sans-serif;
-}
-
-@layer base {
-  :root {
-    --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-  }
-  .dark {
-    /* Space-themed dark mode colors */
-    --sidebar-background: 230 25% 7%;
-    --sidebar-foreground: 220 40% 90%;
-    --sidebar-primary: 220 70% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 25% 15%;
-    --sidebar-accent-foreground: 220 40% 90%;
-    --sidebar-border: 225 25% 15%;
-    --sidebar-ring: 217 70% 50%;
-    
-    --background: 230 25% 7%;
-    --foreground: 220 40% 98%;
-    
-    --card: 225 30% 10%;
-    --card-foreground: 220 40% 98%;
-    
-    --popover: 225 30% 10%;
-    --popover-foreground: 220 40% 98%;
-    
-    --primary: 220 70% 50%;
-    --primary-foreground: 220 40% 98%;
-    
-    --secondary: 220 30% 20%;
-    --secondary-foreground: 220 40% 98%;
-    
-    --muted: 225 25% 15%;
-    --muted-foreground: 220 20% 70%;
-    
-    --accent: 260 60% 55%;
-    --accent-foreground: 220 40% 98%;
-    
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 220 40% 98%;
-    
-    --border: 225 25% 15%;
-    --input: 225 25% 15%;
-    --ring: 220 70% 50%;
-    
-    /* Space-themed chart colors */
-    --chart-1: 220 70% 50%;
-    --chart-2: 180 70% 50%;
-    --chart-3: 280 70% 60%;
-    --chart-4: 330 80% 60%;
-    --chart-5: 40 80% 60%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-    background-image: 
-      radial-gradient(circle at 25% 25%, rgba(30, 50, 100, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, rgba(60, 30, 120, 0.1) 0%, transparent 50%);
-    background-attachment: fixed;
-  }
-}
-
-/* Space theme specific styles */
-.space-bg {
-  position: relative;
-  overflow: hidden;
-}
-
-.space-bg::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  background-color: hsl(var(--background));
   background-image: 
-    radial-gradient(1px 1px at 25% 25%, rgba(255, 255, 255, 0.2) 0%, transparent 100%),
-    radial-gradient(1px 1px at 50% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 100%),
-    radial-gradient(1px 1px at 75% 75%, rgba(255, 255, 255, 0.2) 0%, transparent 100%),
-    radial-gradient(2px 2px at 10% 10%, rgba(255, 255, 255, 0.2) 0%, transparent 100%),
-    radial-gradient(2px 2px at 90% 20%, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
-  background-repeat: repeat;
-  background-size: 200px 200px, 150px 150px, 100px 100px, 200px 200px, 150px 150px;
-  z-index: -1;
-  opacity: 0.4;
-}
-
-.glow {
-  box-shadow: 0 0 15px rgba(66, 153, 225, 0.5);
-}
-
-.space-card {
-  backdrop-filter: blur(10px);
-  background: rgba(20, 30, 50, 0.7);
-  border: 1px solid rgba(66, 153, 225, 0.3);
-}
-
-.planet-bg {
-  position: relative;
-}
-
-.planet-bg::after {
-  content: '';
-  position: fixed;
-  top: -100px;
-  right: -100px;
-  width: 300px;
-  height: 300px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #6366f1, #4f46e5, #4338ca, #3730a3);
-  opacity: 0.15;
-  z-index: -2;
-  box-shadow: 0 0 60px rgba(99, 102, 241, 0.4);
-}
-
-/* Animated elements */
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-}
-
-.float {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
-}
-
-.pulse {
-  animation: pulse 4s ease-in-out infinite;
+    radial-gradient(circle at 25% 25%, rgba(76, 29, 149, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(29, 78, 216, 0.1) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='rgba(255,255,255,0.03)' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+  color: hsl(var(--foreground));
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(30, 41, 59, 0.5);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(66, 153, 225, 0.5);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(66, 153, 225, 0.7);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Custom classes */
+.space-bg {
+  background: linear-gradient(to bottom right, rgba(30, 30, 63, 0.5), rgba(15, 15, 35, 0.5));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glow {
+  box-shadow: 0 0 15px rgba(124, 58, 237, 0.5);
+  transition: box-shadow 0.3s ease;
+}
+
+.glow:hover {
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.7);
+}
+
+.glow-sm {
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.4);
+}
+
+/* Animation for stars */
+@keyframes twinkle {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+.star {
+  position: absolute;
+  background-color: white;
+  border-radius: 50%;
+  animation: twinkle 4s infinite;
+}
+
+.star:nth-child(odd) {
+  animation-delay: 2s;
+}
+
+/* Dashboard layout */
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Sidebar */
+.sidebar {
+  background: linear-gradient(to bottom, rgba(30, 30, 63, 0.8), rgba(15, 15, 35, 0.8));
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Main content */
+.main-content {
+  padding: 2rem;
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+/* Card hover effects */
+.hover-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Button animations */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(124, 58, 237, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+}
+
+.pulse-button {
+  animation: pulse 2s infinite;
+}
+
+/* Form elements */
+input, select, textarea {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(124, 58, 237, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25) !important;
+}
+
+/* Calendar styling */
+.rdp {
+  --rdp-cell-size: 32px;
+  --rdp-accent-color: rgb(124, 58, 237);
+  --rdp-background-color: rgba(124, 58, 237, 0.2);
+  --rdp-accent-color-dark: rgb(124, 58, 237);
+  --rdp-background-color-dark: rgba(124, 58, 237, 0.2);
+  --rdp-outline: 2px solid rgba(124, 58, 237, 0.5);
+  --rdp-outline-selected: 2px solid rgba(124, 58, 237, 0.75);
+  margin: 0;
+}
+
+.rdp-day_selected, .rdp-day_selected:focus-visible, .rdp-day_selected:hover {
+  background-color: var(--rdp-accent-color);
+  color: white;
+}
+
+/* Tabs styling */
+.tabs-list {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 2px;
+  border-radius: var(--radius);
+}
+
+.tab-trigger {
+  transition: all 0.2s ease;
+}
+
+.tab-trigger[data-state="active"] {
+  background-color: rgba(124, 58, 237, 0.2);
+  color: white;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
 }
