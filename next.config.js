@@ -2,7 +2,7 @@
 // with Netlify's serverless functions and edge functions.
 // https://nextjs.org/docs/api-reference/next.config.js/introduction
 
-/** @type {import('next').NextConfig} */
+/** @type {import('next') .NextConfig} */
 const nextConfig = {
   reactStrictMode: false, // Disable strict mode to reduce potential issues
   typescript: {

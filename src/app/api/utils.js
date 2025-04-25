@@ -1,54 +1,26 @@
-'use server';
-
 import { NextResponse } from 'next/server';
 
 // Middleware to handle API errors consistently
-export async function withErrorHandling(handler) {
+export async function withErrorHandling(handler)  {
   return async (req, context) => {
     try {
       return await handler(req, context);
     } catch (error) {
       console.error('API Error:', error);
       
-      // Return a properly formatted JSON error response
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: error.message || 'An unexpected error occurred',
-          code: error.code || 'INTERNAL_SERVER_ERROR'
-        }, 
-        { 
-          status: error.status || 500,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
+      // Determine if this is a known error type or an unexpected error
+      if (error.code && error.status) {
+        return createApiError(error.message, error.status, error.code);
+      }
+      
+      // Handle unexpected errors
+      return createApiError(
+        'An unexpected error occurred',
+        500,
+        'INTERNAL_SERVER_ERROR'
       );
     }
   };
-}
-
-// Helper to validate request body against a schema
-export async function validateRequest(request, schema) {
-  try {
-    const body = await request.json();
-    
-    // Simple validation - check required fields
-    if (schema) {
-      for (const field of schema.required || []) {
-        if (body[field] === undefined) {
-          throw new Error(`Missing required field: ${field}`);
-        }
-      }
-    }
-    
-    return { body, valid: true };
-  } catch (error) {
-    return { 
-      valid: false, 
-      error: error.message || 'Invalid request body'
-    };
-  }
 }
 
 // Helper to create consistent API responses
@@ -58,7 +30,7 @@ export async function createApiResponse(data, status = 200) {
     { 
       status,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       }
     }
   );
@@ -70,12 +42,12 @@ export async function createApiError(message, status = 400, code = 'BAD_REQUEST'
     { 
       success: false, 
       error: message,
-      code
+      code 
     },
     { 
       status,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       }
     }
   );
