@@ -1,6 +1,6 @@
-# Next.js Configuration
-# This file sets a custom webpack configuration to use your Next.js app
-# with Netlify's serverless functions.
+// Next.js Configuration
+// This file sets a custom webpack configuration to use your Next.js app
+// with Netlify's serverless functions.
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
