@@ -1,49 +1,42 @@
-'use server'
+'use server';
 
-import { supabase } from '../../supabase-auth-setup'
-import { withErrorHandling, createApiResponse, createApiError } from '../utils'
+import { createClient } from '@supabase/supabase-js';
 
-// Helper function to validate request
-async function validateRequest(request, options = {}) {
-  try {
-    const body = await request.json();
-    
-    if (options.required) {
-      for (const field of options.required) {
-        if (body[field] === undefined) {
-          return {
-            valid: false,
-            error: `Missing required field: ${field}`,
-            body
-          };
-        }
-      }
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'example-anon-key';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Helper functions for API responses
+const createApiResponse = (data) => {
+  return Response.json({ success: true, ...data });
+};
+
+const createApiError = (message, status = 400) => {
+  return Response.json({ success: false, error: message }, { status });
+};
+
+// Error handling wrapper
+const withErrorHandling = (handler) => {
+  return async (request) => {
+    try {
+      return await handler(request);
+    } catch (error) {
+      console.error('Auth API error:', error);
+      return createApiError('Internal server error', 500);
     }
-    
-    return {
-      valid: true,
-      body
-    };
-  } catch (error) {
-    return {
-      valid: false,
-      error: 'Invalid JSON body',
-      body: {}
-    };
-  }
-}
+  };
+};
 
+// Sign up handler
 export const POST = withErrorHandling(async (request) => {
-  const { body, valid, error } = await validateRequest(request, {
-    required: ['action']
-  });
+  const { action, email, password } = await request.json();
   
-  if (!valid) {
-    return createApiError(error, 400);
+  if (!action) {
+    return createApiError('Action is required', 400);
   }
   
-  const { action, email, password, fullName } = body;
-  
+  // Sign up
   if (action === 'signup') {
     if (!email || !password) {
       return createApiError('Email and password are required', 400);
@@ -52,20 +45,17 @@ export const POST = withErrorHandling(async (request) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
     });
     
     if (error) {
-      return createApiError(error.message, 500);
+      return createApiError(error.message, 400);
     }
     
     return createApiResponse({ user: data.user });
-  } 
-  else if (action === 'signin') {
+  }
+  
+  // Sign in
+  if (action === 'signin') {
     if (!email || !password) {
       return createApiError('Email and password are required', 400);
     }
@@ -76,58 +66,33 @@ export const POST = withErrorHandling(async (request) => {
     });
     
     if (error) {
-      return createApiError(error.message, 500);
+      return createApiError(error.message, 400);
     }
     
     return createApiResponse({ user: data.user, session: data.session });
-  } 
-  else if (action === 'signout') {
+  }
+  
+  // Sign out
+  if (action === 'signout') {
     const { error } = await supabase.auth.signOut();
     
     if (error) {
-      return createApiError(error.message, 500);
+      return createApiError(error.message, 400);
     }
     
-    return createApiResponse({});
-  }
-  else if (action === 'google') {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${request.headers.get('origin')}/auth/callback`,
-      },
-    });
-    
-    if (error) {
-      return createApiError(error.message, 500);
-    }
-    
-    return createApiResponse({ url: data.url });
+    return createApiResponse({ message: 'Signed out successfully' });
   }
   
   return createApiError('Invalid action', 400);
 });
 
-export const GET = withErrorHandling(async (request) => {
-  const { searchParams } = new URL(request.url);
-  const action = searchParams.get('action');
+// Get session handler
+export const GET = withErrorHandling(async () => {
+  const { data, error } = await supabase.auth.getSession();
   
-  if (!action) {
-    return createApiError('Action parameter is required', 400);
+  if (error) {
+    return createApiError(error.message, 400);
   }
   
-  if (action === 'session') {
-    const { data, error } = await supabase.auth.getSession();
-    
-    if (error) {
-      return createApiError(error.message, 500);
-    }
-    
-    return createApiResponse({ 
-      session: data.session,
-      user: data.session?.user || null
-    });
-  }
-  
-  return createApiError('Invalid action', 400);
+  return createApiResponse({ session: data.session });
 });
