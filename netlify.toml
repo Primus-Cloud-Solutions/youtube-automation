@@ -13,11 +13,6 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-  [plugins.inputs]
-    # Force the plugin to use server-side rendering
-    forceSsr = true
-    # Disable edge functions to ensure consistent behavior
-    useEdgeRuntime = false
 
 [[headers]]
   for = "/*"
