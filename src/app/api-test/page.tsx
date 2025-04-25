@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
-export default function ApiTestDashboard() {
+const ApiTestDashboard = () => {
   const [endpoints] = useState([
     { name: 'Session Check', url: '/api/auth?action=session', method: 'GET' },
     { name: 'Login Demo', url: '/api/auth', method: 'POST', body: { action: 'signin', email: 'test@example.com', password: 'password123' } },
@@ -131,4 +131,6 @@ export default function ApiTestDashboard() {
       </div>
     </div>
   );
-}
+};
+
+export default ApiTestDashboard;
