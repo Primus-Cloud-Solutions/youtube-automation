@@ -1,13 +1,37 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
-import { withErrorHandling, validateRequest, createApiResponse, createApiError } from '../utils'
+import { supabase } from '../../supabase-auth-setup'
+import { withErrorHandling, createApiResponse, createApiError } from '../utils'
 
-// Initialize Supabase client with fallback values for development and testing
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://eurztwdqjncuypqbrcmw.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1cnp0d2Rxam5jdXlwcWJyY213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODI1MzQ0MDAsImV4cCI6MTk5ODExMDQwMH0.fallback_demo_key_for_development'
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Helper function to validate request
+async function validateRequest(request, options = {}) {
+  try {
+    const body = await request.json();
+    
+    if (options.required) {
+      for (const field of options.required) {
+        if (body[field] === undefined) {
+          return {
+            valid: false,
+            error: `Missing required field: ${field}`,
+            body
+          };
+        }
+      }
+    }
+    
+    return {
+      valid: true,
+      body
+    };
+  } catch (error) {
+    return {
+      valid: false,
+      error: 'Invalid JSON body',
+      body: {}
+    };
+  }
+}
 
 export const POST = withErrorHandling(async (request) => {
   const { body, valid, error } = await validateRequest(request, {

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function LandingPage() {
@@ -13,12 +14,15 @@ export default function LandingPage() {
       <section className="hero-section">
         <div className="container">
           <div className="hero-content">
+            <div className="hero-badge">
+              <span>✨ AI-Powered YouTube Automation</span>
+            </div>
             <h1 className="hero-title">Automate Your YouTube Content Creation</h1>
             <p className="hero-subtitle">
               Create, schedule, and publish engaging YouTube videos with AI-powered automation.
               Save time and grow your channel faster than ever before.
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="hero-actions">
               <button 
                 className="hero-cta"
                 onClick={() => router.push('/signup')}
@@ -32,14 +36,30 @@ export default function LandingPage() {
                 Sign In
               </button>
             </div>
+            <div className="hero-stats">
+              <div className="hero-stat">
+                <span className="hero-stat-value">10,000+</span>
+                <span className="hero-stat-label">Content Creators</span>
+              </div>
+              <div className="hero-stat">
+                <span className="hero-stat-value">1M+</span>
+                <span className="hero-stat-label">Videos Generated</span>
+              </div>
+              <div className="hero-stat">
+                <span className="hero-stat-value">98%</span>
+                <span className="hero-stat-label">Satisfaction Rate</span>
+              </div>
+            </div>
           </div>
         </div>
+        <div className="hero-shape"></div>
       </section>
 
       {/* Features Section */}
       <section className="feature-section">
         <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12 gradient-text">Powerful Features</h2>
+          <h2 className="section-title gradient-text">Powerful Features</h2>
+          <p className="section-subtitle">Everything you need to create, manage, and grow your YouTube channel</p>
           <div className="feature-grid">
             <div className="feature-card">
               <div className="feature-icon">🤖</div>
@@ -80,10 +100,45 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section className="how-it-works-section">
+        <div className="container">
+          <h2 className="section-title gradient-text">How It Works</h2>
+          <p className="section-subtitle">Three simple steps to automate your YouTube content</p>
+          
+          <div className="workflow-steps">
+            <div className="workflow-step">
+              <div className="workflow-step-number">1</div>
+              <h3 className="workflow-step-title">Connect Your Channel</h3>
+              <p className="workflow-step-description">
+                Link your YouTube channel to TubeAutomator with just a few clicks. Our secure OAuth process ensures your account remains protected.
+              </p>
+            </div>
+            
+            <div className="workflow-step">
+              <div className="workflow-step-number">2</div>
+              <h3 className="workflow-step-title">Generate Content</h3>
+              <p className="workflow-step-description">
+                Use our AI tools to create scripts, titles, descriptions, and voiceovers. Customize everything to match your channel's style.
+              </p>
+            </div>
+            
+            <div className="workflow-step">
+              <div className="workflow-step-number">3</div>
+              <h3 className="workflow-step-title">Schedule & Publish</h3>
+              <p className="workflow-step-description">
+                Set your publishing schedule and let TubeAutomator handle the rest. Monitor performance and optimize your strategy with our analytics.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
       <section className="pricing-section">
         <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12 gradient-text">Simple, Transparent Pricing</h2>
+          <h2 className="section-title gradient-text">Simple, Transparent Pricing</h2>
+          <p className="section-subtitle">Choose the plan that fits your needs</p>
           <div className="pricing-grid">
             <div className="pricing-card">
               <div className="pricing-header">
@@ -122,6 +177,7 @@ export default function LandingPage() {
             </div>
             
             <div className="pricing-card popular">
+              <div className="pricing-badge">Most Popular</div>
               <div className="pricing-header">
                 <div className="pricing-name">Professional</div>
                 <div className="pricing-price">$49<span className="text-sm font-normal">/month</span></div>
@@ -211,7 +267,8 @@ export default function LandingPage() {
       {/* Testimonials Section */}
       <section className="testimonial-section">
         <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12 gradient-text">What Our Users Say</h2>
+          <h2 className="section-title gradient-text">What Our Users Say</h2>
+          <p className="section-subtitle">Join thousands of content creators who love TubeAutomator</p>
           <div className="testimonial-grid">
             <div className="testimonial-card">
               <div className="testimonial-content">
@@ -258,7 +315,8 @@ export default function LandingPage() {
       {/* FAQ Section */}
       <section className="faq-section">
         <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12 gradient-text">Frequently Asked Questions</h2>
+          <h2 className="section-title gradient-text">Frequently Asked Questions</h2>
+          <p className="section-subtitle">Everything you need to know about TubeAutomator</p>
           <div className="max-w-3xl mx-auto">
             <div className="faq-item">
               <div className="faq-question">
@@ -329,7 +387,14 @@ export default function LandingPage() {
         <div className="container">
           <div className="footer-grid">
             <div>
-              <div className="footer-logo">TubeAutomator</div>
+              <div className="footer-logo">
+                <Image 
+                  src="/images/logo.svg" 
+                  alt="TubeAutomator Logo" 
+                  width={150} 
+                  height={40} 
+                />
+              </div>
               <p className="footer-description">
                 AI-powered YouTube content creation and automation platform for creators of all sizes.
               </p>
@@ -366,12 +431,14 @@ export default function LandingPage() {
           </div>
           
           <div className="footer-bottom">
-            <div>© 2025 TubeAutomator. All rights reserved.</div>
+            <div className="footer-copyright">
+              © {new Date().getFullYear()} TubeAutomator. All rights reserved.
+            </div>
             <div className="footer-social">
-              <a href="#" className="footer-social-link">Twitter</a>
-              <a href="#" className="footer-social-link">Facebook</a>
-              <a href="#" className="footer-social-link">Instagram</a>
-              <a href="#" className="footer-social-link">YouTube</a>
+              <Link href="https://twitter.com" className="footer-social-link" target="_blank" rel="noopener noreferrer">Twitter</Link>
+              <Link href="https://facebook.com" className="footer-social-link" target="_blank" rel="noopener noreferrer">Facebook</Link>
+              <Link href="https://instagram.com" className="footer-social-link" target="_blank" rel="noopener noreferrer">Instagram</Link>
+              <Link href="https://linkedin.com" className="footer-social-link" target="_blank" rel="noopener noreferrer">LinkedIn</Link>
             </div>
           </div>
         </div>
