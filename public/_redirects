@@ -1,0 +1,8 @@
+# This file contains the Netlify redirect rules
+# It ensures that all routes are properly handled by the Next.js application
+
+# Handle all routes through Next.js
+/*    /index.html   200
+
+# Custom 404 page
+/*    /404.html    404
