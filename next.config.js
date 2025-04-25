@@ -10,7 +10,9 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true
-  }
+  },
+  output: 'standalone',
+  distDir: '.next'
 };
 
 module.exports = nextConfig;

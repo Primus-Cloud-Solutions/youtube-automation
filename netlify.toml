@@ -1,6 +1,6 @@
 [build]
   command = "npm install && npm run build"
-  publish = ".next"
+  publish = "/opt/build/repo/.next"
 
 [build.environment]
   NEXT_PUBLIC_SUPABASE_URL = "https://eurztwdqjncuypqbrcmw.supabase.co"
@@ -10,7 +10,7 @@
   OPENAI_API_KEY = "your-openai-api-key"
   ELEVENLABS_API_KEY = "your-elevenlabs-api-key"
   YOUTUBE_API_KEY = "your-youtube-api-key"
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
   NEXT_USE_NETLIFY_EDGE = "true"
 
 [[plugins]]
