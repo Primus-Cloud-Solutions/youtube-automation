@@ -1,6 +1,5 @@
 {
-  "name": "vercel",
-  "version": "1.0.0",
+  "version": 2,
   "buildCommand": "next build",
   "cleanUrls": true,
   "framework": "nextjs",
