@@ -1,175 +1,228 @@
 'use client';
 
-import Image from 'next/image';
+import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '../lib/auth-context';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import { AuthProvider } from '../lib/auth-context';
 
-// Create a safe component that uses useAuth inside AuthProvider
-function HomeContent() {
+export default function HomePage() {
   const { user } = useAuth();
   
   return (
-    <main className="min-h-screen">
-      <Header />
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+      <header className="border-b border-gray-800 p-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <Link href="/" className="text-xl font-bold flex items-center">
+            <span className="text-green-500 mr-2">📹</span>
+            <span>TubeAutomator</span>
+          </Link>
+          
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link href="/features" className="text-gray-300 hover:text-white transition-colors">
+              Features
+            </Link>
+            <Link href="/pricing" className="text-gray-300 hover:text-white transition-colors">
+              Pricing
+            </Link>
+            <Link href="/blog" className="text-gray-300 hover:text-white transition-colors">
+              Blog
+            </Link>
+          </nav>
+          
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <Link href="/dashboard" className="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md font-medium transition-colors">
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-gray-300 hover:text-white transition-colors">
+                  Sign In
+                </Link>
+                <Link href="/signup" className="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md font-medium transition-colors">
+                  Get Started
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
       
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-gray-50 to-gray-100 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center">
-            <div className="md:w-1/2 mb-10 md:mb-0 md:pr-10">
-              <div className="inline-block bg-gradient-to-r from-red-500 to-purple-600 rounded-full px-3 py-1 text-xs font-semibold text-white mb-5">
-                AI-POWERED PLATFORM
-              </div>
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                Automate Your YouTube Content Creation
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Create, schedule, and optimize YouTube videos with our AI-powered platform. Save time and grow your channel faster.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link 
-                  href="/signup" 
-                  className="bg-gradient-to-r from-red-500 to-purple-600 text-white px-6 py-3 rounded-md text-base font-medium hover:from-red-600 hover:to-purple-700 shadow-md"
-                >
-                  Get Started Free
-                </Link>
-                <Link 
-                  href="/features" 
-                  className="bg-white text-gray-800 border border-gray-300 px-6 py-3 rounded-md text-base font-medium hover:bg-gray-50"
-                >
-                  Learn More
-                </Link>
-              </div>
-              <div className="mt-6 flex items-center">
-                <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white" />
-                  ))}
+      <main className="flex-grow">
+        {/* Hero Section */}
+        <section className="py-20 px-6">
+          <div className="max-w-7xl mx-auto text-center">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+              <span className="text-green-500">AI-Powered</span> YouTube Content Creation
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-300 mb-10 max-w-3xl mx-auto">
+              Create, schedule, and optimize YouTube videos with our AI-powered platform. Save time and grow your channel faster.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Link href="/signup" className="py-3 px-8 bg-green-600 hover:bg-green-700 rounded-md font-medium text-lg transition-colors">
+                Start Free Trial
+              </Link>
+              <Link href="/demo" className="py-3 px-8 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-md font-medium text-lg transition-colors">
+                Watch Demo
+              </Link>
+            </div>
+          </div>
+        </section>
+        
+        {/* Features Section */}
+        <section className="py-20 px-6 bg-gray-800">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-3xl font-bold mb-12 text-center">How TubeAutomator Works</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
+                <div className="w-12 h-12 bg-green-900/50 text-green-500 rounded-full flex items-center justify-center text-xl font-bold mb-4">
+                  1
                 </div>
-                <div className="ml-3 text-sm text-gray-600">
-                  <span className="font-semibold text-gray-900">500+</span> content creators trust us
+                <h3 className="text-xl font-semibold mb-3">Generate Topics</h3>
+                <p className="text-gray-300">
+                  Our AI analyzes trending content and your channel's performance to suggest high-performing video topics.
+                </p>
+              </div>
+              
+              <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
+                <div className="w-12 h-12 bg-green-900/50 text-green-500 rounded-full flex items-center justify-center text-xl font-bold mb-4">
+                  2
                 </div>
+                <h3 className="text-xl font-semibold mb-3">Create Content</h3>
+                <p className="text-gray-300">
+                  Generate scripts, storyboards, and even complete videos with our advanced AI tools.
+                </p>
+              </div>
+              
+              <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
+                <div className="w-12 h-12 bg-green-900/50 text-green-500 rounded-full flex items-center justify-center text-xl font-bold mb-4">
+                  3
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Schedule & Optimize</h3>
+                <p className="text-gray-300">
+                  Schedule your content for optimal posting times and get AI-powered SEO recommendations.
+                </p>
               </div>
             </div>
-            <div className="md:w-1/2">
-              <div className="bg-white rounded-lg shadow-xl p-6 border border-gray-200">
-                <div className="aspect-video bg-gray-200 rounded-md mb-4"></div>
-                <div className="space-y-2">
-                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  <div className="flex justify-between items-center mt-4">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-                      <div className="h-4 bg-gray-200 rounded w-24"></div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <div className="h-8 bg-gray-200 rounded w-20"></div>
-                      <div className="h-8 bg-gray-200 rounded w-20"></div>
-                    </div>
+          </div>
+        </section>
+        
+        {/* Testimonials Section */}
+        <section className="py-20 px-6">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-3xl font-bold mb-12 text-center">Trusted by Content Creators</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-blue-600 rounded-full mr-4"></div>
+                  <div>
+                    <h3 className="font-semibold">Alex Johnson</h3>
+                    <p className="text-gray-400 text-sm">Tech Reviewer, 250K subscribers</p>
                   </div>
                 </div>
+                <p className="text-gray-300">
+                  "TubeAutomator has completely transformed my content creation process. I've increased my posting frequency by 3x while maintaining quality."
+                </p>
+              </div>
+              
+              <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-purple-600 rounded-full mr-4"></div>
+                  <div>
+                    <h3 className="font-semibold">Sarah Williams</h3>
+                    <p className="text-gray-400 text-sm">Lifestyle Creator, 500K subscribers</p>
+                  </div>
+                </div>
+                <p className="text-gray-300">
+                  "The topic generator alone is worth the subscription. It's helped me discover content ideas that consistently outperform my previous videos."
+                </p>
+              </div>
+              
+              <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-green-600 rounded-full mr-4"></div>
+                  <div>
+                    <h3 className="font-semibold">Michael Chen</h3>
+                    <p className="text-gray-400 text-sm">Educational Channel, 1M subscribers</p>
+                  </div>
+                </div>
+                <p className="text-gray-300">
+                  "As someone who values data-driven decisions, the analytics and optimization features have been game-changing for my channel growth."
+                </p>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-      
-      {/* How It Works Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">How It Works</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our platform simplifies the YouTube content creation process from start to finish
+        </section>
+        
+        {/* CTA Section */}
+        <section className="py-20 px-6 bg-gray-800">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-6">Ready to Transform Your YouTube Channel?</h2>
+            <p className="text-xl text-gray-300 mb-10">
+              Join thousands of content creators who are saving time and growing their channels with TubeAutomator.
             </p>
+            <Link href="/signup" className="py-3 px-8 bg-green-600 hover:bg-green-700 rounded-md font-medium text-lg transition-colors inline-block">
+              Start Your Free Trial
+            </Link>
+            <p className="mt-4 text-gray-400">No credit card required. 14-day free trial.</p>
+          </div>
+        </section>
+      </main>
+      
+      <footer className="bg-gray-900 border-t border-gray-800 py-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <Link href="/" className="text-xl font-bold flex items-center mb-4">
+                <span className="text-green-500 mr-2">📹</span>
+                <span>TubeAutomator</span>
+              </Link>
+              <p className="text-gray-400">
+                AI-powered YouTube content creation and channel growth platform.
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Product</h3>
+              <ul className="space-y-2">
+                <li><Link href="/features" className="text-gray-400 hover:text-white transition-colors">Features</Link></li>
+                <li><Link href="/pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/roadmap" className="text-gray-400 hover:text-white transition-colors">Roadmap</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Resources</h3>
+              <ul className="space-y-2">
+                <li><Link href="/blog" className="text-gray-400 hover:text-white transition-colors">Blog</Link></li>
+                <li><Link href="/tutorials" className="text-gray-400 hover:text-white transition-colors">Tutorials</Link></li>
+                <li><Link href="/support" className="text-gray-400 hover:text-white transition-colors">Support</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Company</h3>
+              <ul className="space-y-2">
+                <li><Link href="/about" className="text-gray-400 hover:text-white transition-colors">About Us</Link></li>
+                <li><Link href="/careers" className="text-gray-400 hover:text-white transition-colors">Careers</Link></li>
+                <li><Link href="/contact" className="text-gray-400 hover:text-white transition-colors">Contact</Link></li>
+              </ul>
+            </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Generate Content Ideas",
-                description: "Our AI analyzes trending topics and your channel's performance to suggest high-potential video ideas."
-              },
-              {
-                title: "Create & Edit Videos",
-                description: "Use our AI tools to generate scripts, voiceovers, and edit videos with just a few clicks."
-              },
-              {
-                title: "Schedule & Optimize",
-                description: "Schedule uploads at optimal times and get AI-powered suggestions to improve your video's performance."
-              }
-            ].map((step, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-8 border border-gray-200 hover:shadow-md transition-shadow">
-                <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl mb-6">
-                  {index + 1}
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      
-      {/* Features Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Powerful Features</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Everything you need to create, manage, and grow your YouTube channel
+          <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-gray-400 mb-4 md:mb-0">
+              &copy; 2025 TubeAutomator. All rights reserved.
             </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                title: "AI Content Generator",
-                description: "Generate video scripts, descriptions, and titles optimized for engagement."
-              },
-              {
-                title: "Voice Synthesis",
-                description: "Convert your scripts to natural-sounding voiceovers in multiple languages."
-              },
-              {
-                title: "Smart Scheduling",
-                description: "Schedule uploads at optimal times based on your audience's activity."
-              },
-              {
-                title: "Performance Analytics",
-                description: "Track your channel's growth with comprehensive analytics and insights."
-              },
-              {
-                title: "Keyword Research",
-                description: "Find high-performing keywords to improve your video's discoverability."
-              },
-              {
-                title: "Thumbnail Generator",
-                description: "Create eye-catching thumbnails that drive higher click-through rates."
-              }
-            ].map((feature, index) => (
-              <div key={index} className="bg-white rounded-lg p-6 border border-gray-200 hover:shadow-md transition-shadow">
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
-            ))}
+            <div className="flex space-x-6">
+              <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">Terms</Link>
+              <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy</Link>
+              <Link href="/cookies" className="text-gray-400 hover:text-white transition-colors">Cookies</Link>
+            </div>
           </div>
         </div>
-      </section>
-      
-      <Footer />
-    </main>
-  );
-}
-
-// Wrap the component with AuthProvider
-export default function Home() {
-  return (
-    <AuthProvider>
-      <HomeContent />
-    </AuthProvider>
+      </footer>
+    </div>
   );
 }

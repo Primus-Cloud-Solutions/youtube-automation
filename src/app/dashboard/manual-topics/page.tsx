@@ -1,279 +1,189 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/auth-context';
-import { useContent } from '../../context/content-context';
+import React, { useState } from 'react';
 import withAuth from '../../utils/with-auth';
 import DashboardHeader from '../../components/dashboard-header';
+import { useAuth } from '../../../lib/auth-context';
 
 function ManualTopicsPage() {
   const { user } = useAuth();
-  const { generateScript, scheduleVideo, loading } = useContent();
+  const [prompt, setPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedTopics, setGeneratedTopics] = useState([]);
+  const [selectedTopics, setSelectedTopics] = useState([]);
   
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [script, setScript] = useState('');
-  const [tags, setTags] = useState('');
-  const [currentTag, setCurrentTag] = useState('');
-  const [tagsList, setTagsList] = useState([]);
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
-  const [scheduling, setScheduling] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  
-  // Handle tag input
-  const handleAddTag = () => {
-    if (currentTag.trim() && !tagsList.includes(currentTag.trim())) {
-      setTagsList([...tagsList, currentTag.trim()]);
-      setCurrentTag('');
-    }
-  };
-  
-  const handleRemoveTag = (tagToRemove) => {
-    setTagsList(tagsList.filter(tag => tag !== tagToRemove));
-  };
-  
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddTag();
-    }
-  };
-  
-  // Update tags string when tagsList changes
-  useEffect(() => {
-    setTags(tagsList.join(', '));
-  }, [tagsList]);
-  
-  const handleScheduleVideo = async (e) => {
+  const handleGenerateTopics = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-    setScheduling(true);
+    setIsGenerating(true);
     
-    if (!title || !description || !script || !scheduledDate || !scheduledTime) {
-      setError('Please fill in all required fields');
-      setScheduling(false);
-      return;
-    }
-    
-    try {
-      const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+    // Simulate API call delay
+    setTimeout(() => {
+      // Mock generated topics based on prompt
+      const mockTopics = [
+        `How to Use AI for ${prompt} Creation`,
+        `10 Best Practices for ${prompt} in 2025`,
+        `The Future of ${prompt}: Trends and Predictions`,
+        `${prompt} for Beginners: A Complete Guide`,
+        `Advanced ${prompt} Techniques for Content Creators`,
+        `Why ${prompt} is Changing the Industry`,
+        `${prompt} vs Traditional Methods: A Comparison`,
+        `Optimize Your Workflow with ${prompt} Tools`,
+        `The Ultimate ${prompt} Tutorial for YouTube`,
+        `How Top Creators Use ${prompt} to Grow Their Channel`
+      ];
       
-      if (isNaN(scheduledDateTime.getTime())) {
-        setError('Invalid date or time');
-        setScheduling(false);
-        return;
-      }
-      
-      const result = await scheduleVideo({
-        title,
-        description,
-        tags: tagsList,
-        scheduledTime: scheduledDateTime.toISOString()
-      });
-      
-      if (result.success) {
-        setSuccess('Video scheduled successfully!');
-        // Reset form
-        setTitle('');
-        setDescription('');
-        setScript('');
-        setTags('');
-        setTagsList([]);
-        setScheduledDate('');
-        setScheduledTime('');
-      } else {
-        setError(result.error || 'Failed to schedule video');
-      }
-    } catch (err) {
-      setError('An unexpected error occurred');
-      console.error(err);
-    } finally {
-      setScheduling(false);
+      setGeneratedTopics(mockTopics);
+      setIsGenerating(false);
+    }, 2000);
+  };
+  
+  const toggleTopicSelection = (topic) => {
+    if (selectedTopics.includes(topic)) {
+      setSelectedTopics(selectedTopics.filter(t => t !== topic));
+    } else {
+      setSelectedTopics([...selectedTopics, topic]);
     }
   };
-
+  
+  const handleSaveTopics = () => {
+    alert(`${selectedTopics.length} topics saved successfully!`);
+  };
+  
   return (
-    <div>
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
       <DashboardHeader />
       
-      <main className="container mt-4 fade-in">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Manual Topic Submission</h1>
-          <p className="text-muted-foreground">Create and schedule custom content for your YouTube channel</p>
-        </div>
-        
-        {error && (
-          <div className="glass-card p-4 mb-6 border border-destructive/30 bg-destructive/10">
-            <p className="text-destructive">{error}</p>
-          </div>
-        )}
-        
-        {success && (
-          <div className="glass-card p-4 mb-6 border border-green-500/30 bg-green-500/10">
-            <p className="text-green-400">{success}</p>
-          </div>
-        )}
-        
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-semibold mb-6">Create Custom Video</h2>
+      <main className="flex-grow p-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6">Generate Video Topics</h1>
           
-          <form onSubmit={handleScheduleVideo}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-6">
-                <div>
-                  <label htmlFor="title" className="block text-sm font-medium mb-2">
-                    Video Title <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    id="title"
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter your video title"
-                    className="w-full p-2.5 bg-muted border border-border rounded-md"
-                    disabled={scheduling || loading}
-                    required
-                  />
-                </div>
+          <div className="bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold mb-4">Topic Generator</h2>
+            <p className="text-gray-300 mb-6">
+              Enter a keyword or topic area, and our AI will generate engaging video topic ideas for your YouTube channel.
+            </p>
+            
+            <form onSubmit={handleGenerateTopics} className="mb-6">
+              <div className="mb-4">
+                <label htmlFor="prompt" className="block text-sm font-medium mb-2">
+                  Keyword or Topic Area
+                </label>
+                <input
+                  id="prompt"
+                  type="text"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="e.g., Video Editing, Cryptocurrency, Fitness, etc."
+                  required
+                />
+              </div>
+              
+              <button
+                type="submit"
+                disabled={isGenerating || !prompt}
+                className="py-3 px-6 bg-green-600 hover:bg-green-700 rounded-md font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isGenerating ? 'Generating...' : 'Generate Topics'}
+              </button>
+            </form>
+            
+            {generatedTopics.length > 0 && (
+              <div>
+                <h3 className="text-lg font-medium mb-3">Generated Topics</h3>
+                <p className="text-gray-300 mb-4">
+                  Select the topics you'd like to save for your content calendar.
+                </p>
                 
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium mb-2">
-                    Video Description <span className="text-destructive">*</span>
-                  </label>
-                  <textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Enter your video description"
-                    className="w-full p-2.5 bg-muted border border-border rounded-md h-32"
-                    disabled={scheduling || loading}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="tags" className="block text-sm font-medium mb-2">
-                    Tags
-                  </label>
-                  <div className="flex mb-2">
-                    <input
-                      id="currentTag"
-                      type="text"
-                      value={currentTag}
-                      onChange={(e) => setCurrentTag(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Add a tag and press Enter"
-                      className="flex-1 p-2.5 bg-muted border border-border rounded-l-md"
-                      disabled={scheduling || loading}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddTag}
-                      className="px-4 py-2.5 bg-primary text-primary-foreground rounded-r-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={scheduling || loading || !currentTag.trim()}
+                <div className="space-y-3 mb-6">
+                  {generatedTopics.map((topic, index) => (
+                    <div
+                      key={index}
+                      className={`p-3 rounded-md cursor-pointer transition-colors ${
+                        selectedTopics.includes(topic)
+                          ? 'bg-green-900/30 border border-green-700'
+                          : 'bg-gray-700 hover:bg-gray-600'
+                      }`}
+                      onClick={() => toggleTopicSelection(topic)}
                     >
-                      Add
-                    </button>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {tagsList.map((tag, index) => (
-                      <div 
-                        key={index}
-                        className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm flex items-center"
-                      >
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTag(tag)}
-                          className="ml-2 text-primary hover:text-primary-foreground"
-                        >
-                          ×
-                        </button>
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          checked={selectedTopics.includes(topic)}
+                          onChange={() => {}}
+                          className="mt-1 mr-3"
+                        />
+                        <div>
+                          <p className="font-medium">{topic}</p>
+                          <p className="text-sm text-gray-400 mt-1">
+                            Estimated engagement: {Math.floor(Math.random() * 30) + 70}%
+                          </p>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  
-                  <p className="text-xs text-muted-foreground">
-                    Tags help viewers find your video. Add relevant keywords separated by Enter.
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <p className="text-gray-300">
+                    {selectedTopics.length} topics selected
                   </p>
+                  <button
+                    onClick={handleSaveTopics}
+                    disabled={selectedTopics.length === 0}
+                    className="py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    Save Selected Topics
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Trending Topics</h2>
+            <p className="text-gray-300 mb-6">
+              Based on current YouTube trends, these topics are likely to perform well.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <h3 className="font-medium mb-2">AI Tools for Content Creators</h3>
+                <p className="text-gray-300 mb-2">Trending in Technology category</p>
+                <div className="flex justify-between">
+                  <span className="text-green-500">High engagement potential</span>
+                  <button className="text-blue-400 hover:text-blue-300">Use</button>
                 </div>
               </div>
               
-              <div className="space-y-6">
-                <div>
-                  <label htmlFor="script" className="block text-sm font-medium mb-2">
-                    Video Script <span className="text-destructive">*</span>
-                  </label>
-                  <textarea
-                    id="script"
-                    value={script}
-                    onChange={(e) => setScript(e.target.value)}
-                    placeholder="Enter your video script"
-                    className="w-full p-2.5 bg-muted border border-border rounded-md h-40"
-                    disabled={scheduling || loading}
-                    required
-                  />
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <h3 className="font-medium mb-2">Passive Income Strategies 2025</h3>
+                <p className="text-gray-300 mb-2">Trending in Finance category</p>
+                <div className="flex justify-between">
+                  <span className="text-green-500">High engagement potential</span>
+                  <button className="text-blue-400 hover:text-blue-300">Use</button>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="scheduledDate" className="block text-sm font-medium mb-2">
-                      Scheduled Date <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      id="scheduledDate"
-                      type="date"
-                      value={scheduledDate}
-                      onChange={(e) => setScheduledDate(e.target.value)}
-                      className="w-full p-2.5 bg-muted border border-border rounded-md"
-                      disabled={scheduling || loading}
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="scheduledTime" className="block text-sm font-medium mb-2">
-                      Scheduled Time <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      id="scheduledTime"
-                      type="time"
-                      value={scheduledTime}
-                      onChange={(e) => setScheduledTime(e.target.value)}
-                      className="w-full p-2.5 bg-muted border border-border rounded-md"
-                      disabled={scheduling || loading}
-                      required
-                    />
-                  </div>
+              </div>
+              
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <h3 className="font-medium mb-2">Home Office Setup Guide</h3>
+                <p className="text-gray-300 mb-2">Trending in Lifestyle category</p>
+                <div className="flex justify-between">
+                  <span className="text-yellow-500">Medium engagement potential</span>
+                  <button className="text-blue-400 hover:text-blue-300">Use</button>
                 </div>
-                
-                <div className="bg-muted/30 border border-border rounded-md p-4">
-                  <h3 className="text-sm font-medium mb-3">Tips for Creating Great Content</h3>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li>• Keep titles under 60 characters for optimal display</li>
-                    <li>• Include keywords in your title and description</li>
-                    <li>• Write scripts with clear sections: intro, main points, conclusion</li>
-                    <li>• Use tags that are specific to your content niche</li>
-                    <li>• Schedule videos when your audience is most active</li>
-                  </ul>
+              </div>
+              
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <h3 className="font-medium mb-2">YouTube Algorithm Explained</h3>
+                <p className="text-gray-300 mb-2">Trending in Education category</p>
+                <div className="flex justify-between">
+                  <span className="text-green-500">High engagement potential</span>
+                  <button className="text-blue-400 hover:text-blue-300">Use</button>
                 </div>
               </div>
             </div>
-            
-            <div className="mt-6">
-              <button
-                type="submit"
-                disabled={scheduling || loading || !title || !description || !script || !scheduledDate || !scheduledTime}
-                className="btn w-full py-3"
-              >
-                {scheduling ? 'Scheduling...' : 'Schedule Video'}
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
       </main>
     </div>

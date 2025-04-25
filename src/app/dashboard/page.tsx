@@ -1,135 +1,93 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useAuth } from '../context/auth-context';
-import DashboardHeader from '../../components/dashboard-header';
+import React from 'react';
 import withAuth from '../utils/with-auth';
-import { useRouter } from 'next/navigation';
-import { useContent } from '../context/content-context';
+import DashboardHeader from '../components/dashboard-header';
+import Link from 'next/link';
+import { useAuth } from '../../lib/auth-context';
 
-function Dashboard() {
-  const { user, loading: authLoading } = useAuth();
-  const { scheduledVideos, loadScheduledVideos, loading: contentLoading } = useContent();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (user) {
-      loadScheduledVideos();
-    }
-  }, [user, loadScheduledVideos]);
-
-  const loading = authLoading || contentLoading;
-
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
-
+function DashboardPage() {
+  const { user } = useAuth();
+  
   return (
-    <div>
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
       <DashboardHeader />
       
-      <main className="container mt-4">
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold">Dashboard Overview</h1>
-          <p>View your YouTube channel performance and upcoming content</p>
-        </div>
-        
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="stat-card">
-            <div className="stat-label">Videos Created</div>
-            <div className="stat-value">24</div>
-            <div className="stat-change positive">+12% from last month</div>
-          </div>
+      <main className="flex-grow p-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
           
-          <div className="stat-card">
-            <div className="stat-label">Total Views</div>
-            <div className="stat-value">142.5K</div>
-            <div className="stat-change positive">+18% from last month</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-label">Subscription Status</div>
-            <div className="stat-value">Active</div>
-            <div className="stat-change">Next billing: May 24, 2025</div>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Quick Actions */}
-          <div>
-            <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-            <div className="flex flex-col gap-4">
-              <button 
-                className="btn flex items-center justify-center gap-2"
-                onClick={() => router.push('/dashboard/topic-scheduler')}
-              >
-                <span>📹</span> Create Video
-              </button>
-              <button 
-                className="btn flex items-center justify-center gap-2"
-                onClick={() => router.push('/dashboard/topic-scheduler')}
-              >
-                <span>📅</span> Schedule Content
-              </button>
-              <button 
-                className="btn flex items-center justify-center gap-2"
-                onClick={() => router.push('/dashboard/analytics')}
-              >
-                <span>📊</span> View Analytics
-              </button>
-              <button 
-                className="btn flex items-center justify-center gap-2"
-                onClick={() => router.push('/dashboard/api-keys')}
-              >
-                <span>🔑</span> Manage API Keys
-              </button>
+          <div className="bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold mb-4">Welcome back, {user?.email?.split('@')[0] || 'User'}!</h2>
+            <p className="text-gray-300 mb-4">
+              Your YouTube content automation platform is ready to help you create engaging videos and grow your channel.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <h3 className="font-medium mb-2">Videos Created</h3>
+                <p className="text-3xl font-bold text-green-500">12</p>
+              </div>
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <h3 className="font-medium mb-2">Scheduled</h3>
+                <p className="text-3xl font-bold text-blue-500">5</p>
+              </div>
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <h3 className="font-medium mb-2">Topics Generated</h3>
+                <p className="text-3xl font-bold text-purple-500">28</p>
+              </div>
             </div>
           </div>
           
-          {/* Upcoming Videos */}
-          <div>
-            <h2 className="text-xl font-bold mb-4">Upcoming Videos</h2>
-            <div className="flex flex-col gap-4">
-              {scheduledVideos && scheduledVideos.length > 0 ? (
-                scheduledVideos.map((video) => (
-                  <div className="card" key={video.id}>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold">{video.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Scheduled for {new Date(video.scheduled_time).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <button 
-                        className="btn btn-outline btn-sm"
-                        onClick={() => router.push(`/dashboard/topic-scheduler?edit=${video.id}`)}
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="card">
-                  <p>No upcoming videos scheduled. Create your first video!</p>
-                  <button 
-                    className="btn btn-outline mt-4"
-                    onClick={() => router.push('/dashboard/topic-scheduler')}
-                  >
-                    Schedule Your First Video
-                  </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div className="bg-gray-800 rounded-lg shadow-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+              <div className="space-y-4">
+                <Link href="/dashboard/manual-topics" className="block w-full py-3 px-4 bg-green-600 hover:bg-green-700 rounded-md font-medium transition-colors text-center">
+                  Generate New Video Topics
+                </Link>
+                <Link href="/dashboard/topic-scheduler" className="block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium transition-colors text-center">
+                  Schedule Content
+                </Link>
+                <Link href="/dashboard/analytics" className="block w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 rounded-md font-medium transition-colors text-center">
+                  View Analytics
+                </Link>
+              </div>
+            </div>
+            
+            <div className="bg-gray-800 rounded-lg shadow-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+              <div className="space-y-4">
+                <div className="border-b border-gray-700 pb-3">
+                  <p className="font-medium">Video "Top 10 AI Tools for Content Creators" created</p>
+                  <p className="text-sm text-gray-400">2 days ago</p>
                 </div>
-              )}
-              
-              {scheduledVideos && scheduledVideos.length > 0 && (
-                <button 
-                  className="btn btn-outline"
-                  onClick={() => router.push('/dashboard/topic-scheduler')}
-                >
-                  View All Scheduled Content
-                </button>
-              )}
+                <div className="border-b border-gray-700 pb-3">
+                  <p className="font-medium">Scheduled 3 videos for publication</p>
+                  <p className="text-sm text-gray-400">3 days ago</p>
+                </div>
+                <div className="border-b border-gray-700 pb-3">
+                  <p className="font-medium">Generated 8 new topic ideas</p>
+                  <p className="text-sm text-gray-400">5 days ago</p>
+                </div>
+                <div>
+                  <p className="font-medium">Account created</p>
+                  <p className="text-sm text-gray-400">7 days ago</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Subscription Status</h2>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-lg">Professional Plan</p>
+                <p className="text-gray-400">20 AI-generated videos per month</p>
+                <p className="text-green-500 mt-2">Active until May 25, 2025</p>
+              </div>
+              <Link href="/pricing" className="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md font-medium transition-colors">
+                Manage Subscription
+              </Link>
             </div>
           </div>
         </div>
@@ -138,4 +96,4 @@ function Dashboard() {
   );
 }
 
-export default withAuth(Dashboard);
+export default withAuth(DashboardPage);

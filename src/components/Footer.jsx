@@ -1,95 +1,60 @@
 'use client';
 
-import Image from 'next/image';
+import React from 'react';
 import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-50 border-t border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <footer className="bg-gray-900 border-t border-gray-800 py-12 px-6">
+      <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="col-span-1 md:col-span-1">
-            <Image
-              src="/logo.svg"
-              alt="TubeAutomator Logo"
-              width={180}
-              height={45}
-              className="mb-4"
-            />
-            <p className="text-gray-600 text-sm">
-              Automate your YouTube content creation with AI-powered tools and analytics.
+          <div>
+            <Link href="/" className="text-xl font-bold flex items-center mb-4">
+              <span className="text-green-500 mr-2">📹</span>
+              <span>TubeAutomator</span>
+            </Link>
+            <p className="text-gray-400">
+              AI-powered YouTube content creation and channel growth platform.
             </p>
           </div>
           
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 tracking-wider uppercase mb-4">
-              Product
-            </h3>
-            <ul className="space-y-3">
-              <li>
-                <Link href="/features" className="text-gray-600 hover:text-indigo-600 text-sm">
-                  Features
-                </Link>
-              </li>
-              <li>
-                <Link href="/pricing" className="text-gray-600 hover:text-indigo-600 text-sm">
-                  Pricing
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="text-gray-600 hover:text-indigo-600 text-sm">
-                  FAQ
-                </Link>
-              </li>
+            <h3 className="font-semibold mb-4">Product</h3>
+            <ul className="space-y-2">
+              <li><Link href="/features" className="text-gray-400 hover:text-white transition-colors">Features</Link></li>
+              <li><Link href="/pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</Link></li>
+              <li><Link href="/roadmap" className="text-gray-400 hover:text-white transition-colors">Roadmap</Link></li>
             </ul>
           </div>
           
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 tracking-wider uppercase mb-4">
-              Company
-            </h3>
-            <ul className="space-y-3">
-              <li>
-                <Link href="/about" className="text-gray-600 hover:text-indigo-600 text-sm">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="text-gray-600 hover:text-indigo-600 text-sm">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-gray-600 hover:text-indigo-600 text-sm">
-                  Contact
-                </Link>
-              </li>
+            <h3 className="font-semibold mb-4">Resources</h3>
+            <ul className="space-y-2">
+              <li><Link href="/blog" className="text-gray-400 hover:text-white transition-colors">Blog</Link></li>
+              <li><Link href="/tutorials" className="text-gray-400 hover:text-white transition-colors">Tutorials</Link></li>
+              <li><Link href="/support" className="text-gray-400 hover:text-white transition-colors">Support</Link></li>
             </ul>
           </div>
           
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 tracking-wider uppercase mb-4">
-              Legal
-            </h3>
-            <ul className="space-y-3">
-              <li>
-                <Link href="/privacy" className="text-gray-600 hover:text-indigo-600 text-sm">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="text-gray-600 hover:text-indigo-600 text-sm">
-                  Terms of Service
-                </Link>
-              </li>
+            <h3 className="font-semibold mb-4">Company</h3>
+            <ul className="space-y-2">
+              <li><Link href="/about" className="text-gray-400 hover:text-white transition-colors">About Us</Link></li>
+              <li><Link href="/careers" className="text-gray-400 hover:text-white transition-colors">Careers</Link></li>
+              <li><Link href="/contact" className="text-gray-400 hover:text-white transition-colors">Contact</Link></li>
             </ul>
           </div>
         </div>
         
-        <div className="mt-12 border-t border-gray-200 pt-8">
-          <p className="text-gray-500 text-sm text-center">
-            &copy; {new Date().getFullYear()} TubeAutomator. All rights reserved.
+        <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+          <p className="text-gray-400 mb-4 md:mb-0">
+            &copy; 2025 TubeAutomator. All rights reserved.
           </p>
+          <div className="flex space-x-6">
+            <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">Terms</Link>
+            <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy</Link>
+            <Link href="/cookies" className="text-gray-400 hover:text-white transition-colors">Cookies</Link>
+          </div>
         </div>
       </div>
     </footer>

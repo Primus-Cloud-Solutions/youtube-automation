@@ -18,28 +18,44 @@ export default function withAuth(Component) {
 
 // Separate component to use useAuth inside AuthProvider
 function AuthGuard({ Component, props }) {
-  const { user, loading } = useAuth();
+  const { user, isLoading, error } = useAuth();
   const router = useRouter();
+  const [redirecting, setRedirecting] = React.useState(false);
   
   // Show loading state while checking authentication
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
         <div className="animate-pulse text-center">
           <div className="text-xl font-semibold mb-2">Loading...</div>
-          <p className="text-muted-foreground">Verifying your authentication</p>
+          <p className="text-gray-400">Verifying your authentication</p>
         </div>
       </div>
     );
   }
   
   // Redirect to login if not authenticated
-  if (!user) {
-    React.useEffect(() => {
+  React.useEffect(() => {
+    if (!user && !isLoading && !redirecting) {
+      setRedirecting(true);
       router.push('/login');
-    }, [router]);
-    
-    return null;
+    }
+  }, [user, isLoading, router, redirecting]);
+  
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+        <div className="text-center">
+          <div className="text-xl font-semibold mb-2">Access Restricted</div>
+          <p className="text-gray-400">Please log in to access this page</p>
+          {error && (
+            <div className="mt-4 p-3 bg-red-900/50 text-red-200 rounded-md">
+              {error}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
   
   // Render the protected component if authenticated
