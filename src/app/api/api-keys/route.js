@@ -1,6 +1,6 @@
 'use server';
 
-import { openai } from '../openai-api';
+import { generateScript } from '../openai-api';
 import { getVoices, generateSpeech } from '../elevenlabs-api';
 import { searchVideos, getTrendingVideos } from '../youtube-api';
 

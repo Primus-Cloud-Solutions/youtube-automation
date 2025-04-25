@@ -2,8 +2,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
-import { openaiApi } from '../openai-api';
-import { elevenlabsApi } from '../elevenlabs-api';
+import { generateScript } from '../openai-api';
+import { getVoices, generateSpeech } from '../elevenlabs-api';
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
@@ -69,7 +69,7 @@ export const POST = withErrorHandling(async (request) => {
     }
     
     try {
-      const scriptContent = await openaiApi.generateScript(topic, length, tone);
+      const scriptContent = await generateScript(topic, length, tone);
       return createApiResponse({ script: scriptContent });
     } catch (error) {
       return createApiError(`Error generating script: ${error.message}`, 500);
@@ -83,7 +83,7 @@ export const POST = withErrorHandling(async (request) => {
     }
     
     try {
-      const audioBuffer = await elevenlabsApi.generateSpeech(text, voiceId);
+      const audioBuffer = await generateSpeech(text, voiceId);
       
       // In a real implementation, you would save this to a file or return it directly
       // For demo purposes, we'll just return a success message
