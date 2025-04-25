@@ -141,10 +141,19 @@ export function AuthProvider({ children }) {
 // Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
+  
+  // Instead of throwing an error, return the default context during SSR
   if (!context) {
-    // Instead of throwing an error, return the default context during SSR
     console.warn('useAuth must be used within an AuthProvider, returning default context');
-    return AuthContext._currentValue;
+    return AuthContext._currentValue || {
+      user: null,
+      session: null,
+      isLoading: false,
+      signIn: async () => ({ success: false }),
+      signUp: async () => ({ success: false }),
+      signOut: async () => ({ success: false }),
+    };
   }
+  
   return context;
 };

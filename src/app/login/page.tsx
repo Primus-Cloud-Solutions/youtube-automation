@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/auth-context';
+import { useAuth, AuthProvider } from '../context/auth-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-export default function Login() {
+// Create a safe component that uses useAuth inside AuthProvider
+function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -137,5 +138,14 @@ export default function Login() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrap the component with AuthProvider
+export default function Login() {
+  return (
+    <AuthProvider>
+      <LoginContent />
+    </AuthProvider>
   );
 }
