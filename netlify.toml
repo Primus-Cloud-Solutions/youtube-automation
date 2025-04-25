@@ -1,26 +1,15 @@
 [build]
   command = "npm install && npm run build"
   publish = ".next"
-
+  
 [build.environment]
-  NEXT_PUBLIC_SUPABASE_URL = "https://eurztwdqjncuypqbrcmw.supabase.co"
-  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1cnp0d2Rxam5jdXlwcWJyY213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODI1MzQ0MDAsImV4cCI6MTk5ODExMDQwMH0.fallback_demo_key_for_development"
-  SKIP_TYPESCRIPT_CHECK = "true"
-  NEXT_TELEMETRY_DISABLED = "1"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
+  NEXT_USE_NETLIFY_EDGE = "true"
   NODE_VERSION = "18"
   NODE_OPTIONS = "--max-old-space-size=4096"
-  NEXT_PRIVATE_TARGET = "server"
-
+  
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    X-Content-Type-Options = "nosniff"
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
 
 [[headers]]
   for = "/_next/static/*"
@@ -36,29 +25,3 @@
   for = "/_next/*.css"
   [headers.values]
     Content-Type = "text/css"
-
-# These redirects ensure that API routes work correctly
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-
-# These redirects ensure that Next.js data fetching works correctly
-[[redirects]]
-  from = "/_next/data/*"
-  to = "/_next/data/:splat"
-  status = 200
-
-# These redirects ensure that static assets are served correctly
-[[redirects]]
-  from = "/_next/static/*"
-  to = "/_next/static/:splat"
-  status = 200
-  force = true
-  headers = {Cache-Control = "public, max-age=31536000, immutable"}
-
-# SPA fallback for client-side routing
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
