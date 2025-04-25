@@ -27,52 +27,59 @@ const withErrorHandling = (handler) => {
   };
 };
 
-// Get available voices
-export const getVoices = async () => {
-  try {
-    const response = await axios.get(`${ELEVENLABS_API_URL}/voices`, {
-      headers: {
-        'xi-api-key': ELEVENLABS_API_KEY,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    return response.data.voices;
-  } catch (error) {
-    console.error('Error fetching voices:', error);
-    throw error;
+// ElevenLabs API functions object - export this for importing in other files
+export const elevenlabsApi = {
+  // Get available voices
+  getVoices: async () => {
+    try {
+      const response = await axios.get(`${ELEVENLABS_API_URL}/voices`, {
+        headers: {
+          'xi-api-key': ELEVENLABS_API_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      return response.data.voices;
+    } catch (error) {
+      console.error('Error fetching voices:', error);
+      throw error;
+    }
+  },
+
+  // Generate speech from text
+  generateSpeech: async (text, voiceId) => {
+    try {
+      const response = await axios.post(
+        `${ELEVENLABS_API_URL}/text-to-speech/${voiceId}`,
+        {
+          text,
+          model_id: 'eleven_monolingual_v1',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.5
+          }
+        },
+        {
+          headers: {
+            'xi-api-key': ELEVENLABS_API_KEY,
+            'Content-Type': 'application/json',
+            'Accept': 'audio/mpeg'
+          },
+          responseType: 'arraybuffer'
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error generating speech:', error);
+      throw error;
+    }
   }
 };
 
-// Generate speech from text
-export const generateSpeech = async (text, voiceId) => {
-  try {
-    const response = await axios.post(
-      `${ELEVENLABS_API_URL}/text-to-speech/${voiceId}`,
-      {
-        text,
-        model_id: 'eleven_monolingual_v1',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.5
-        }
-      },
-      {
-        headers: {
-          'xi-api-key': ELEVENLABS_API_KEY,
-          'Content-Type': 'application/json',
-          'Accept': 'audio/mpeg'
-        },
-        responseType: 'arraybuffer'
-      }
-    );
-    
-    return response.data;
-  } catch (error) {
-    console.error('Error generating speech:', error);
-    throw error;
-  }
-};
+// Also export individual functions for backward compatibility
+export const getVoices = elevenlabsApi.getVoices;
+export const generateSpeech = elevenlabsApi.generateSpeech;
 
 // API route handler
 export const POST = withErrorHandling(async (request) => {
@@ -85,7 +92,7 @@ export const POST = withErrorHandling(async (request) => {
   // Get available voices
   if (action === 'get-voices') {
     try {
-      const voices = await getVoices();
+      const voices = await elevenlabsApi.getVoices();
       return createApiResponse({ voices });
     } catch (error) {
       return createApiError(`Error fetching voices: ${error.message}`, 500);
@@ -99,7 +106,7 @@ export const POST = withErrorHandling(async (request) => {
     }
     
     try {
-      const audioBuffer = await generateSpeech(text, voiceId);
+      const audioBuffer = await elevenlabsApi.generateSpeech(text, voiceId);
       
       // In a real implementation, you would save this to a file or return it directly
       // For demo purposes, we'll just return a success message

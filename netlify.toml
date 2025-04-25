@@ -3,7 +3,7 @@
   publish = ".next"
 
 [build.environment]
-  NEXT_PUBLIC_SUPABASE_URL = "https://eurztwdqjncuypqbrcmw.supabase.co"
+  NEXT_PUBLIC_SUPABASE_URL = "your-supabase-url"
   NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-supabase-anon-key"
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = "your-stripe-publishable-key"
   STRIPE_SECRET_KEY = "your-stripe-secret-key"
@@ -13,20 +13,13 @@
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
   NEXT_USE_NETLIFY_EDGE = "true"
 
-[[headers]]
-  for = "/_next/static/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/_next/*.js"
-  [headers.values]
-    Content-Type = "application/javascript"
-
-[[headers]]
-  for = "/_next/*.css"
-  [headers.values]
-    Content-Type = "text/css"
-
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

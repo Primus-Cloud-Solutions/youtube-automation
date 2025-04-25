@@ -9,14 +9,14 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'example-an
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Create auth context
+// Create auth context with default values
 const AuthContext = createContext({
   user: null,
   session: null,
   isLoading: true,
-  signIn: async (email, password) => {},
-  signUp: async (email, password) => {},
-  signOut: async () => {},
+  signIn: async (email, password) => ({ success: false }),
+  signUp: async (email, password) => ({ success: false }),
+  signOut: async () => ({ success: false }),
 });
 
 // Auth provider component
@@ -140,5 +140,11 @@ export function AuthProvider({ children }) {
 
 // Custom hook to use auth context
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    // Instead of throwing an error, return the default context during SSR
+    console.warn('useAuth must be used within an AuthProvider, returning default context');
+    return AuthContext._currentValue;
+  }
+  return context;
 };
