@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useAuth, AuthProvider } from '@/lib/auth-context';
+import { useAuth, AuthProvider } from '../lib/auth-context';
 
 // Create a safe component that uses useAuth inside AuthProvider
 function HeaderContent() {
