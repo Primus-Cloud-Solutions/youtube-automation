@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/auth-context';
+import { useAuth, AuthProvider } from '../context/auth-context';
 import { usePayment } from '../hooks/use-payment';
 import Link from 'next/link';
 import Image from 'next/image';
 
-export default function AccountPage() {
+// Create a safe component that uses useAuth inside AuthProvider
+function AccountContent() {
   const { user } = useAuth();
   const { getSubscription, cancelSubscription, loading, error } = usePayment();
   const [subscription, setSubscription] = useState(null);
@@ -235,5 +236,14 @@ export default function AccountPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrap the component with AuthProvider
+export default function AccountPage() {
+  return (
+    <AuthProvider>
+      <AccountContent />
+    </AuthProvider>
   );
 }

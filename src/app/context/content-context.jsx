@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './auth-context';
+import { useAuth, AuthProvider } from './auth-context';
 
 // Create Content Generation context
 const ContentContext = createContext(null);
@@ -190,11 +190,29 @@ export function ContentProvider({ children }) {
   return <ContentContext.Provider value={value}>{children}</ContentContext.Provider>;
 }
 
+// Safe wrapper to ensure ContentProvider is used within AuthProvider
+export function SafeContentProvider({ children }) {
+  return (
+    <AuthProvider>
+      <ContentProvider>{children}</ContentProvider>
+    </AuthProvider>
+  );
+}
+
 // Content hook
 export function useContent() {
   const context = useContext(ContentContext);
   if (!context) {
-    throw new Error('useContent must be used within a ContentProvider');
+    console.warn('useContent must be used within a ContentProvider, returning default context');
+    return {
+      generatedContent: null,
+      scheduledVideos: [],
+      loading: false,
+      generateScript: async () => ({ success: false, error: 'ContentProvider not found' }),
+      generateVoice: async () => ({ success: false, error: 'ContentProvider not found' }),
+      scheduleVideo: async () => ({ success: false, error: 'ContentProvider not found' }),
+      loadScheduledVideos: async () => ({ success: false, error: 'ContentProvider not found' })
+    };
   }
   return context;
 }

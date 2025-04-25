@@ -2,9 +2,10 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useAuth } from '../../app/context/auth-context';
+import { useAuth, AuthProvider } from '../../app/context/auth-context';
 
-export default function DashboardHeader() {
+// Create a safe component that uses useAuth inside AuthProvider
+function DashboardHeaderContent() {
   const { user, signOut } = useAuth();
   
   const handleSignOut = async () => {
@@ -45,5 +46,14 @@ export default function DashboardHeader() {
         </div>
       </div>
     </header>
+  );
+}
+
+// Wrap the component with AuthProvider
+export default function DashboardHeader() {
+  return (
+    <AuthProvider>
+      <DashboardHeaderContent />
+    </AuthProvider>
   );
 }

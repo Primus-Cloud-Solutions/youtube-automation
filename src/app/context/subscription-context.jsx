@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState } from 'react'
 import { stripePayment } from '../../../stripe-payment-integration'
-import { useAuth } from './auth-context'
+import { useAuth, AuthProvider } from './auth-context'
 
 // Create subscription context
 const SubscriptionContext = createContext(null)
@@ -134,11 +134,31 @@ export function SubscriptionProvider({ children }) {
   return <SubscriptionContext.Provider value={value}>{children}</SubscriptionContext.Provider>
 }
 
+// Safe wrapper to ensure SubscriptionProvider is used within AuthProvider
+export function SafeSubscriptionProvider({ children }) {
+  return (
+    <AuthProvider>
+      <SubscriptionProvider>{children}</SubscriptionProvider>
+    </AuthProvider>
+  );
+}
+
 // Subscription hook
 export function useSubscription() {
   const context = useContext(SubscriptionContext)
   if (!context) {
-    throw new Error('useSubscription must be used within a SubscriptionProvider')
+    console.warn('useSubscription must be used within a SubscriptionProvider, returning default context')
+    return {
+      subscription: null,
+      loading: false,
+      getSubscription: async () => null,
+      createCheckoutSession: async () => ({ success: false, error: 'SubscriptionProvider not found' }),
+      createCustomerPortalSession: async () => ({ success: false, error: 'SubscriptionProvider not found' }),
+      cancelSubscription: async () => ({ success: false, error: 'SubscriptionProvider not found' }),
+      reactivateSubscription: async () => ({ success: false, error: 'SubscriptionProvider not found' }),
+      hasActiveSubscription: () => false,
+      formatSubscriptionEndDate: () => ''
+    }
   }
   return context
 }

@@ -2,11 +2,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth-context';
+import { useAuth, AuthProvider } from '@/lib/auth-context';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
-export default function Home() {
+// Create a safe component that uses useAuth inside AuthProvider
+function HomeContent() {
   const { user } = useAuth();
   
   return (
@@ -321,5 +322,14 @@ export default function Home() {
       
       <Footer />
     </main>
+  );
+}
+
+// Wrap the component with AuthProvider
+export default function Home() {
+  return (
+    <AuthProvider>
+      <HomeContent />
+    </AuthProvider>
   );
 }

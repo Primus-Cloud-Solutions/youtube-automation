@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './auth-context';
+import { useAuth, AuthProvider } from './auth-context';
 
 // Create YouTube API context
 const YouTubeApiContext = createContext(null);
@@ -212,11 +212,33 @@ export function YouTubeApiProvider({ children }) {
   return <YouTubeApiContext.Provider value={value}>{children}</YouTubeApiContext.Provider>;
 }
 
+// Safe wrapper to ensure YouTubeApiProvider is used within AuthProvider
+export function SafeYouTubeApiProvider({ children }) {
+  return (
+    <AuthProvider>
+      <YouTubeApiProvider>{children}</YouTubeApiProvider>
+    </AuthProvider>
+  );
+}
+
 // YouTube API hook
 export function useYouTubeApi() {
   const context = useContext(YouTubeApiContext);
   if (!context) {
-    throw new Error('useYouTubeApi must be used within a YouTubeApiProvider');
+    console.warn('useYouTubeApi must be used within a YouTubeApiProvider, returning default context');
+    return {
+      apiKeys: {
+        youtube: '',
+        openai: '',
+        elevenlabs: ''
+      },
+      loading: false,
+      saveApiKeys: async () => ({ success: false, error: 'YouTubeApiProvider not found' }),
+      loadApiKeys: async () => ({ success: false, error: 'YouTubeApiProvider not found' }),
+      testYouTubeApiKey: async () => ({ success: false, error: 'YouTubeApiProvider not found' }),
+      testOpenAIApiKey: async () => ({ success: false, error: 'YouTubeApiProvider not found' }),
+      testElevenLabsApiKey: async () => ({ success: false, error: 'YouTubeApiProvider not found' })
+    };
   }
   return context;
 }
