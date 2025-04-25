@@ -1,91 +1,74 @@
-# Vercel Deployment Guide for YouTube Automation Platform
+# Vercel Deployment Guide
 
 This guide provides instructions for deploying the YouTube Automation Platform to Vercel.
 
 ## Prerequisites
 
-1. A Vercel account (create one at [vercel.com](https://vercel.com) if you don't have one)
+Before deploying, make sure you have:
+
+1. A Vercel account (sign up at [vercel.com](https://vercel.com) if you don't have one)
 2. A Supabase account with a project set up
-3. A Stripe account for payment processing
-
-## Environment Variables
-
-Set up the following environment variables in your Vercel project:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://your-supabase-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your-stripe-publishable-key
-STRIPE_SECRET_KEY=your-stripe-secret-key
-```
+3. A Stripe account with API keys
 
 ## Deployment Steps
 
-1. **Install Vercel CLI** (optional, for local testing)
-   ```
-   npm install -g vercel
-   ```
+### 1. Set Up Environment Variables
 
-2. **Login to Vercel** (optional, for local testing)
-   ```
-   vercel login
-   ```
+You'll need to set the following environment variables in your Vercel project:
 
-3. **Deploy to Vercel**
+- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`: Your Stripe publishable key
+- `STRIPE_SECRET_KEY`: Your Stripe secret key
 
-   ### Option 1: Using Vercel Dashboard
-   
-   1. Go to [vercel.com](https://vercel.com) and log in
-   2. Click "New Project"
-   3. Import your GitHub repository or upload the project files
-   4. Configure the project:
-      - Framework Preset: Next.js
-      - Build Command: `next build`
-      - Output Directory: `.next`
-      - Install Command: `npm install`
-   5. Add the environment variables listed above
-   6. Click "Deploy"
+### 2. Deploy to Vercel
 
-   ### Option 2: Using Vercel CLI
-   
-   1. Navigate to your project directory
-   2. Run:
-      ```
-      vercel
-      ```
-   3. Follow the prompts to configure your project
-   4. For production deployment, use:
-      ```
-      vercel --prod
-      ```
+#### Option 1: Deploy from GitHub
 
-## Post-Deployment
+1. Push your project to a GitHub repository
+2. Log in to your Vercel account
+3. Click "Add New" > "Project"
+4. Select your GitHub repository
+5. Configure the project:
+   - Framework Preset: Next.js
+   - Root Directory: ./
+   - Build Command: next build
+   - Output Directory: .next
+6. Add the environment variables mentioned above
+7. Click "Deploy"
 
-1. **Set up Supabase Tables**
-   
-   Create the necessary tables in your Supabase project:
-   
-   - `users` table for storing user information
-   - `subscriptions` table for tracking subscription status
+#### Option 2: Deploy using Vercel CLI
 
-2. **Configure Stripe Webhooks**
-   
-   Set up Stripe webhooks to handle subscription events:
-   
-   1. Go to your Stripe Dashboard > Developers > Webhooks
-   2. Add an endpoint with your Vercel deployment URL + `/api/webhooks/stripe`
-   3. Add the following events:
-      - `customer.subscription.created`
-      - `customer.subscription.updated`
-      - `customer.subscription.deleted`
-      - `checkout.session.completed`
+1. Install Vercel CLI: `npm i -g vercel`
+2. Navigate to your project directory
+3. Run `vercel login` and follow the prompts
+4. Run `vercel` to deploy
+5. Follow the prompts to set up your project
+6. Add the environment variables when prompted
+
+### 3. Verify Deployment
+
+After deployment:
+
+1. Visit your deployed site
+2. Test the authentication flow (login/signup)
+3. Test the payment flow
+4. Verify all pages are working correctly
 
 ## Troubleshooting
 
-- **API Routes Not Working**: Ensure your `next.config.js` has the correct rewrites configuration
-- **Authentication Issues**: Verify your Supabase environment variables are correct
-- **Payment Processing Errors**: Check your Stripe configuration and webhook setup
+If you encounter issues during deployment:
 
-## Support
+1. **Build Errors**: Check the build logs in Vercel for specific errors
+2. **API Routes Not Working**: Ensure your environment variables are set correctly
+3. **Authentication Issues**: Verify your Supabase configuration
+4. **Payment Issues**: Check your Stripe configuration and webhook setup
 
-If you encounter any issues with your deployment, please contact support at support@tubeautomator.com
+## Additional Resources
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Vercel Documentation](https://vercel.com/docs)
+- [Supabase Documentation](https://supabase.io/docs)
+- [Stripe Documentation](https://stripe.com/docs)
+
+For any other issues, please contact support or open an issue on the project repository.

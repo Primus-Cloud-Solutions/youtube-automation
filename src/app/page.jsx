@@ -1,747 +1,325 @@
-import React from 'react';
+'use client';
 
-const LandingPage = () => {
+import Image from 'next/image';
+import Link from 'next/link';
+import { useAuth } from '@/lib/auth-context';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+
+export default function Home() {
+  const { user } = useAuth();
+  
   return (
-    <div className="landing-page">
+    <main className="min-h-screen">
+      <Header />
+      
       {/* Hero Section */}
-      <section className="hero">
-        <div className="container">
-          <div className="hero-content">
-            <h1>Automate Your YouTube Success</h1>
-            <p className="hero-subtitle">Create, schedule, and publish engaging YouTube videos with AI-powered automation</p>
-            <div className="cta-buttons">
-              <a href="/signup" className="button primary">Start Free Trial</a>
-              <a href="#pricing" className="button outline">View Pricing</a>
+      <section className="bg-gradient-to-r from-gray-50 to-gray-100 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center">
+            <div className="md:w-1/2 mb-10 md:mb-0 md:pr-10">
+              <div className="inline-block bg-gradient-to-r from-red-500 to-purple-600 rounded-full px-3 py-1 text-xs font-semibold text-white mb-5">
+                AI-POWERED PLATFORM
+              </div>
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                Automate Your YouTube Content Creation
+              </h1>
+              <p className="text-xl text-gray-600 mb-8">
+                Create, schedule, and optimize YouTube videos with our AI-powered platform. Save time and grow your channel faster.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link 
+                  href="/signup" 
+                  className="bg-gradient-to-r from-red-500 to-purple-600 text-white px-6 py-3 rounded-md text-base font-medium hover:from-red-600 hover:to-purple-700 shadow-md"
+                >
+                  Get Started Free
+                </Link>
+                <Link 
+                  href="/features" 
+                  className="bg-white text-gray-800 border border-gray-300 px-6 py-3 rounded-md text-base font-medium hover:bg-gray-50"
+                >
+                  Learn More
+                </Link>
+              </div>
+              <div className="mt-6 flex items-center">
+                <div className="flex -space-x-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white" />
+                  ))}
+                </div>
+                <div className="ml-3 text-sm text-gray-600">
+                  <span className="font-semibold text-gray-900">500+</span> content creators trust us
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="hero-image">
-            <div className="image-container">
-              <div className="dashboard-preview"></div>
+            <div className="md:w-1/2">
+              <div className="bg-white rounded-lg shadow-xl p-6 border border-gray-200">
+                <div className="aspect-video bg-gray-200 rounded-md mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="flex justify-between items-center mt-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <div className="h-8 bg-gray-200 rounded w-20"></div>
+                      <div className="h-8 bg-gray-200 rounded w-20"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
-
-      {/* Features Section */}
-      <section className="features" id="features">
-        <div className="container">
-          <h2 className="section-title">Powerful YouTube Automation</h2>
-          <p className="section-subtitle">Everything you need to grow your channel without the hassle</p>
-          
-          <div className="feature-grid">
-            <div className="feature-card">
-              <div className="feature-icon">🤖</div>
-              <h3>AI Content Generation</h3>
-              <p>Generate video scripts, descriptions, and titles using advanced AI technology</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">📅</div>
-              <h3>Smart Scheduling</h3>
-              <p>Schedule videos for optimal posting times to maximize views and engagement</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">📊</div>
-              <h3>Performance Analytics</h3>
-              <p>Track your channel growth with detailed analytics and actionable insights</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">🔍</div>
-              <h3>Trend Analysis</h3>
-              <p>Discover trending topics in your niche to stay ahead of the competition</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
+      
       {/* How It Works Section */}
-      <section className="how-it-works" id="how-it-works">
-        <div className="container">
-          <h2 className="section-title">How It Works</h2>
-          <p className="section-subtitle">Three simple steps to YouTube automation</p>
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">How It Works</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Our platform simplifies the YouTube content creation process from start to finish
+            </p>
+          </div>
           
-          <div className="steps">
-            <div className="step">
-              <div className="step-number">1</div>
-              <h3>Connect Your Channel</h3>
-              <p>Link your YouTube account with our secure API integration</p>
-            </div>
-            <div className="step">
-              <div className="step-number">2</div>
-              <h3>Create Content</h3>
-              <p>Generate or upload video topics and let our AI handle the rest</p>
-            </div>
-            <div className="step">
-              <div className="step-number">3</div>
-              <h3>Schedule & Publish</h3>
-              <p>Set your publishing schedule and watch your channel grow</p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Generate Content Ideas",
+                description: "Our AI analyzes trending topics and your channel's performance to suggest high-potential video ideas."
+              },
+              {
+                title: "Create & Edit Videos",
+                description: "Use our AI tools to generate scripts, voiceovers, and edit videos with just a few clicks."
+              },
+              {
+                title: "Schedule & Optimize",
+                description: "Schedule uploads at optimal times and get AI-powered suggestions to improve your video's performance."
+              }
+            ].map((step, index) => (
+              <div key={index} className="bg-gray-50 rounded-lg p-8 border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl mb-6">
+                  {index + 1}
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">{step.title}</h3>
+                <p className="text-gray-600">{step.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
-
+      
+      {/* Features Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Powerful Features</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Everything you need to create, manage, and grow your YouTube channel
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                title: "AI Content Generator",
+                description: "Generate video scripts, descriptions, and titles optimized for engagement."
+              },
+              {
+                title: "Voice Synthesis",
+                description: "Convert your scripts to natural-sounding voiceovers in multiple languages."
+              },
+              {
+                title: "Smart Scheduling",
+                description: "Schedule uploads at optimal times based on your audience's activity."
+              },
+              {
+                title: "Performance Analytics",
+                description: "Track your channel's growth with comprehensive analytics and insights."
+              },
+              {
+                title: "Keyword Research",
+                description: "Find high-performing keywords to improve your video's discoverability."
+              },
+              {
+                title: "Thumbnail Generator",
+                description: "Create eye-catching thumbnails that drive higher click-through rates."
+              }
+            ].map((feature, index) => (
+              <div key={index} className="bg-white rounded-lg p-6 border border-gray-200 hover:shadow-md transition-shadow">
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
+                <p className="text-gray-600">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      
       {/* Pricing Section */}
-      <section className="pricing" id="pricing">
-        <div className="container">
-          <h2 className="section-title">Simple, Transparent Pricing</h2>
-          <p className="section-subtitle">Choose the plan that fits your needs</p>
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Simple, Transparent Pricing</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Choose the plan that's right for your channel
+            </p>
+          </div>
           
-          <div className="pricing-grid">
-            <div className="pricing-card">
-              <div className="pricing-header">
-                <h3>Starter</h3>
-                <div className="price">$29<span>/month</span></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                name: "Starter",
+                price: "$19",
+                description: "Perfect for new creators just getting started",
+                features: [
+                  "5 AI-generated videos per month",
+                  "Basic voice synthesis",
+                  "Standard scheduling",
+                  "Basic analytics",
+                  "Email support"
+                ]
+              },
+              {
+                name: "Professional",
+                price: "$49",
+                description: "For growing channels looking to scale",
+                features: [
+                  "20 AI-generated videos per month",
+                  "Advanced voice synthesis",
+                  "Smart scheduling",
+                  "Comprehensive analytics",
+                  "Priority support",
+                  "Trend analysis"
+                ],
+                popular: true
+              },
+              {
+                name: "Enterprise",
+                price: "$99",
+                description: "For established channels and businesses",
+                features: [
+                  "Unlimited AI-generated videos",
+                  "Premium voice synthesis",
+                  "Advanced scheduling",
+                  "Advanced analytics & reporting",
+                  "Dedicated account manager",
+                  "API access",
+                  "Custom integrations"
+                ]
+              }
+            ].map((plan, index) => (
+              <div 
+                key={index} 
+                className={`bg-white rounded-lg p-8 border ${plan.popular ? 'border-purple-500 ring-2 ring-purple-500' : 'border-gray-200'} hover:shadow-md transition-shadow relative`}
+              >
+                {plan.popular && (
+                  <div className="absolute top-0 right-0 bg-gradient-to-r from-red-500 to-purple-600 text-white text-xs font-semibold px-3 py-1 rounded-bl-lg rounded-tr-lg">
+                    MOST POPULAR
+                  </div>
+                )}
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                <div className="flex items-baseline mb-4">
+                  <span className="text-4xl font-extrabold text-gray-900">{plan.price}</span>
+                  <span className="text-gray-600 ml-1">/month</span>
+                </div>
+                <p className="text-gray-600 mb-6">{plan.description}</p>
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start">
+                      <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      <span className="text-gray-600">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link 
+                  href={user ? "/pricing" : "/signup"} 
+                  className={`w-full block text-center py-3 px-4 rounded-md font-medium ${
+                    plan.popular 
+                      ? 'bg-gradient-to-r from-red-500 to-purple-600 text-white hover:from-red-600 hover:to-purple-700' 
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-300'
+                  }`}
+                >
+                  {user ? "Choose Plan" : "Get Started"}
+                </Link>
               </div>
-              <ul className="pricing-features">
-                <li>5 videos per month</li>
-                <li>Basic analytics</li>
-                <li>Standard video quality</li>
-                <li>Email support</li>
-              </ul>
-              <a href="/signup?plan=starter" className="button outline full-width">Get Started</a>
-            </div>
-            
-            <div className="pricing-card popular">
-              <div className="popular-badge">Most Popular</div>
-              <div className="pricing-header">
-                <h3>Professional</h3>
-                <div className="price">$79<span>/month</span></div>
-              </div>
-              <ul className="pricing-features">
-                <li>20 videos per month</li>
-                <li>Advanced analytics</li>
-                <li>HD video quality</li>
-                <li>Priority support</li>
-                <li>Custom thumbnails</li>
-              </ul>
-              <a href="/signup?plan=professional" className="button primary full-width">Get Started</a>
-            </div>
-            
-            <div className="pricing-card">
-              <div className="pricing-header">
-                <h3>Enterprise</h3>
-                <div className="price">$199<span>/month</span></div>
-              </div>
-              <ul className="pricing-features">
-                <li>Unlimited videos</li>
-                <li>Premium analytics</li>
-                <li>4K video quality</li>
-                <li>Dedicated support</li>
-                <li>Custom thumbnails</li>
-                <li>Multi-channel management</li>
-              </ul>
-              <a href="/signup?plan=enterprise" className="button outline full-width">Get Started</a>
-            </div>
+            ))}
           </div>
         </div>
       </section>
-
+      
       {/* Testimonials Section */}
-      <section className="testimonials">
-        <div className="container">
-          <h2 className="section-title">What Our Customers Say</h2>
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Users Say</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Join hundreds of content creators who are growing their channels with TubeAutomator
+            </p>
+          </div>
           
-          <div className="testimonial-grid">
-            <div className="testimonial-card">
-              <div className="testimonial-content">
-                <p>"TubeAutomator has completely transformed how I manage my YouTube channel. I've increased my upload frequency by 300% while actually spending less time on content creation."</p>
-              </div>
-              <div className="testimonial-author">
-                <div className="author-avatar"></div>
-                <div className="author-info">
-                  <h4>Sarah Johnson</h4>
-                  <p>Tech Reviewer, 250K subscribers</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                quote: "TubeAutomator has completely transformed my content creation process. I've been able to double my upload frequency while maintaining quality.",
+                author: "Sarah Johnson",
+                role: "Tech Reviewer"
+              },
+              {
+                quote: "The AI content suggestions are spot-on. I've seen a 40% increase in views since using TubeAutomator's keyword research and optimization tools.",
+                author: "Michael Chen",
+                role: "Gaming Channel"
+              },
+              {
+                quote: "As a solo creator, TubeAutomator has been a game-changer. It's like having a full production team at my fingertips.",
+                author: "Emma Rodriguez",
+                role: "Travel Vlogger"
+              }
+            ].map((testimonial, index) => (
+              <div key={index} className="bg-white rounded-lg p-8 border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-purple-600 rounded-full mr-3"></div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">{testimonial.author}</h4>
+                    <p className="text-sm text-gray-600">{testimonial.role}</p>
+                  </div>
                 </div>
+                <p className="text-gray-600 italic">"{testimonial.quote}"</p>
               </div>
-            </div>
-            
-            <div className="testimonial-card">
-              <div className="testimonial-content">
-                <p>"The AI-generated content is surprisingly good. My audience hasn't noticed any difference, but I'm saving 20+ hours per week. The ROI is incredible."</p>
-              </div>
-              <div className="testimonial-author">
-                <div className="author-avatar"></div>
-                <div className="author-info">
-                  <h4>Mark Williams</h4>
-                  <p>Gaming Channel, 500K subscribers</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="testimonial-card">
-              <div className="testimonial-content">
-                <p>"As a small business owner, I never had time to maintain a YouTube presence. TubeAutomator changed that completely. Now we publish twice weekly with minimal effort."</p>
-              </div>
-              <div className="testimonial-author">
-                <div className="author-avatar"></div>
-                <div className="author-info">
-                  <h4>Jessica Chen</h4>
-                  <p>Small Business Owner, 75K subscribers</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
-
-      {/* FAQ Section */}
-      <section className="faq" id="faq">
-        <div className="container">
-          <h2 className="section-title">Frequently Asked Questions</h2>
-          
-          <div className="faq-grid">
-            <div className="faq-item">
-              <h3>How does the AI content generation work?</h3>
-              <p>Our AI analyzes trending topics in your niche and generates original scripts, titles, and descriptions based on your channel's style and audience preferences.</p>
-            </div>
-            
-            <div className="faq-item">
-              <h3>Do I need technical skills to use TubeAutomator?</h3>
-              <p>Not at all! Our platform is designed to be user-friendly with an intuitive interface. If you can use YouTube, you can use TubeAutomator.</p>
-            </div>
-            
-            <div className="faq-item">
-              <h3>Can I cancel my subscription anytime?</h3>
-              <p>Yes, you can cancel your subscription at any time with no questions asked. We don't believe in long-term contracts or hidden fees.</p>
-            </div>
-            
-            <div className="faq-item">
-              <h3>Will my audience know the content is AI-generated?</h3>
-              <p>Our AI is trained to create natural, engaging content that matches your voice and style. Most creators report that their audience can't tell the difference.</p>
-            </div>
-            
-            <div className="faq-item">
-              <h3>How secure is my YouTube account with your platform?</h3>
-              <p>We use OAuth 2.0 for secure authentication and never store your passwords. Your account security is our top priority.</p>
-            </div>
-            
-            <div className="faq-item">
-              <h3>Do you offer a free trial?</h3>
-              <p>Yes! We offer a 14-day free trial so you can experience the full power of TubeAutomator before committing.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
+      
       {/* CTA Section */}
-      <section className="cta">
-        <div className="container">
-          <h2>Ready to Revolutionize Your YouTube Channel?</h2>
-          <p>Join thousands of content creators who are saving time and growing their audience with TubeAutomator</p>
-          <a href="/signup" className="button primary large">Start Your Free Trial</a>
-          <p className="no-credit-card">No credit card required • 14-day free trial</p>
+      <section className="py-20 bg-gradient-to-r from-red-500 to-purple-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold mb-6">Ready to Transform Your YouTube Channel?</h2>
+          <p className="text-xl mb-8 max-w-3xl mx-auto">
+            Join thousands of content creators who are saving time and growing their channels with TubeAutomator.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Link 
+              href="/signup" 
+              className="bg-white text-gray-900 px-6 py-3 rounded-md text-base font-medium hover:bg-gray-100 shadow-md"
+            >
+              Get Started Free
+            </Link>
+            <Link 
+              href="/contact" 
+              className="bg-transparent text-white border border-white px-6 py-3 rounded-md text-base font-medium hover:bg-white/10"
+            >
+              Contact Sales
+            </Link>
+          </div>
         </div>
       </section>
-
-      <style jsx>{`
-        /* Landing Page Styles */
-        .landing-page {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-          color: #f8fafc;
-          line-height: 1.6;
-        }
-        
-        .container {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 2rem;
-        }
-        
-        section {
-          padding: 5rem 0;
-        }
-        
-        /* Hero Section */
-        .hero {
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .hero::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-image: radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), 
-                            radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
-          z-index: 1;
-        }
-        
-        .hero .container {
-          position: relative;
-          z-index: 2;
-          display: flex;
-          align-items: center;
-          min-height: 80vh;
-        }
-        
-        .hero-content {
-          flex: 1;
-          max-width: 600px;
-        }
-        
-        .hero h1 {
-          font-size: 3.5rem;
-          font-weight: 800;
-          line-height: 1.2;
-          margin-bottom: 1.5rem;
-          background: linear-gradient(to right, #3b82f6, #8b5cf6);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        
-        .hero-subtitle {
-          font-size: 1.25rem;
-          margin-bottom: 2.5rem;
-          color: #94a3b8;
-        }
-        
-        .cta-buttons {
-          display: flex;
-          gap: 1rem;
-        }
-        
-        .button {
-          display: inline-block;
-          padding: 0.75rem 1.5rem;
-          border-radius: 0.375rem;
-          font-weight: 600;
-          text-decoration: none;
-          transition: all 0.3s ease;
-        }
-        
-        .button.primary {
-          background: linear-gradient(to right, #3b82f6, #8b5cf6);
-          color: white;
-        }
-        
-        .button.outline {
-          border: 2px solid #3b82f6;
-          color: #3b82f6;
-        }
-        
-        .button.primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-        
-        .button.outline:hover {
-          background-color: rgba(59, 130, 246, 0.1);
-          transform: translateY(-2px);
-        }
-        
-        .hero-image {
-          flex: 1;
-          display: flex;
-          justify-content: flex-end;
-        }
-        
-        .image-container {
-          position: relative;
-          width: 100%;
-          max-width: 500px;
-        }
-        
-        .dashboard-preview {
-          width: 100%;
-          height: 350px;
-          background: rgba(30, 41, 59, 0.7);
-          border-radius: 0.5rem;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .dashboard-preview::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 40px;
-          background: rgba(59, 130, 246, 0.1);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Features Section */
-        .features {
-          background-color: #0f172a;
-        }
-        
-        .section-title {
-          font-size: 2.5rem;
-          font-weight: 700;
-          text-align: center;
-          margin-bottom: 1rem;
-          background: linear-gradient(to right, #3b82f6, #8b5cf6);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        
-        .section-subtitle {
-          font-size: 1.25rem;
-          text-align: center;
-          margin-bottom: 4rem;
-          color: #94a3b8;
-          max-width: 700px;
-          margin-left: auto;
-          margin-right: auto;
-        }
-        
-        .feature-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 2rem;
-        }
-        
-        .feature-card {
-          background: rgba(30, 41, 59, 0.5);
-          border-radius: 0.5rem;
-          padding: 2rem;
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .feature-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        
-        .feature-icon {
-          font-size: 2.5rem;
-          margin-bottom: 1.5rem;
-        }
-        
-        .feature-card h3 {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin-bottom: 1rem;
-        }
-        
-        .feature-card p {
-          color: #94a3b8;
-        }
-        
-        /* How It Works Section */
-        .how-it-works {
-          background-color: #1e293b;
-        }
-        
-        .steps {
-          display: flex;
-          justify-content: space-between;
-          gap: 2rem;
-          margin-top: 3rem;
-        }
-        
-        .step {
-          flex: 1;
-          text-align: center;
-          position: relative;
-        }
-        
-        .step:not(:last-child)::after {
-          content: '';
-          position: absolute;
-          top: 2.5rem;
-          right: -1rem;
-          width: 2rem;
-          height: 2px;
-          background: linear-gradient(to right, #3b82f6, #8b5cf6);
-        }
-        
-        .step-number {
-          width: 5rem;
-          height: 5rem;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.5rem;
-          font-weight: 700;
-          margin: 0 auto 1.5rem;
-          color: white;
-        }
-        
-        .step h3 {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin-bottom: 1rem;
-        }
-        
-        .step p {
-          color: #94a3b8;
-        }
-        
-        /* Pricing Section */
-        .pricing {
-          background-color: #0f172a;
-        }
-        
-        .pricing-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 2rem;
-          margin-top: 3rem;
-        }
-        
-        .pricing-card {
-          background: rgba(30, 41, 59, 0.5);
-          border-radius: 0.5rem;
-          padding: 2rem;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          position: relative;
-          transition: transform 0.3s ease;
-        }
-        
-        .pricing-card:hover {
-          transform: translateY(-5px);
-        }
-        
-        .pricing-card.popular {
-          border: 2px solid #3b82f6;
-          transform: scale(1.05);
-        }
-        
-        .pricing-card.popular:hover {
-          transform: scale(1.05) translateY(-5px);
-        }
-        
-        .popular-badge {
-          position: absolute;
-          top: -12px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: linear-gradient(to right, #3b82f6, #8b5cf6);
-          color: white;
-          padding: 0.25rem 1rem;
-          border-radius: 1rem;
-          font-size: 0.875rem;
-          font-weight: 600;
-        }
-        
-        .pricing-header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-        
-        .pricing-header h3 {
-          font-size: 1.5rem;
-          font-weight: 700;
-          margin-bottom: 1rem;
-        }
-        
-        .price {
-          font-size: 3rem;
-          font-weight: 800;
-          color: #3b82f6;
-        }
-        
-        .price span {
-          font-size: 1rem;
-          font-weight: 400;
-          color: #94a3b8;
-        }
-        
-        .pricing-features {
-          list-style-type: none;
-          padding: 0;
-          margin: 0 0 2rem;
-        }
-        
-        .pricing-features li {
-          padding: 0.75rem 0;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          position: relative;
-          padding-left: 1.5rem;
-        }
-        
-        .pricing-features li::before {
-          content: '✓';
-          position: absolute;
-          left: 0;
-          color: #3b82f6;
-        }
-        
-        .button.full-width {
-          display: block;
-          width: 100%;
-          text-align: center;
-        }
-        
-        /* Testimonials Section */
-        .testimonials {
-          background-color: #1e293b;
-        }
-        
-        .testimonial-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 2rem;
-          margin-top: 3rem;
-        }
-        
-        .testimonial-card {
-          background: rgba(15, 23, 42, 0.5);
-          border-radius: 0.5rem;
-          padding: 2rem;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .testimonial-content {
-          margin-bottom: 1.5rem;
-          font-style: italic;
-          position: relative;
-        }
-        
-        .testimonial-content::before {
-          content: '"';
-          font-size: 4rem;
-          position: absolute;
-          top: -2rem;
-          left: -1rem;
-          color: rgba(59, 130, 246, 0.2);
-          font-family: Georgia, serif;
-        }
-        
-        .testimonial-author {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-        
-        .author-avatar {
-          width: 3rem;
-          height: 3rem;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-        }
-        
-        .author-info h4 {
-          font-weight: 600;
-          margin: 0;
-        }
-        
-        .author-info p {
-          color: #94a3b8;
-          font-size: 0.875rem;
-          margin: 0;
-        }
-        
-        /* FAQ Section */
-        .faq {
-          background-color: #0f172a;
-        }
-        
-        .faq-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-          gap: 2rem;
-          margin-top: 3rem;
-        }
-        
-        .faq-item {
-          margin-bottom: 2rem;
-        }
-        
-        .faq-item h3 {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin-bottom: 0.75rem;
-          color: #3b82f6;
-        }
-        
-        .faq-item p {
-          color: #94a3b8;
-        }
-        
-        /* CTA Section */
-        .cta {
-          background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-          text-align: center;
-          padding: 5rem 0;
-        }
-        
-        .cta h2 {
-          font-size: 2.5rem;
-          font-weight: 700;
-          margin-bottom: 1rem;
-          background: linear-gradient(to right, #3b82f6, #8b5cf6);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        
-        .cta p {
-          font-size: 1.25rem;
-          color: #94a3b8;
-          margin-bottom: 2rem;
-          max-width: 700px;
-          margin-left: auto;
-          margin-right: auto;
-        }
-        
-        .button.large {
-          padding: 1rem 2.5rem;
-          font-size: 1.125rem;
-        }
-        
-        .no-credit-card {
-          margin-top: 1rem;
-          font-size: 0.875rem;
-          color: #94a3b8;
-        }
-        
-        /* Responsive Adjustments */
-        @media (max-width: 768px) {
-          .hero .container {
-            flex-direction: column;
-            text-align: center;
-            padding-top: 3rem;
-            padding-bottom: 3rem;
-          }
-          
-          .hero-content {
-            margin-bottom: 3rem;
-          }
-          
-          .hero h1 {
-            font-size: 2.5rem;
-          }
-          
-          .cta-buttons {
-            justify-content: center;
-          }
-          
-          .steps {
-            flex-direction: column;
-          }
-          
-          .step:not(:last-child)::after {
-            display: none;
-          }
-          
-          .pricing-card.popular {
-            transform: none;
-          }
-          
-          .pricing-card.popular:hover {
-            transform: translateY(-5px);
-          }
-          
-          .faq-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-    </div>
+      
+      <Footer />
+    </main>
   );
-};
-
-export default LandingPage;
+}

@@ -1,11 +1,12 @@
 {
+  "name": "vercel",
+  "version": "1.0.0",
   "buildCommand": "next build",
-  "installCommand": "npm install",
+  "cleanUrls": true,
   "framework": "nextjs",
-  "outputDirectory": ".next",
   "regions": ["iad1"],
   "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "https://your-supabase-project.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_URL": "your-supabase-url",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "your-supabase-anon-key",
     "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "your-stripe-publishable-key",
     "STRIPE_SECRET_KEY": "your-stripe-secret-key"
