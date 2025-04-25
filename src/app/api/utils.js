@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 
 // Middleware to handle API errors consistently
-export function withErrorHandling(handler) {
+export async function withErrorHandling(handler) {
   return async (req, context) => {
     try {
       return await handler(req, context);
@@ -52,7 +52,7 @@ export async function validateRequest(request, schema) {
 }
 
 // Helper to create consistent API responses
-export function createApiResponse(data, status = 200) {
+export async function createApiResponse(data, status = 200) {
   return NextResponse.json(
     { success: true, ...data },
     { 
@@ -65,7 +65,7 @@ export function createApiResponse(data, status = 200) {
 }
 
 // Helper to create consistent error responses
-export function createApiError(message, status = 400, code = 'BAD_REQUEST') {
+export async function createApiError(message, status = 400, code = 'BAD_REQUEST') {
   return NextResponse.json(
     { 
       success: false, 

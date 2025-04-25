@@ -24,8 +24,8 @@ const nextConfig = {
     domains: ['i.ytimg.com'],
     unoptimized: true, // Reduce memory usage during build
   },
-  // Include all page extensions to avoid issues with file detection
-  pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+  // Only include tsx and ts files to avoid duplicate page detection
+  pageExtensions: ['tsx', 'ts'],
   // Disable SWC minify to avoid memory issues
   swcMinify: false,
   // Disable source maps in production to reduce bundle size
