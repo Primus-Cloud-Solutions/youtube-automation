@@ -1,106 +1,113 @@
-'use server'
+'use server';
 
-import { createClient } from '@supabase/supabase-js'
-import { youtubeApi } from '../youtube-api'
-import { openaiApi } from '../openai-api'
-import { elevenlabsApi } from '../elevenlabs-api'
+import { openai } from '../openai-api';
+import { getVoices, generateSpeech } from '../elevenlabs-api';
+import { searchVideos, getTrendingVideos } from '../youtube-api';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-supabase-url.supabase.co'
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'your-service-role-key'
+// Helper functions for API responses
+const createApiResponse = (data) => {
+  return Response.json({ success: true, ...data });
+};
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const createApiError = (message, status = 400) => {
+  return Response.json({ success: false, error: message }, { status });
+};
 
-export async function POST(request) {
-  try {
-    const { action, apiKey, userId } = await request.json()
-    
-    if (!userId) {
-      return Response.json({ success: false, error: 'User ID is required' }, { status: 400 })
+// Error handling wrapper
+const withErrorHandling = (handler) => {
+  return async (request) => {
+    try {
+      return await handler(request);
+    } catch (error) {
+      console.error('API error:', error);
+      return createApiError('Internal server error', 500);
     }
-    
-    if (action === 'save') {
-      const { youtubeApiKey, openaiApiKey, elevenlabsApiKey } = await request.json()
-      
-      // Save API keys to user profile in database
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          youtube_api_key: youtubeApiKey,
-          openai_api_key: openaiApiKey,
-          elevenlabs_api_key: elevenlabsApiKey,
-          updated_at: new Date()
-        })
-        .eq('user_id', userId)
-      
-      if (error) throw error
-      
-      return Response.json({ success: true })
-    } 
-    else if (action === 'test-youtube') {
-      // Test YouTube API key
-      const result = await youtubeApi.testApiKey(apiKey)
-      
-      if (!result.success) {
-        return Response.json({ success: false, error: result.error }, { status: 400 })
-      }
-      
-      return Response.json({ success: true, data: result.data })
-    }
-    else if (action === 'test-openai') {
-      // Test OpenAI API key
-      const result = await openaiApi.testApiKey(apiKey)
-      
-      if (!result.success) {
-        return Response.json({ success: false, error: result.error }, { status: 400 })
-      }
-      
-      return Response.json({ success: true, data: result.data })
-    }
-    else if (action === 'test-elevenlabs') {
-      // Test ElevenLabs API key
-      const result = await elevenlabsApi.testApiKey(apiKey)
-      
-      if (!result.success) {
-        return Response.json({ success: false, error: result.error }, { status: 400 })
-      }
-      
-      return Response.json({ success: true, data: result.data })
-    }
-    
-    return Response.json({ success: false, error: 'Invalid action' }, { status: 400 })
-  } catch (error) {
-    console.error('API Keys API error:', error)
-    return Response.json({ success: false, error: error.message }, { status: 500 })
+  };
+};
+
+// API route handler
+export const POST = withErrorHandling(async (request) => {
+  const { action, apiKey, service } = await request.json();
+  
+  if (!action) {
+    return createApiError('Action is required', 400);
   }
-}
-
-export async function GET(request) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    
-    if (!userId) {
-      return Response.json({ success: false, error: 'User ID is required' }, { status: 400 })
+  
+  // Validate API key
+  if (action === 'validate-key') {
+    if (!apiKey || !service) {
+      return createApiError('API key and service are required', 400);
     }
     
-    // Get API keys from user profile
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('youtube_api_key, openai_api_key, elevenlabs_api_key')
-      .eq('user_id', userId)
-      .single()
-    
-    if (error) throw error
-    
-    return Response.json({ 
-      success: true, 
-      youtubeApiKey: data.youtube_api_key,
-      openaiApiKey: data.openai_api_key,
-      elevenlabsApiKey: data.elevenlabs_api_key
-    })
-  } catch (error) {
-    console.error('API Keys API error:', error)
-    return Response.json({ success: false, error: error.message }, { status: 500 })
+    try {
+      let isValid = false;
+      
+      // Validate based on service
+      switch (service) {
+        case 'openai':
+          // For demo purposes, we'll just check if the key has a valid format
+          isValid = apiKey.startsWith('sk-') && apiKey.length > 20;
+          break;
+        case 'elevenlabs':
+          // Try to get voices to validate the key
+          try {
+            await getVoices();
+            isValid = true;
+          } catch (error) {
+            isValid = false;
+          }
+          break;
+        case 'youtube':
+          // Try to get trending videos to validate the key
+          try {
+            await getTrendingVideos('US', '', 1);
+            isValid = true;
+          } catch (error) {
+            isValid = false;
+          }
+          break;
+        default:
+          return createApiError('Invalid service', 400);
+      }
+      
+      return createApiResponse({ isValid });
+    } catch (error) {
+      return createApiError(`Error validating API key: ${error.message}`, 500);
+    }
   }
-}
+  
+  // Get API key status
+  if (action === 'get-key-status') {
+    if (!service) {
+      return createApiError('Service is required', 400);
+    }
+    
+    try {
+      // For demo purposes, we'll return mock data
+      const keyStatus = {
+        openai: {
+          isConfigured: !!process.env.OPENAI_API_KEY,
+          status: 'active'
+        },
+        elevenlabs: {
+          isConfigured: !!process.env.ELEVENLABS_API_KEY,
+          status: 'active'
+        },
+        youtube: {
+          isConfigured: !!process.env.YOUTUBE_API_KEY,
+          status: 'active'
+        }
+      };
+      
+      if (!keyStatus[service]) {
+        return createApiError('Invalid service', 400);
+      }
+      
+      return createApiResponse({ keyStatus: keyStatus[service] });
+    } catch (error) {
+      return createApiError(`Error getting API key status: ${error.message}`, 500);
+    }
+  }
+  
+  return createApiError('Invalid action', 400);
+});

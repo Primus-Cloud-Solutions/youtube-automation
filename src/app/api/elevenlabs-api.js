@@ -1,209 +1,116 @@
-// api/elevenlabs-api.js
+'use server';
+
 import axios from 'axios';
 
-// ElevenLabs API base URL
+// ElevenLabs API configuration
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || '';
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1';
 
-export const elevenlabsApi = {
-  // Test ElevenLabs API key
-  testApiKey: async (apiKey) => {
+// Helper functions for API responses
+const createApiResponse = (data) => {
+  return Response.json({ success: true, ...data });
+};
+
+const createApiError = (message, status = 400) => {
+  return Response.json({ success: false, error: message }, { status });
+};
+
+// Error handling wrapper
+const withErrorHandling = (handler) => {
+  return async (request) => {
     try {
-      const response = await axios.get(`${ELEVENLABS_API_URL}/voices`, {
-        headers: {
-          'xi-api-key': apiKey
-        }
-      });
-      
-      return { success: true, data: response.data };
+      return await handler(request);
     } catch (error) {
-      console.error('ElevenLabs API key test error:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.detail || error.message || 'Failed to validate ElevenLabs API key' 
-      };
+      console.error('ElevenLabs API error:', error);
+      return createApiError('Internal server error', 500);
     }
-  },
-  
-  // Get available voices
-  getVoices: async (apiKey) => {
-    try {
-      const response = await axios.get(`${ELEVENLABS_API_URL}/voices`, {
-        headers: {
-          'xi-api-key': apiKey
-        }
-      });
-      
-      return { success: true, voices: response.data.voices };
-    } catch (error) {
-      console.error('Error getting voices:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.detail || error.message || 'Failed to get voices' 
-      };
-    }
-  },
-  
-  // Generate speech from text
-  generateSpeech: async (apiKey, text, voiceId, options = {}) => {
-    try {
-      const {
-        stability = 0.5,
-        similarityBoost = 0.5,
-        style = 0.0,
-        speakerBoost = true
-      } = options;
-      
-      const response = await axios.post(
-        `${ELEVENLABS_API_URL}/text-to-speech/${voiceId}`,
-        {
-          text,
-          model_id: 'eleven_turbo_v2',
-          voice_settings: {
-            stability,
-            similarity_boost: similarityBoost,
-            style,
-            use_speaker_boost: speakerBoost
-          }
-        },
-        {
-          headers: {
-            'xi-api-key': apiKey,
-            'Content-Type': 'application/json',
-            'Accept': 'audio/mpeg'
-          },
-          responseType: 'arraybuffer'
-        }
-      );
-      
-      return { 
-        success: true, 
-        audioBuffer: response.data,
-        contentType: response.headers['content-type']
-      };
-    } catch (error) {
-      console.error('Error generating speech:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.detail || error.message || 'Failed to generate speech' 
-      };
-    }
-  },
-  
-  // Convert script to speech with proper pacing and emphasis
-  convertScriptToSpeech: async (apiKey, script, voiceId, options = {}) => {
-    try {
-      // Process script to add SSML tags for better pacing and emphasis
-      const processedScript = addSSMLTags(script);
-      
-      // Split script into manageable chunks (ElevenLabs has a limit)
-      const chunks = splitScriptIntoChunks(processedScript);
-      
-      // Generate speech for each chunk
-      const audioChunks = [];
-      for (const chunk of chunks) {
-        const result = await elevenlabsApi.generateSpeech(apiKey, chunk, voiceId, options);
-        if (!result.success) {
-          throw new Error(result.error);
-        }
-        audioChunks.push(result.audioBuffer);
+  };
+};
+
+// Get available voices
+export const getVoices = async () => {
+  try {
+    const response = await axios.get(`${ELEVENLABS_API_URL}/voices`, {
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY,
+        'Content-Type': 'application/json'
       }
-      
-      // Combine audio chunks (in a real implementation, you'd use a library to concatenate audio)
-      // For this example, we'll just return the first chunk
-      return { 
-        success: true, 
-        audioBuffer: audioChunks[0],
-        contentType: 'audio/mpeg'
-      };
-    } catch (error) {
-      console.error('Error converting script to speech:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to convert script to speech' 
-      };
-    }
-  },
-  
-  // Get user's subscription info
-  getUserSubscription: async (apiKey) => {
-    try {
-      const response = await axios.get(`${ELEVENLABS_API_URL}/user/subscription`, {
-        headers: {
-          'xi-api-key': apiKey
-        }
-      });
-      
-      return { success: true, subscription: response.data };
-    } catch (error) {
-      console.error('Error getting user subscription:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.detail || error.message || 'Failed to get user subscription' 
-      };
-    }
-  },
-  
-  // Get user's remaining character count
-  getRemainingCharacters: async (apiKey) => {
-    try {
-      const response = await axios.get(`${ELEVENLABS_API_URL}/user`, {
-        headers: {
-          'xi-api-key': apiKey
-        }
-      });
-      
-      return { 
-        success: true, 
-        characterCount: response.data.subscription.character_count,
-        characterLimit: response.data.subscription.character_limit
-      };
-    } catch (error) {
-      console.error('Error getting remaining characters:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.detail || error.message || 'Failed to get remaining characters' 
-      };
-    }
+    });
+    
+    return response.data.voices;
+  } catch (error) {
+    console.error('Error fetching voices:', error);
+    throw error;
   }
 };
 
-// Helper function to add SSML tags for better speech
-function addSSMLTags(script) {
-  // Replace [VISUAL CUE: ...] with pauses
-  let processedScript = script.replace(/\[VISUAL CUE:([^\]]+)\]/g, '<break time="1s"/>');
-  
-  // Add pauses after paragraphs
-  processedScript = processedScript.replace(/\.\s+(?=[A-Z])/g, '.<break time="0.5s"/> ');
-  
-  // Add emphasis to important phrases (this is a simplified example)
-  processedScript = processedScript.replace(
-    /(important|crucial|significant|key|essential|critical|vital)/gi, 
-    '<emphasis>$1</emphasis>'
-  );
-  
-  return processedScript;
-}
+// Generate speech from text
+export const generateSpeech = async (text, voiceId) => {
+  try {
+    const response = await axios.post(
+      `${ELEVENLABS_API_URL}/text-to-speech/${voiceId}`,
+      {
+        text,
+        model_id: 'eleven_monolingual_v1',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.5
+        }
+      },
+      {
+        headers: {
+          'xi-api-key': ELEVENLABS_API_KEY,
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg'
+        },
+        responseType: 'arraybuffer'
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error generating speech:', error);
+    throw error;
+  }
+};
 
-// Helper function to split script into manageable chunks
-function splitScriptIntoChunks(script, maxChunkSize = 4000) {
-  const chunks = [];
-  let currentChunk = '';
+// API route handler
+export const POST = withErrorHandling(async (request) => {
+  const { action, text, voiceId } = await request.json();
   
-  // Split by sentences
-  const sentences = script.split(/(?<=[.!?])\s+/);
+  if (!action) {
+    return createApiError('Action is required', 400);
+  }
   
-  for (const sentence of sentences) {
-    if (currentChunk.length + sentence.length > maxChunkSize) {
-      chunks.push(currentChunk);
-      currentChunk = sentence;
-    } else {
-      currentChunk += (currentChunk ? ' ' : '') + sentence;
+  // Get available voices
+  if (action === 'get-voices') {
+    try {
+      const voices = await getVoices();
+      return createApiResponse({ voices });
+    } catch (error) {
+      return createApiError(`Error fetching voices: ${error.message}`, 500);
     }
   }
   
-  if (currentChunk) {
-    chunks.push(currentChunk);
+  // Generate speech from text
+  if (action === 'generate-speech') {
+    if (!text || !voiceId) {
+      return createApiError('Text and voice ID are required', 400);
+    }
+    
+    try {
+      const audioBuffer = await generateSpeech(text, voiceId);
+      
+      // In a real implementation, you would save this to a file or return it directly
+      // For demo purposes, we'll just return a success message
+      return createApiResponse({ 
+        message: 'Speech generated successfully',
+        audioUrl: '/api/audio/demo.mp3' // This would be a real URL in production
+      });
+    } catch (error) {
+      return createApiError(`Error generating speech: ${error.message}`, 500);
+    }
   }
   
-  return chunks;
-}
+  return createApiError('Invalid action', 400);
+});

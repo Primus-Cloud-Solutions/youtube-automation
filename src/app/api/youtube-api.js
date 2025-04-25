@@ -1,283 +1,164 @@
-// api/youtube-api.js
+'use server';
+
 import { google } from 'googleapis';
-import { supabase } from '../../supabase-auth-setup';
 
-// Initialize YouTube API client
-export const initializeYouTubeClient = (apiKey) => {
-  return google.youtube({
-    version: 'v3',
-    auth: apiKey
-  });
+// YouTube API configuration
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
+const youtube = google.youtube({
+  version: 'v3',
+  auth: YOUTUBE_API_KEY
+});
+
+// Helper functions for API responses
+const createApiResponse = (data) => {
+  return Response.json({ success: true, ...data });
 };
 
-// Initialize YouTube API client with OAuth
-export const initializeYouTubeOAuthClient = (oauthClient) => {
-  return google.youtube({
-    version: 'v3',
-    auth: oauthClient
-  });
+const createApiError = (message, status = 400) => {
+  return Response.json({ success: false, error: message }, { status });
 };
 
-export const youtubeApi = {
-  // Test YouTube API key
-  testApiKey: async (apiKey) => {
+// Error handling wrapper
+const withErrorHandling = (handler) => {
+  return async (request) => {
     try {
-      const youtube = initializeYouTubeClient(apiKey);
-      
-      // Make a simple request to test the API key
-      const response = await youtube.channels.list({
-        part: 'snippet',
-        mine: false,
-        maxResults: 1,
-        forUsername: 'GoogleDevelopers' // Use a known channel as a test
-      });
-      
-      return { success: true, data: response.data };
+      return await handler(request);
     } catch (error) {
-      console.error('YouTube API key test error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to validate YouTube API key' 
-      };
+      console.error('YouTube API error:', error);
+      return createApiError('Internal server error', 500);
     }
-  },
-  
-  // Get user's YouTube channels
-  getUserChannels: async (apiKey) => {
-    try {
-      const youtube = initializeYouTubeClient(apiKey);
-      
-      const response = await youtube.channels.list({
-        part: 'snippet,statistics,contentDetails',
-        mine: true
-      });
-      
-      return { success: true, channels: response.data.items };
-    } catch (error) {
-      console.error('Error getting user channels:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to get YouTube channels' 
-      };
-    }
-  },
-  
-  // Get channel videos
-  getChannelVideos: async (apiKey, channelId, maxResults = 50) => {
-    try {
-      const youtube = initializeYouTubeClient(apiKey);
-      
-      // First get the uploads playlist ID
-      const channelResponse = await youtube.channels.list({
-        part: 'contentDetails',
-        id: channelId
-      });
-      
-      const uploadsPlaylistId = channelResponse.data.items[0].contentDetails.relatedPlaylists.uploads;
-      
-      // Then get the videos from that playlist
-      const videosResponse = await youtube.playlistItems.list({
-        part: 'snippet,contentDetails',
-        playlistId: uploadsPlaylistId,
-        maxResults
-      });
-      
-      return { success: true, videos: videosResponse.data.items };
-    } catch (error) {
-      console.error('Error getting channel videos:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to get channel videos' 
-      };
-    }
-  },
-  
-  // Get video statistics
-  getVideoStats: async (apiKey, videoId) => {
-    try {
-      const youtube = initializeYouTubeClient(apiKey);
-      
-      const response = await youtube.videos.list({
-        part: 'statistics,snippet',
-        id: videoId
-      });
-      
-      return { success: true, stats: response.data.items[0] };
-    } catch (error) {
-      console.error('Error getting video stats:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to get video statistics' 
-      };
-    }
-  },
-  
-  // Upload a video to YouTube (requires OAuth)
-  uploadVideo: async (oauthClient, videoFile, metadata) => {
-    try {
-      const youtube = initializeYouTubeOAuthClient(oauthClient);
-      
-      const response = await youtube.videos.insert({
-        part: 'snippet,status',
-        requestBody: {
-          snippet: {
-            title: metadata.title,
-            description: metadata.description,
-            tags: metadata.tags,
-            categoryId: metadata.categoryId || '22' // People & Blogs by default
-          },
-          status: {
-            privacyStatus: metadata.privacyStatus || 'private'
-          }
-        },
-        media: {
-          body: videoFile
-        }
-      });
-      
-      return { success: true, video: response.data };
-    } catch (error) {
-      console.error('Error uploading video:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to upload video' 
-      };
-    }
-  },
-  
-  // Schedule a video for publishing
-  scheduleVideo: async (userId, videoData) => {
-    try {
-      // Save video schedule to database
-      const { data, error } = await supabase
-        .from('scheduled_videos')
-        .insert({
-          user_id: userId,
-          title: videoData.title,
-          description: videoData.description,
-          category: videoData.category,
-          tags: videoData.tags,
-          scheduled_time: videoData.scheduledTime,
-          status: 'scheduled',
-          created_at: new Date()
-        });
-      
-      if (error) throw error;
-      
-      return { success: true, scheduledVideo: data };
-    } catch (error) {
-      console.error('Error scheduling video:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to schedule video' 
-      };
-    }
-  },
-  
-  // Get trending topics in a category
-  getTrendingTopics: async (apiKey, category) => {
-    try {
-      const youtube = initializeYouTubeClient(apiKey);
-      
-      // Map our categories to YouTube category IDs
-      const categoryMap = {
-        'technology': '28',
-        'gaming': '20',
-        'education': '27',
-        'entertainment': '24',
-        'science': '28', // Science & Technology
-        'finance': '22'  // People & Blogs (closest match)
-      };
-      
-      const videoCategoryId = categoryMap[category] || '0';
-      
-      // Get trending videos in the category
-      const response = await youtube.videos.list({
-        part: 'snippet,statistics',
-        chart: 'mostPopular',
-        videoCategoryId,
-        maxResults: 50,
-        regionCode: 'US'
-      });
-      
-      // Extract topics from video titles and tags
-      const videos = response.data.items;
-      const topics = extractTopicsFromVideos(videos);
-      
-      return { success: true, topics };
-    } catch (error) {
-      console.error('Error getting trending topics:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to get trending topics' 
-      };
-    }
+  };
+};
+
+// Search for videos
+export const searchVideos = async (query, maxResults = 10) => {
+  try {
+    const response = await youtube.search.list({
+      part: 'snippet',
+      q: query,
+      maxResults,
+      type: 'video'
+    });
+    
+    return response.data.items;
+  } catch (error) {
+    console.error('Error searching videos:', error);
+    throw error;
   }
 };
 
-// Helper function to extract topics from videos
-function extractTopicsFromVideos(videos) {
-  // Extract all words from titles
-  const allWords = videos.flatMap(video => 
-    video.snippet.title.toLowerCase().split(/\s+/)
-  );
-  
-  // Count word frequency
-  const wordCounts = {};
-  allWords.forEach(word => {
-    // Filter out common words and short words
-    if (word.length > 3 && !commonWords.includes(word)) {
-      wordCounts[word] = (wordCounts[word] || 0) + 1;
-    }
-  });
-  
-  // Extract phrases from titles
-  const phrases = [];
-  videos.forEach(video => {
-    const title = video.snippet.title;
-    // Extract 2-3 word phrases
-    const words = title.split(/\s+/);
-    for (let i = 0; i < words.length - 1; i++) {
-      phrases.push(`${words[i]} ${words[i+1]}`.toLowerCase());
-      if (i < words.length - 2) {
-        phrases.push(`${words[i]} ${words[i+1]} ${words[i+2]}`.toLowerCase());
-      }
-    }
-  });
-  
-  // Count phrase frequency
-  const phraseCounts = {};
-  phrases.forEach(phrase => {
-    // Filter out phrases with common words
-    const hasCommonWord = commonWords.some(word => 
-      phrase.split(/\s+/).includes(word)
-    );
-    if (!hasCommonWord) {
-      phraseCounts[phrase] = (phraseCounts[phrase] || 0) + 1;
-    }
-  });
-  
-  // Combine words and phrases, sort by frequency
-  const combined = [
-    ...Object.entries(wordCounts).map(([text, count]) => ({ text, count, type: 'word' })),
-    ...Object.entries(phraseCounts).map(([text, count]) => ({ text, count, type: 'phrase' }))
-  ];
-  
-  combined.sort((a, b) => b.count - a.count);
-  
-  // Return top 20 topics
-  return combined.slice(0, 20).map(item => item.text);
-}
+// Get video details
+export const getVideoDetails = async (videoId) => {
+  try {
+    const response = await youtube.videos.list({
+      part: 'snippet,contentDetails,statistics',
+      id: videoId
+    });
+    
+    return response.data.items[0];
+  } catch (error) {
+    console.error('Error getting video details:', error);
+    throw error;
+  }
+};
 
-// Common words to filter out
-const commonWords = [
-  'the', 'and', 'that', 'have', 'for', 'not', 'with', 'you', 'this', 'but',
-  'his', 'from', 'they', 'she', 'will', 'would', 'there', 'their', 'what',
-  'about', 'which', 'when', 'make', 'like', 'time', 'just', 'him', 'know',
-  'take', 'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them',
-  'see', 'other', 'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over',
-  'think', 'also', 'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first',
-  'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day',
-  'most', 'cant', 'cant', 'wont', 'dont', 'didnt', 'isnt', 'arent', 'wasnt',
-  'werent', 'hasnt', 'havent', 'hadnt', 'doesnt', 'dont', 'didnt'
-];
+// Get channel details
+export const getChannelDetails = async (channelId) => {
+  try {
+    const response = await youtube.channels.list({
+      part: 'snippet,contentDetails,statistics',
+      id: channelId
+    });
+    
+    return response.data.items[0];
+  } catch (error) {
+    console.error('Error getting channel details:', error);
+    throw error;
+  }
+};
+
+// Get trending videos
+export const getTrendingVideos = async (regionCode = 'US', category = '', maxResults = 10) => {
+  try {
+    const params = {
+      part: 'snippet,contentDetails,statistics',
+      chart: 'mostPopular',
+      regionCode,
+      maxResults
+    };
+    
+    if (category) {
+      params.videoCategoryId = category;
+    }
+    
+    const response = await youtube.videos.list(params);
+    
+    return response.data.items;
+  } catch (error) {
+    console.error('Error getting trending videos:', error);
+    throw error;
+  }
+};
+
+// API route handler
+export const POST = withErrorHandling(async (request) => {
+  const { action, query, videoId, channelId, regionCode, category, maxResults } = await request.json();
+  
+  if (!action) {
+    return createApiError('Action is required', 400);
+  }
+  
+  // Search videos
+  if (action === 'search-videos') {
+    if (!query) {
+      return createApiError('Query is required', 400);
+    }
+    
+    try {
+      const videos = await searchVideos(query, maxResults);
+      return createApiResponse({ videos });
+    } catch (error) {
+      return createApiError(`Error searching videos: ${error.message}`, 500);
+    }
+  }
+  
+  // Get video details
+  if (action === 'get-video-details') {
+    if (!videoId) {
+      return createApiError('Video ID is required', 400);
+    }
+    
+    try {
+      const video = await getVideoDetails(videoId);
+      return createApiResponse({ video });
+    } catch (error) {
+      return createApiError(`Error getting video details: ${error.message}`, 500);
+    }
+  }
+  
+  // Get channel details
+  if (action === 'get-channel-details') {
+    if (!channelId) {
+      return createApiError('Channel ID is required', 400);
+    }
+    
+    try {
+      const channel = await getChannelDetails(channelId);
+      return createApiResponse({ channel });
+    } catch (error) {
+      return createApiError(`Error getting channel details: ${error.message}`, 500);
+    }
+  }
+  
+  // Get trending videos
+  if (action === 'get-trending-videos') {
+    try {
+      const videos = await getTrendingVideos(regionCode, category, maxResults);
+      return createApiResponse({ videos });
+    } catch (error) {
+      return createApiError(`Error getting trending videos: ${error.message}`, 500);
+    }
+  }
+  
+  return createApiError('Invalid action', 400);
+});

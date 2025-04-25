@@ -1,15 +1,17 @@
 [build]
   command = "npm install && npm run build"
   publish = ".next"
-  
+
 [build.environment]
-  NETLIFY_NEXT_PLUGIN_SKIP = "false"
+  NEXT_PUBLIC_SUPABASE_URL = "your-supabase-url"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-supabase-anon-key"
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = "your-stripe-publishable-key"
+  STRIPE_SECRET_KEY = "your-stripe-secret-key"
+  OPENAI_API_KEY = "your-openai-api-key"
+  ELEVENLABS_API_KEY = "your-elevenlabs-api-key"
+  YOUTUBE_API_KEY = "your-youtube-api-key"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
   NEXT_USE_NETLIFY_EDGE = "true"
-  NODE_VERSION = "18"
-  NODE_OPTIONS = "--max-old-space-size=4096"
-  
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
 
 [[headers]]
   for = "/_next/static/*"
@@ -25,3 +27,6 @@
   for = "/_next/*.css"
   [headers.values]
     Content-Type = "text/css"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
