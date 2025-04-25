@@ -1,6 +1,6 @@
 [build]
   command = "npm install && npm run build"
-  publish = "/opt/build/repo/.next"
+  publish = ".next"
 
 [build.environment]
   NEXT_PUBLIC_SUPABASE_URL = "https://eurztwdqjncuypqbrcmw.supabase.co"
