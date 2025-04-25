@@ -6,7 +6,7 @@ import { openaiApi } from '../openai-api'
 import { elevenlabsApi } from '../elevenlabs-api'
 
 // Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-supabase-url.supabase.co'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://eurztwdqjncuypqbrcmw.supabase.co'
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'your-service-role-key'
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
