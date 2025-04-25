@@ -9,9 +9,15 @@
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
   NODE_OPTIONS = "--max-old-space-size=4096"
+  NEXT_PRIVATE_TARGET = "server"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+  [plugins.inputs]
+    # Force the plugin to use server-side rendering
+    forceSsr = true
+    # Disable edge functions to ensure consistent behavior
+    useEdgeRuntime = false
 
 [[headers]]
   for = "/*"

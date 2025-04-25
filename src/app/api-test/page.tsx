@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 
 export default function ApiTestDashboard() {
-  const [endpoints, setEndpoints] = useState([
+  const [endpoints] = useState([
     { name: 'Session Check', url: '/api/auth?action=session', method: 'GET' },
     { name: 'Login Demo', url: '/api/auth', method: 'POST', body: { action: 'signin', email: 'test@example.com', password: 'password123' } },
     { name: 'Content API', url: '/api/content', method: 'GET' },
@@ -60,19 +60,19 @@ export default function ApiTestDashboard() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex justify-between items-center">
-          <h1 className="text-3xl font-bold gradient-text">API Endpoint Tester</h1>
-          <Link href="/dashboard" className="btn">
+          <h1 className="text-3xl font-bold">API Endpoint Tester</h1>
+          <Link href="/dashboard" className="px-4 py-2 bg-blue-500 text-white rounded">
             Back to Dashboard
           </Link>
         </div>
         
-        <div className="glass-card p-6 mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Test API Endpoints</h2>
           <p className="mb-4">This page tests the API endpoints to ensure they return proper JSON responses with the correct content type headers.</p>
           
           <div className="grid gap-6 mt-6">
             {endpoints.map((endpoint, index) => (
-              <div key={index} className="card p-4">
+              <div key={index} className="border rounded-lg p-4">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-semibold text-lg">{endpoint.name}</h3>
@@ -85,7 +85,7 @@ export default function ApiTestDashboard() {
                   </div>
                   <button 
                     onClick={() => testEndpoint(endpoint, index)}
-                    className="btn"
+                    className="px-4 py-2 bg-blue-500 text-white rounded"
                     disabled={loading[index]}
                   >
                     {loading[index] ? 'Testing...' : 'Test Endpoint'}
@@ -119,7 +119,7 @@ export default function ApiTestDashboard() {
           </div>
         </div>
         
-        <div className="glass-card p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Troubleshooting</h2>
           <ul className="list-disc pl-5 space-y-2">
             <li>If you see <strong>"Unexpected token '&lt;', "<!DOCTYPE "... is not valid JSON"</strong>, it means HTML is being returned instead of JSON</li>
