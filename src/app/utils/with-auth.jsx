@@ -5,7 +5,8 @@ import { useAuth } from '../../lib/auth-context';
 import { useRouter } from 'next/navigation';
 import DashboardHeader from '../components/dashboard-header';
 
-export default function WithAuth(Component) {
+// Export as both named export and default export to support different import styles
+export function withAuth(Component) {
   return function ProtectedRoute(props) {
     const { user, isLoading } = useAuth();
     const router = useRouter();
@@ -40,3 +41,6 @@ export default function WithAuth(Component) {
     return <Component {...props} />;
   };
 }
+
+// Also export as default for backward compatibility
+export default withAuth;
