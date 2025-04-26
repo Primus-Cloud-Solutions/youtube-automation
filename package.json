@@ -1,33 +1,30 @@
 {
-  "name": "fresh-youtube-automation",
-  "version": "0.1.0",
+  "name": "youtube-automation-platform",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
-    "@stripe/stripe-js": "^7.2.0",
-    "@supabase/supabase-js": "^2.49.4",
-    "axios": "^1.9.0",
-    "googleapis": "^148.0.0",
-    "next": "15.3.1",
-    "openai": "^4.96.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "stripe": "^18.0.0"
+    "@aws-sdk/client-s3": "^3.450.0",
+    "@aws-sdk/s3-request-presigner": "^3.450.0",
+    "next": "13.5.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "stripe": "^14.1.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.1",
-    "tailwindcss": "^4",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10",
+    "eslint": "^8",
+    "eslint-config-next": "13.5.4",
+    "postcss": "^8",
+    "tailwindcss": "^3",
     "typescript": "^5"
   }
 }

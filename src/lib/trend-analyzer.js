@@ -1,228 +1,211 @@
-// Trend analyzer for discovering viral content opportunities
+'use server';
 
 /**
- * Analyze trending topics across various platforms
- * @param {string} category - The content category to analyze
- * @param {number} limit - Maximum number of trends to return (default: 10)
- * @returns {Promise<{success: boolean, trends: Array|null, error: string|null}>}
+ * Trend Analyzer Module
+ * 
+ * This module provides functions for analyzing content trends and predicting viral potential.
+ * It uses a combination of data sources to identify trending topics and calculate viral scores.
  */
-export const analyzeTrends = async (category, limit = 10) => {
+
+// Mock trending topics by category for build/SSG environments
+const MOCK_TRENDS = {
+  technology: [
+    { title: 'The Future of AI in 2025', description: 'Exploring how artificial intelligence will transform industries in the coming year.', score: 92 },
+    { title: 'Web3 Development Guide', description: 'A comprehensive guide to building decentralized applications.', score: 88 },
+    { title: 'Quantum Computing Breakthroughs', description: 'Recent advances in quantum computing and what they mean for technology.', score: 85 },
+    { title: '5G Revolution: Beyond Mobile', description: 'How 5G technology is transforming more than just smartphones.', score: 82 },
+    { title: 'Cybersecurity Essentials for 2025', description: 'Protecting your digital assets in an increasingly vulnerable online world.', score: 79 }
+  ],
+  gaming: [
+    { title: 'Next-Gen Console Comparison', description: 'A detailed analysis of the latest gaming consoles and their capabilities.', score: 94 },
+    { title: 'Indie Games That Are Changing the Industry', description: 'How independent developers are innovating in the gaming space.', score: 89 },
+    { title: 'The Rise of Cloud Gaming', description: 'Exploring the technology and platforms making game streaming possible.', score: 86 },
+    { title: 'Esports Career Opportunities', description: 'Professional paths in the growing competitive gaming industry.', score: 83 },
+    { title: 'Game Development with Unreal Engine 5', description: 'Creating stunning visuals with the latest game engine technology.', score: 80 }
+  ],
+  finance: [
+    { title: 'Cryptocurrency Investment Strategies', description: 'Smart approaches to investing in digital currencies in 2025.', score: 91 },
+    { title: 'Passive Income Ideas That Actually Work', description: 'Realistic ways to generate income streams with minimal ongoing effort.', score: 87 },
+    { title: 'Retirement Planning for Millennials', description: 'How younger generations can prepare for financial security later in life.', score: 84 },
+    { title: 'Stock Market Trends to Watch', description: 'Emerging patterns and opportunities in equity markets.', score: 81 },
+    { title: 'Personal Finance Apps Review', description: 'The best digital tools for managing your money and investments.', score: 78 }
+  ],
+  health: [
+    { title: 'Nutrition Myths Debunked', description: 'Scientific facts behind common misconceptions about diet and nutrition.', score: 93 },
+    { title: 'Mental Health Practices for Daily Life', description: 'Simple techniques to maintain psychological wellbeing.', score: 90 },
+    { title: 'The Science of Sleep Optimization', description: 'Research-backed methods to improve sleep quality and duration.', score: 86 },
+    { title: 'Home Workout Revolution', description: 'Effective exercise routines that require minimal equipment.', score: 82 },
+    { title: 'Longevity Research Breakthroughs', description: 'Recent scientific advances in extending healthy human lifespan.', score: 79 }
+  ],
+  entertainment: [
+    { title: 'Streaming Wars: Platform Comparison', description: 'Analyzing the major content streaming services and their offerings.', score: 95 },
+    { title: 'Behind the Scenes: Blockbuster Production', description: 'The making of recent hit movies and shows.', score: 91 },
+    { title: 'Rising Stars to Watch', description: 'Emerging talent in film, music, and television.', score: 87 },
+    { title: 'Evolution of Content Creation', description: 'How digital media has transformed entertainment production and consumption.', score: 84 },
+    { title: 'Music Industry Transformation', description: 'How streaming and social media have changed how music is made and distributed.', score: 81 }
+  ]
+};
+
+// Content categories
+const CATEGORIES = [
+  { id: 'technology', name: 'Technology', description: 'Tech news, gadgets, software, and digital transformation' },
+  { id: 'gaming', name: 'Gaming', description: 'Video games, esports, gaming hardware, and industry trends' },
+  { id: 'finance', name: 'Finance', description: 'Personal finance, investing, cryptocurrency, and economic trends' },
+  { id: 'health', name: 'Health & Wellness', description: 'Fitness, nutrition, mental health, and medical advances' },
+  { id: 'entertainment', name: 'Entertainment', description: 'Movies, TV shows, music, celebrities, and streaming content' }
+];
+
+/**
+ * Analyze trends in a specific content category
+ * @param {string} category - Content category to analyze
+ * @param {number} count - Number of trends to return (default: 5)
+ * @returns {Promise<{success: boolean, trends: Array|null, error: string|null}>} - Trend analysis result
+ */
+export async function analyzeTrends(category, count = 5) {
   try {
     // Check if we're in a build/SSG environment
     if (process.env.NODE_ENV === 'production') {
-      console.warn('Trend analyzer running in build environment, returning mock data');
+      console.warn('Using mock trend data during build');
+      
+      // Return mock data for the specified category
+      const mockData = MOCK_TRENDS[category.toLowerCase()] || MOCK_TRENDS.technology;
       return { 
         success: true, 
-        trends: generateMockTrends(category, limit)
+        trends: mockData.slice(0, count)
       };
     }
-
-    // In a real implementation, this would call various APIs to gather trending data
-    // For now, we'll return mock data
-    const trends = generateMockTrends(category, limit);
     
-    return {
-      success: true,
-      trends
+    // In a real implementation, you would:
+    // 1. Query trending topics APIs (YouTube, Google Trends, Twitter, etc.)
+    // 2. Analyze recent popular content in the category
+    // 3. Apply NLP to identify common themes and topics
+    // 4. Calculate engagement metrics and potential scores
+    
+    // For now, we'll return mock data
+    const mockData = MOCK_TRENDS[category.toLowerCase()] || MOCK_TRENDS.technology;
+    
+    return { 
+      success: true, 
+      trends: mockData.slice(0, count)
     };
   } catch (error) {
     console.error('Error analyzing trends:', error);
-    return {
-      success: false,
-      trends: null,
-      error: error.message || 'Failed to analyze trends'
-    };
+    return { success: false, trends: null, error: error.message || 'Failed to analyze trends' };
   }
-};
+}
 
 /**
- * Generate mock trending data for development and testing
- * @param {string} category - The content category
- * @param {number} limit - Number of trends to generate
- * @returns {Array} Array of trend objects
+ * Predict the viral potential of a specific topic
+ * @param {string} topic - Content topic to analyze
+ * @param {string} category - Content category
+ * @param {Array} keywords - Additional keywords for analysis
+ * @returns {Promise<{success: boolean, score: number|null, insights: Array|null, error: string|null}>} - Viral potential result
  */
-const generateMockTrends = (category, limit) => {
-  const trendsByCategory = {
-    technology: [
-      { title: 'The Future of AI in 2025', score: 98, source: 'youtube', keywords: ['AI', 'future tech', 'machine learning'] },
-      { title: 'iPhone 16 Pro: Everything We Know', score: 95, source: 'google', keywords: ['Apple', 'iPhone', 'tech review'] },
-      { title: 'How Quantum Computing Will Change Everything', score: 92, source: 'twitter', keywords: ['quantum', 'computing', 'technology'] },
-      { title: 'The Rise of Decentralized Apps', score: 90, source: 'reddit', keywords: ['blockchain', 'dApps', 'Web3'] },
-      { title: 'Virtual Reality: Beyond Gaming', score: 88, source: 'youtube', keywords: ['VR', 'metaverse', 'technology'] },
-      { title: 'Electric Vehicles in 2025: What to Expect', score: 87, source: 'google', keywords: ['EV', 'Tesla', 'electric cars'] },
-      { title: 'The Truth About 6G Technology', score: 85, source: 'twitter', keywords: ['6G', 'wireless', 'connectivity'] },
-      { title: 'Cybersecurity Threats You Need to Know About', score: 84, source: 'reddit', keywords: ['security', 'hacking', 'protection'] },
-      { title: 'Smart Home Devices That Actually Work', score: 82, source: 'youtube', keywords: ['IoT', 'smart home', 'automation'] },
-      { title: 'The End of Passwords: What Comes Next', score: 80, source: 'google', keywords: ['security', 'biometrics', 'authentication'] }
-    ],
-    gaming: [
-      { title: 'GTA 6: Everything We Know So Far', score: 99, source: 'youtube', keywords: ['GTA', 'Rockstar', 'open world'] },
-      { title: 'The Most Anticipated Games of 2025', score: 96, source: 'reddit', keywords: ['upcoming games', 'gaming', 'new releases'] },
-      { title: 'How to Dominate in Battle Royale Games', score: 94, source: 'twitch', keywords: ['battle royale', 'gaming tips', 'strategy'] },
-      { title: 'The Evolution of RPG Games', score: 91, source: 'youtube', keywords: ['RPG', 'gaming history', 'game design'] },
-      { title: 'Hidden Easter Eggs in Popular Games', score: 89, source: 'reddit', keywords: ['easter eggs', 'secrets', 'gaming'] },
-      { title: 'Pro Gaming Setup on a Budget', score: 87, source: 'youtube', keywords: ['gaming setup', 'budget', 'peripherals'] },
-      { title: 'The Psychology of Game Design', score: 85, source: 'twitch', keywords: ['game design', 'psychology', 'player engagement'] },
-      { title: 'Indie Games That Became Mainstream Hits', score: 83, source: 'reddit', keywords: ['indie games', 'success stories', 'game dev'] },
-      { title: 'The Future of Cloud Gaming', score: 81, source: 'youtube', keywords: ['cloud gaming', 'streaming', 'future tech'] },
-      { title: 'Retro Games Worth Playing Today', score: 79, source: 'twitch', keywords: ['retro', 'classic games', 'nostalgia'] }
-    ],
-    finance: [
-      { title: 'Crypto Investments for Beginners', score: 97, source: 'youtube', keywords: ['cryptocurrency', 'investing', 'beginners'] },
-      { title: 'How to Build Wealth in Your 30s', score: 95, source: 'google', keywords: ['wealth building', 'personal finance', 'investing'] },
-      { title: 'The Truth About Passive Income', score: 93, source: 'youtube', keywords: ['passive income', 'financial freedom', 'side hustles'] },
-      { title: 'Stock Market Predictions for 2025', score: 91, source: 'twitter', keywords: ['stocks', 'market analysis', 'investing'] },
-      { title: 'Real Estate Investment Strategies', score: 89, source: 'youtube', keywords: ['real estate', 'investing', 'property'] },
-      { title: 'How to Pay Off Debt Fast', score: 87, source: 'google', keywords: ['debt', 'personal finance', 'financial freedom'] },
-      { title: 'Retirement Planning for Millennials', score: 85, source: 'youtube', keywords: ['retirement', 'millennials', 'investing'] },
-      { title: 'The Future of Digital Banking', score: 83, source: 'twitter', keywords: ['fintech', 'banking', 'digital finance'] },
-      { title: 'Tax Strategies to Save Thousands', score: 81, source: 'youtube', keywords: ['taxes', 'tax planning', 'savings'] },
-      { title: 'Understanding NFTs and Digital Assets', score: 79, source: 'google', keywords: ['NFT', 'digital assets', 'blockchain'] }
-    ],
-    health: [
-      { title: 'Intermittent Fasting: Science or Hype?', score: 96, source: 'youtube', keywords: ['intermittent fasting', 'nutrition', 'diet'] },
-      { title: 'The Truth About Superfoods', score: 94, source: 'google', keywords: ['superfoods', 'nutrition', 'healthy eating'] },
-      { title: '10-Minute Workouts That Actually Work', score: 92, source: 'youtube', keywords: ['fitness', 'workouts', 'exercise'] },
-      { title: 'Mental Health Habits for Daily Life', score: 90, source: 'twitter', keywords: ['mental health', 'wellness', 'self-care'] },
-      { title: 'The Science of Sleep: How to Optimize Rest', score: 88, source: 'youtube', keywords: ['sleep', 'health', 'wellness'] },
-      { title: 'Plant-Based Diet: Benefits and Challenges', score: 86, source: 'google', keywords: ['plant-based', 'vegan', 'nutrition'] },
-      { title: 'Strength Training Myths Debunked', score: 84, source: 'youtube', keywords: ['strength training', 'fitness', 'exercise'] },
-      { title: 'Meditation Techniques for Beginners', score: 82, source: 'twitter', keywords: ['meditation', 'mindfulness', 'mental health'] },
-      { title: 'The Truth About Vitamin Supplements', score: 80, source: 'youtube', keywords: ['vitamins', 'supplements', 'nutrition'] },
-      { title: 'Home Remedies That Actually Work', score: 78, source: 'google', keywords: ['home remedies', 'natural health', 'wellness'] }
-    ],
-    entertainment: [
-      { title: 'Behind the Scenes: Making of [Popular Show]', score: 98, source: 'youtube', keywords: ['behind the scenes', 'TV shows', 'production'] },
-      { title: 'Upcoming Movie Releases You Can't Miss', score: 96, source: 'google', keywords: ['movies', 'upcoming releases', 'entertainment'] },
-      { title: 'The Evolution of Superhero Movies', score: 94, source: 'youtube', keywords: ['superhero', 'Marvel', 'DC', 'movies'] },
-      { title: 'Hidden Gems on Streaming Platforms', score: 92, source: 'reddit', keywords: ['streaming', 'Netflix', 'hidden gems'] },
-      { title: 'Music Artists to Watch in 2025', score: 90, source: 'youtube', keywords: ['music', 'new artists', 'trending'] },
-      { title: 'The Psychology of Binge-Watching', score: 88, source: 'google', keywords: ['binge-watching', 'streaming', 'psychology'] },
-      { title: 'How Movie Stunts Are Really Performed', score: 86, source: 'youtube', keywords: ['movie stunts', 'filmmaking', 'behind the scenes'] },
-      { title: 'The Rise of International Content', score: 'reddit', keywords: ['international', 'foreign films', 'global entertainment'] },
-      { title: 'Classic Films Everyone Should Watch', score: 82, source: 'youtube', keywords: ['classic movies', 'film history', 'must-watch'] },
-      { title: 'The Future of Live Entertainment', score: 80, source: 'google', keywords: ['live events', 'concerts', 'entertainment'] }
-    ]
-  };
-  
-  // Default to technology if category not found
-  const categoryTrends = trendsByCategory[category] || trendsByCategory.technology;
-  
-  // Return limited number of trends
-  return categoryTrends.slice(0, limit);
-};
-
-/**
- * Predict viral potential for a given topic
- * @param {string} title - The content title
- * @param {string} description - The content description
- * @param {Array} keywords - Related keywords
- * @returns {Promise<{success: boolean, score: number|null, insights: Object|null, error: string|null}>}
- */
-export const predictViralPotential = async (title, description, keywords = []) => {
+export async function predictViralPotential(topic, category, keywords = []) {
   try {
     // Check if we're in a build/SSG environment
     if (process.env.NODE_ENV === 'production') {
-      console.warn('Viral prediction running in build environment, returning mock data');
+      console.warn('Using mock viral potential data during build');
+      
+      // Generate a mock score between 65 and 95
+      const mockScore = Math.floor(Math.random() * 30) + 65;
+      
       return { 
         success: true, 
-        score: Math.floor(Math.random() * 30) + 70, // Random score between 70-99
-        insights: {
-          titleStrength: Math.floor(Math.random() * 30) + 70,
-          keywordRelevance: Math.floor(Math.random() * 30) + 70,
-          trendAlignment: Math.floor(Math.random() * 30) + 70,
-          recommendations: [
-            'Consider adding more specific keywords',
-            'Title could be more attention-grabbing',
-            'Topic has strong current interest'
-          ]
-        }
+        score: mockScore,
+        insights: [
+          'Topic aligns with current trends',
+          'Moderate to high engagement potential',
+          'Consider adding more visual elements',
+          'Opportunity for series content'
+        ]
       };
     }
-
-    // In a real implementation, this would use ML models to predict viral potential
-    // For now, we'll generate a mock score and insights
     
-    // Simple scoring algorithm (for demonstration)
-    let score = 75; // Base score
+    // In a real implementation, you would:
+    // 1. Analyze the topic against current trends
+    // 2. Check search volume and growth
+    // 3. Evaluate social media engagement for similar content
+    // 4. Apply ML models to predict performance
     
-    // Title factors
-    if (title.length > 30 && title.length < 60) score += 5; // Optimal title length
-    if (title.includes('?') || title.includes(':')) score += 3; // Question or colon format
-    if (/^(How|Why|Top|[0-9]+)/.test(title)) score += 4; // Starts with How, Why, Top, or number
+    // For now, we'll generate a score based on the topic and category
+    let baseScore = 70; // Start with a base score
     
-    // Keywords factors
-    if (keywords.length >= 5) score += 5; // Good number of keywords
+    // Adjust score based on category popularity
+    const categoryBonus = {
+      technology: 5,
+      gaming: 8,
+      finance: 3,
+      health: 4,
+      entertainment: 10
+    };
     
-    // Randomize slightly for demo purposes
-    score += Math.floor(Math.random() * 10) - 5;
-    score = Math.min(99, Math.max(50, score)); // Keep between 50-99
+    baseScore += categoryBonus[category.toLowerCase()] || 0;
     
-    // Generate insights
-    const titleStrength = Math.min(99, score + Math.floor(Math.random() * 10) - 5);
-    const keywordRelevance = Math.min(99, score + Math.floor(Math.random() * 10) - 5);
-    const trendAlignment = Math.min(99, score + Math.floor(Math.random() * 10) - 5);
+    // Adjust score based on topic characteristics
+    if (topic.includes('2025') || topic.includes('future')) baseScore += 5;
+    if (topic.includes('guide') || topic.includes('how to')) baseScore += 3;
+    if (topic.includes('AI') || topic.includes('crypto')) baseScore += 4;
+    if (topic.length < 30) baseScore += 2; // Shorter titles tend to perform better
     
-    // Generate recommendations
-    const recommendations = [];
-    if (titleStrength < 80) recommendations.push('Consider making the title more attention-grabbing');
-    if (keywordRelevance < 80) recommendations.push('Add more trending keywords related to your topic');
-    if (trendAlignment < 80) recommendations.push('Topic could be more aligned with current trends');
-    if (recommendations.length === 0) recommendations.push('Content has strong viral potential');
+    // Cap the score at 95
+    const finalScore = Math.min(baseScore, 95);
     
-    return {
-      success: true,
-      score,
-      insights: {
-        titleStrength,
-        keywordRelevance,
-        trendAlignment,
-        recommendations
-      }
+    // Generate insights based on the score and topic
+    const insights = [];
+    
+    if (finalScore > 85) {
+      insights.push('High viral potential detected');
+      insights.push('Topic is highly relevant to current trends');
+    } else if (finalScore > 75) {
+      insights.push('Good viral potential');
+      insights.push('Topic has solid engagement metrics');
+    } else {
+      insights.push('Moderate viral potential');
+      insights.push('Consider refining the topic angle');
+    }
+    
+    // Add category-specific insights
+    if (category.toLowerCase() === 'technology') {
+      insights.push('Tech audiences respond well to detailed tutorials');
+      insights.push('Consider adding code examples or demonstrations');
+    } else if (category.toLowerCase() === 'gaming') {
+      insights.push('Gaming content performs best with gameplay footage');
+      insights.push('Consider reaction-style or review format');
+    } else if (category.toLowerCase() === 'finance') {
+      insights.push('Financial content benefits from data visualization');
+      insights.push('Include disclaimers for investment-related content');
+    } else if (category.toLowerCase() === 'health') {
+      insights.push('Health content should cite credible sources');
+      insights.push('Personal stories increase engagement in health topics');
+    } else if (category.toLowerCase() === 'entertainment') {
+      insights.push('Entertainment content benefits from visual appeal');
+      insights.push('Consider news or reaction format for higher engagement');
+    }
+    
+    return { 
+      success: true, 
+      score: finalScore,
+      insights
     };
   } catch (error) {
     console.error('Error predicting viral potential:', error);
-    return {
-      success: false,
-      score: null,
-      insights: null,
-      error: error.message || 'Failed to predict viral potential'
-    };
+    return { success: false, score: null, insights: null, error: error.message || 'Failed to predict viral potential' };
   }
-};
+}
 
 /**
  * Get available content categories
- * @returns {Promise<{success: boolean, categories: Array|null, error: string|null}>}
+ * @returns {Promise<{success: boolean, categories: Array|null, error: string|null}>} - Categories result
  */
-export const getCategories = async () => {
+export async function getCategories() {
   try {
-    // These categories match the mock trend data
-    const categories = [
-      'technology',
-      'gaming',
-      'finance',
-      'health',
-      'entertainment'
-    ];
-    
-    return {
-      success: true,
-      categories
+    return { 
+      success: true, 
+      categories: CATEGORIES
     };
   } catch (error) {
     console.error('Error getting categories:', error);
-    return {
-      success: false,
-      categories: null,
-      error: error.message || 'Failed to get categories'
-    };
+    return { success: false, categories: null, error: error.message || 'Failed to get categories' };
   }
-};
-
-// Export API functions
-export default {
-  analyzeTrends,
-  predictViralPotential,
-  getCategories
-};
+}

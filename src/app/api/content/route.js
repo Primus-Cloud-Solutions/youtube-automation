@@ -1,9 +1,9 @@
 'use server';
 
-import openaiApi from './openai-api';
-import elevenlabsApi from './elevenlabs-api';
-import trendAnalyzer from '../../lib/trend-analyzer';
-import s3Storage from './s3-storage';
+import * as openaiApi from './openai-api';
+import * as elevenlabsApi from './elevenlabs-api';
+import * as trendAnalyzer from '../../lib/trend-analyzer';
+import { uploadToS3, getSignedUrl, deleteFromS3, listS3Objects, getStorageUsage } from './s3-storage';
 
 // Content categories
 export const CONTENT_CATEGORIES = [
@@ -259,14 +259,14 @@ export const POST = withErrorHandling(async (request) => {
       const mockVideoBuffer = Buffer.from('Mock video data');
       
       // Upload to S3
-      const uploadResult = await s3Storage.uploadToS3(s3Key, mockVideoBuffer, 'video/mp4');
+      const uploadResult = await uploadToS3(s3Key, mockVideoBuffer, 'video/mp4');
       
       if (!uploadResult.success) {
         return createApiError(uploadResult.error || 'Failed to upload video', 500);
       }
       
       // Get a signed URL for the video
-      const urlResult = await s3Storage.getSignedUrl(s3Key);
+      const urlResult = await getSignedUrl(s3Key);
       
       if (!urlResult.success) {
         return createApiError(urlResult.error || 'Failed to get video URL', 500);
@@ -277,14 +277,14 @@ export const POST = withErrorHandling(async (request) => {
       const mockThumbnailBuffer = Buffer.from('Mock thumbnail data');
       
       // Upload thumbnail to S3
-      const thumbnailResult = await s3Storage.uploadToS3(thumbnailKey, mockThumbnailBuffer, 'image/jpeg');
+      const thumbnailResult = await uploadToS3(thumbnailKey, mockThumbnailBuffer, 'image/jpeg');
       
       if (!thumbnailResult.success) {
         return createApiError(thumbnailResult.error || 'Failed to upload thumbnail', 500);
       }
       
       // Get a signed URL for the thumbnail
-      const thumbnailUrlResult = await s3Storage.getSignedUrl(thumbnailKey);
+      const thumbnailUrlResult = await getSignedUrl(thumbnailKey);
       
       if (!thumbnailUrlResult.success) {
         return createApiError(thumbnailUrlResult.error || 'Failed to get thumbnail URL', 500);

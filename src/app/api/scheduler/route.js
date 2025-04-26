@@ -1,6 +1,6 @@
 'use server';
 
-import youtubeApi from '../../lib/youtube-api';
+import * as youtubeApi from '../../lib/youtube-api';
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
@@ -475,22 +475,12 @@ function getCategoryId(category) {
     'Gaming': 'Gaming',
     'Finance': 'Education',
     'Health': 'Howto & Style',
-    'Entertainment': 'Entertainment',
-    'Lifestyle': 'People & Blogs',
-    'Education': 'Education',
-    'Travel': 'Travel & Events',
-    'Food': 'Howto & Style',
-    'Fashion': 'Howto & Style',
-    'Sports': 'Sports',
-    'Music': 'Music',
-    'News': 'News & Politics',
-    'Comedy': 'Comedy',
-    'DIY': 'Howto & Style'
+    'Entertainment': 'Entertainment'
   };
   
-  // Get the mapped YouTube category
-  const youtubeCategory = categoryMap[category] || 'Education';
+  // Get the YouTube category name
+  const youtubeCategoryName = categoryMap[category] || 'Entertainment';
   
-  // Return the category ID
-  return categoryIds[youtubeCategory] || '27'; // Default to Education
+  // Get the YouTube category ID
+  return categoryIds[youtubeCategoryName] || '24'; // Default to Entertainment
 }

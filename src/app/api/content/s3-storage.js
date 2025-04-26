@@ -22,7 +22,7 @@ const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'youtube-automation-storage';
  * @param {string} contentType - MIME type of the file
  * @returns {Promise<{success: boolean, key: string|null, error: string|null}>} - Upload result
  */
-export const uploadToS3 = async (key, body, contentType) => {
+export async function uploadToS3(key, body, contentType) {
   try {
     // Check if we're in a build/SSG environment
     if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
@@ -46,7 +46,7 @@ export const uploadToS3 = async (key, body, contentType) => {
     console.error('Error uploading to S3:', error);
     return { success: false, key: null, error: error.message || 'Failed to upload file' };
   }
-};
+}
 
 /**
  * Get a signed URL for an S3 object
@@ -54,7 +54,7 @@ export const uploadToS3 = async (key, body, contentType) => {
  * @param {number} expiresIn - URL expiration time in seconds (default: 3600)
  * @returns {Promise<{success: boolean, url: string|null, error: string|null}>} - Signed URL result
  */
-export const getSignedUrl = async (key, expiresIn = 3600) => {
+export async function getSignedUrl(key, expiresIn = 3600) {
   try {
     // Check if we're in a build/SSG environment
     if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
@@ -76,14 +76,14 @@ export const getSignedUrl = async (key, expiresIn = 3600) => {
     console.error('Error generating signed URL:', error);
     return { success: false, url: null, error: error.message || 'Failed to generate signed URL' };
   }
-};
+}
 
 /**
  * Delete an object from S3
  * @param {string} key - S3 object key (path)
  * @returns {Promise<{success: boolean, error: string|null}>} - Delete result
  */
-export const deleteFromS3 = async (key) => {
+export async function deleteFromS3(key) {
   try {
     // Check if we're in a build/SSG environment
     if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
@@ -105,14 +105,14 @@ export const deleteFromS3 = async (key) => {
     console.error('Error deleting from S3:', error);
     return { success: false, error: error.message || 'Failed to delete file' };
   }
-};
+}
 
 /**
  * List objects in an S3 directory
  * @param {string} prefix - Directory prefix
  * @returns {Promise<{success: boolean, objects: Array|null, error: string|null}>} - List result
  */
-export const listS3Objects = async (prefix) => {
+export async function listS3Objects(prefix) {
   try {
     // Check if we're in a build/SSG environment
     if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
@@ -147,14 +147,14 @@ export const listS3Objects = async (prefix) => {
     console.error('Error listing S3 objects:', error);
     return { success: false, objects: null, error: error.message || 'Failed to list files' };
   }
-};
+}
 
 /**
  * Get storage usage for a user
  * @param {string} userId - User ID
  * @returns {Promise<{success: boolean, usage: Object|null, error: string|null}>} - Storage usage result
  */
-export const getStorageUsage = async (userId) => {
+export async function getStorageUsage(userId) {
   try {
     // Check if we're in a build/SSG environment
     if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
@@ -195,13 +195,15 @@ export const getStorageUsage = async (userId) => {
     console.error('Error getting storage usage:', error);
     return { success: false, usage: null, error: error.message || 'Failed to get storage usage' };
   }
-};
+}
 
-// Export API functions
-export default {
-  uploadToS3,
-  getSignedUrl,
-  deleteFromS3,
-  listS3Objects,
-  getStorageUsage
-};
+// Export an async wrapper function to comply with 'use server' requirements
+export async function getS3Functions() {
+  return {
+    uploadToS3,
+    getSignedUrl,
+    deleteFromS3,
+    listS3Objects,
+    getStorageUsage
+  };
+}
