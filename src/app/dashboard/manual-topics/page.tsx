@@ -80,7 +80,7 @@ function ManualTopicsPage() {
         {
           id: 3,
           title: 'The Ultimate Guide to YouTube SEO: Double Your Views in 30 Days',
-          description: 'Master YouTube's algorithm with proven SEO techniques that will significantly increase your video visibility.',
+          description: 'Master YouTube\'s algorithm with proven SEO techniques that will significantly increase your video visibility.',
           score: 85,
         },
         {
