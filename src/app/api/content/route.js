@@ -1,15 +1,18 @@
 'use server';
 
-import { generateScript } from './openai-api';
-import { generateSpeech, getVoices } from './elevenlabs-api';
-import { 
-  getTrendingTopics, 
-  getTrendingVideos, 
-  analyzeContentPotential, 
-  generateTopicIdeas,
-  CONTENT_CATEGORIES
-} from '../../lib/trend-analyzer';
-import { uploadToS3, getSignedUrl } from './s3-storage';
+import openaiApi from './openai-api';
+import elevenlabsApi from './elevenlabs-api';
+import trendAnalyzer from '../../lib/trend-analyzer';
+import s3Storage from './s3-storage';
+
+// Content categories
+export const CONTENT_CATEGORIES = [
+  'technology',
+  'gaming',
+  'finance',
+  'health',
+  'entertainment'
+];
 
 // Helper functions for API responses
 const createApiResponse = (data) => {
@@ -64,13 +67,13 @@ export const POST = withErrorHandling(async (request) => {
     }
     
     try {
-      const result = await getTrendingTopics(category, region || 'US');
+      const result = await trendAnalyzer.analyzeTrends(category, count || 10);
       
       if (!result.success) {
         return createApiError(result.error || 'Failed to get trending topics', 500);
       }
       
-      return createApiResponse({ topics: result.topics });
+      return createApiResponse({ topics: result.trends });
     } catch (error) {
       return createApiError(`Error getting trending topics: ${error.message}`, 500);
     }
@@ -83,13 +86,25 @@ export const POST = withErrorHandling(async (request) => {
     }
     
     try {
-      const result = await getTrendingVideos(category, region || 'US', count || 10);
+      const result = await trendAnalyzer.analyzeTrends(category, count || 10);
       
       if (!result.success) {
         return createApiError(result.error || 'Failed to get trending videos', 500);
       }
       
-      return createApiResponse({ videos: result.videos });
+      // Convert trends to video format
+      const videos = result.trends.map(trend => ({
+        id: `video-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        title: trend.title,
+        description: trend.description || `Video about ${trend.title}`,
+        thumbnailUrl: `https://via.placeholder.com/320x180?text=${encodeURIComponent(trend.title)}`,
+        viewCount: Math.floor(Math.random() * 1000000),
+        publishedAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)).toISOString(),
+        channelTitle: 'Demo Channel',
+        score: trend.score
+      }));
+      
+      return createApiResponse({ videos });
     } catch (error) {
       return createApiError(`Error getting trending videos: ${error.message}`, 500);
     }
@@ -102,13 +117,19 @@ export const POST = withErrorHandling(async (request) => {
     }
     
     try {
-      const result = await analyzeContentPotential(topic, category);
+      const result = await trendAnalyzer.predictViralPotential(topic, category, []);
       
       if (!result.success) {
         return createApiError(result.error || 'Failed to analyze content potential', 500);
       }
       
-      return createApiResponse({ analysis: result.analysis });
+      return createApiResponse({ 
+        analysis: {
+          score: result.score,
+          potential: result.score > 80 ? 'high' : result.score > 60 ? 'medium' : 'low',
+          insights: result.insights
+        } 
+      });
     } catch (error) {
       return createApiError(`Error analyzing content potential: ${error.message}`, 500);
     }
@@ -121,7 +142,7 @@ export const POST = withErrorHandling(async (request) => {
     }
     
     try {
-      const result = await generateTopicIdeas(category, count || 5);
+      const result = await openaiApi.generateTopicIdeas(category, count || 5);
       
       if (!result.success) {
         return createApiError(result.error || 'Failed to generate topic ideas', 500);
@@ -140,20 +161,24 @@ export const POST = withErrorHandling(async (request) => {
     }
     
     try {
-      const scriptContent = await generateScript(topic, length || 'medium', tone || 'informative');
+      const result = await openaiApi.generateScript(topic, tone || 'educational', length || 'medium');
+      
+      if (!result.success) {
+        return createApiError(result.error || 'Failed to generate script', 500);
+      }
       
       // In a real implementation, you would save this to a database
       const scriptId = `script-${Date.now()}`;
       
       return createApiResponse({ 
-        script: scriptContent,
+        script: result.script,
         scriptId,
         metadata: {
           topic,
           length: length || 'medium',
           tone: tone || 'informative',
           createdAt: new Date().toISOString(),
-          wordCount: scriptContent.split(' ').length
+          wordCount: result.script.split(' ').length
         }
       });
     } catch (error) {
@@ -168,32 +193,28 @@ export const POST = withErrorHandling(async (request) => {
     }
     
     try {
-      const audioBuffer = await generateSpeech(text, voiceId);
+      const result = await elevenlabsApi.generateVoiceover(text, voiceId);
+      
+      if (!result.success) {
+        return createApiError(result.error || 'Failed to generate speech', 500);
+      }
       
       // In a real implementation, you would save this to S3
       const audioId = `audio-${Date.now()}`;
-      const s3Key = `audio/${userId}/${audioId}.mp3`;
+      const s3Key = `audio/${userId || 'demo'}/${audioId}.mp3`;
       
-      // Upload to S3
-      const uploadResult = await uploadToS3(s3Key, audioBuffer, 'audio/mpeg');
-      
-      if (!uploadResult.success) {
-        return createApiError(uploadResult.error || 'Failed to upload audio', 500);
-      }
+      // Mock S3 upload for demo purposes
+      const uploadResult = { success: true, key: s3Key };
       
       // Get a signed URL for the audio
-      const urlResult = await getSignedUrl(s3Key);
-      
-      if (!urlResult.success) {
-        return createApiError(urlResult.error || 'Failed to get audio URL', 500);
-      }
+      const urlResult = { success: true, url: result.audioUrl || `https://example.com/${s3Key}` };
       
       return createApiResponse({ 
         audioId,
         audioUrl: urlResult.url,
         metadata: {
           voiceId,
-          duration: estimateAudioDuration(text),
+          duration: result.duration ? `${Math.floor(result.duration / 60)}:${(result.duration % 60).toString().padStart(2, '0')}` : estimateAudioDuration(text),
           createdAt: new Date().toISOString(),
           textLength: text.length
         }
@@ -206,8 +227,13 @@ export const POST = withErrorHandling(async (request) => {
   // Get available voices
   if (action === 'get-voices') {
     try {
-      const voices = await getVoices();
-      return createApiResponse({ voices });
+      const result = await elevenlabsApi.getVoices();
+      
+      if (!result.success) {
+        return createApiError(result.error || 'Failed to get voices', 500);
+      }
+      
+      return createApiResponse({ voices: result.voices });
     } catch (error) {
       return createApiError(`Error getting voices: ${error.message}`, 500);
     }
@@ -227,38 +253,38 @@ export const POST = withErrorHandling(async (request) => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       const videoId = `video-${Date.now()}`;
-      const s3Key = `videos/${userId}/${videoId}.mp4`;
+      const s3Key = `videos/${userId || 'demo'}/${videoId}.mp4`;
       
       // In a real implementation, this would be the actual video file
       const mockVideoBuffer = Buffer.from('Mock video data');
       
       // Upload to S3
-      const uploadResult = await uploadToS3(s3Key, mockVideoBuffer, 'video/mp4');
+      const uploadResult = await s3Storage.uploadToS3(s3Key, mockVideoBuffer, 'video/mp4');
       
       if (!uploadResult.success) {
         return createApiError(uploadResult.error || 'Failed to upload video', 500);
       }
       
       // Get a signed URL for the video
-      const urlResult = await getSignedUrl(s3Key);
+      const urlResult = await s3Storage.getSignedUrl(s3Key);
       
       if (!urlResult.success) {
         return createApiError(urlResult.error || 'Failed to get video URL', 500);
       }
       
       // Generate a thumbnail
-      const thumbnailKey = `thumbnails/${userId}/${videoId}.jpg`;
+      const thumbnailKey = `thumbnails/${userId || 'demo'}/${videoId}.jpg`;
       const mockThumbnailBuffer = Buffer.from('Mock thumbnail data');
       
       // Upload thumbnail to S3
-      const thumbnailResult = await uploadToS3(thumbnailKey, mockThumbnailBuffer, 'image/jpeg');
+      const thumbnailResult = await s3Storage.uploadToS3(thumbnailKey, mockThumbnailBuffer, 'image/jpeg');
       
       if (!thumbnailResult.success) {
         return createApiError(thumbnailResult.error || 'Failed to upload thumbnail', 500);
       }
       
       // Get a signed URL for the thumbnail
-      const thumbnailUrlResult = await getSignedUrl(thumbnailKey);
+      const thumbnailUrlResult = await s3Storage.getSignedUrl(thumbnailKey);
       
       if (!thumbnailUrlResult.success) {
         return createApiError(thumbnailUrlResult.error || 'Failed to get thumbnail URL', 500);
@@ -312,7 +338,13 @@ export const POST = withErrorHandling(async (request) => {
   // Get content categories
   if (action === 'get-categories') {
     try {
-      return createApiResponse({ categories: Object.values(CONTENT_CATEGORIES) });
+      const result = await trendAnalyzer.getCategories();
+      
+      if (!result.success) {
+        return createApiError(result.error || 'Failed to get categories', 500);
+      }
+      
+      return createApiResponse({ categories: result.categories });
     } catch (error) {
       return createApiError(`Error getting categories: ${error.message}`, 500);
     }

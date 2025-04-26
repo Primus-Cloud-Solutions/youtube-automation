@@ -1,12 +1,10 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
-import { uploadToYouTube } from '../../lib/youtube-api';
+import youtubeApi from '../../lib/youtube-api';
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'example-anon-key';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Helper functions for API responses
 const createApiResponse = (data) => {
@@ -250,7 +248,7 @@ export const POST = withErrorHandling(async (request) => {
       };
       
       // Upload to YouTube
-      const uploadResult = await uploadToYouTube(
+      const uploadResult = await youtubeApi.uploadVideoToYouTube(
         youtubeApiKey,
         {
           title: mockScheduledVideo.title,
@@ -259,7 +257,6 @@ export const POST = withErrorHandling(async (request) => {
           categoryId: getCategoryId(mockScheduledVideo.category),
           privacyStatus: mockScheduledVideo.visibility
         },
-        mockScheduledVideo.videoUrl,
         (progress) => {
           // In a real implementation, you would update the progress in a database
           console.log(`Upload progress: ${progress}%`);
@@ -473,24 +470,27 @@ function getCategoryId(category) {
   };
   
   // Map our categories to YouTube categories
-  const categoryMapping = {
+  const categoryMap = {
     'Technology': 'Science & Technology',
     'Gaming': 'Gaming',
-    'Entertainment': 'Entertainment',
-    'Education': 'Education',
-    'Lifestyle': 'People & Blogs',
     'Finance': 'Education',
     'Health': 'Howto & Style',
+    'Entertainment': 'Entertainment',
+    'Lifestyle': 'People & Blogs',
+    'Education': 'Education',
     'Travel': 'Travel & Events',
     'Food': 'Howto & Style',
-    'Sports': 'Sports',
-    'Beauty': 'Howto & Style',
     'Fashion': 'Howto & Style',
-    'DIY': 'Howto & Style',
-    'Business': 'Education',
-    'Science': 'Science & Technology'
+    'Sports': 'Sports',
+    'Music': 'Music',
+    'News': 'News & Politics',
+    'Comedy': 'Comedy',
+    'DIY': 'Howto & Style'
   };
   
-  const youtubeCategory = categoryMapping[category] || 'Education';
-  return categoryIds[youtubeCategory] || '22'; // Default to People & Blogs
+  // Get the mapped YouTube category
+  const youtubeCategory = categoryMap[category] || 'Education';
+  
+  // Return the category ID
+  return categoryIds[youtubeCategory] || '27'; // Default to Education
 }

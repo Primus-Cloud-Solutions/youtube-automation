@@ -1,6 +1,6 @@
 'use server';
 
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Initialize S3 client with environment variables
@@ -147,4 +147,61 @@ export const listS3Objects = async (prefix) => {
     console.error('Error listing S3 objects:', error);
     return { success: false, objects: null, error: error.message || 'Failed to list files' };
   }
+};
+
+/**
+ * Get storage usage for a user
+ * @param {string} userId - User ID
+ * @returns {Promise<{success: boolean, usage: Object|null, error: string|null}>} - Storage usage result
+ */
+export const getStorageUsage = async (userId) => {
+  try {
+    // Check if we're in a build/SSG environment
+    if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
+      console.warn('AWS credentials not available during build, returning mock data');
+      return { 
+        success: true, 
+        usage: {
+          bytes: 3072000,
+          megabytes: "3.07",
+          gigabytes: "0.00",
+          fileCount: 2
+        }
+      };
+    }
+
+    const userPrefix = `users/${userId}/`;
+    const result = await listS3Objects(userPrefix);
+    
+    if (!result.success) {
+      return { success: false, usage: null, error: result.error };
+    }
+    
+    // Calculate total storage usage
+    const totalBytes = result.objects.reduce((total, obj) => total + obj.size, 0);
+    const totalMB = totalBytes / (1024 * 1024);
+    const totalGB = totalMB / 1024;
+    
+    return { 
+      success: true, 
+      usage: {
+        bytes: totalBytes,
+        megabytes: totalMB.toFixed(2),
+        gigabytes: totalGB.toFixed(2),
+        fileCount: result.objects.length
+      }
+    };
+  } catch (error) {
+    console.error('Error getting storage usage:', error);
+    return { success: false, usage: null, error: error.message || 'Failed to get storage usage' };
+  }
+};
+
+// Export API functions
+export default {
+  uploadToS3,
+  getSignedUrl,
+  deleteFromS3,
+  listS3Objects,
+  getStorageUsage
 };
