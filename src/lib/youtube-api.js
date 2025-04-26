@@ -1,122 +1,164 @@
-// YouTube API integration helper functions
+'use server';
 
-/**
- * Validates a YouTube API key by making a test request
- * @param {string} apiKey - The YouTube API key to validate
- * @returns {Promise<{valid: boolean, error: string|null}>} - Result of validation
- */
-export const validateYouTubeApiKey = async (apiKey) => {
+import { google } from 'googleapis';
+
+// YouTube API configuration
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
+const youtube = google.youtube({
+  version: 'v3',
+  auth: YOUTUBE_API_KEY
+});
+
+// Helper functions for API responses
+const createApiResponse = (data) => {
+  return Response.json({ success: true, ...data });
+};
+
+const createApiError = (message, status = 400) => {
+  return Response.json({ success: false, error: message }, { status });
+};
+
+// Error handling wrapper
+const withErrorHandling = (handler) => {
+  return async (request) => {
+    try {
+      return await handler(request);
+    } catch (error) {
+      console.error('YouTube API error:', error);
+      return createApiError('Internal server error', 500);
+    }
+  };
+};
+
+// Search for videos
+export const searchVideos = async (query, maxResults = 10) => {
   try {
-    // In a real implementation, this would make an actual API call to YouTube
-    // For demo purposes, we'll simulate the validation
+    const response = await youtube.search.list({
+      part: 'snippet',
+      q: query,
+      maxResults,
+      type: 'video'
+    });
     
-    if (!apiKey || apiKey.trim().length < 10) {
-      return { valid: false, error: 'API key is too short or invalid' };
-    }
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // For demo, we'll consider any key that starts with 'AIza' as valid
-    // In a real implementation, this would check against the actual YouTube API
-    if (apiKey.startsWith('AIza')) {
-      return { valid: true, error: null };
-    }
-    
-    return { valid: false, error: 'Invalid API key format' };
+    return response.data.items;
   } catch (error) {
-    console.error('Error validating YouTube API key:', error);
-    return { valid: false, error: error.message || 'Failed to validate API key' };
+    console.error('Error searching videos:', error);
+    throw error;
   }
 };
 
-/**
- * Uploads a video to YouTube
- * @param {string} apiKey - YouTube API key
- * @param {Object} videoData - Video data including title, description, etc.
- * @param {Function} progressCallback - Callback for upload progress updates
- * @returns {Promise<{success: boolean, videoId: string|null, error: string|null}>} - Upload result
- */
-export const uploadVideoToYouTube = async (apiKey, videoData, progressCallback) => {
+// Get video details
+export const getVideoDetails = async (videoId) => {
   try {
-    if (!apiKey) {
-      return { success: false, videoId: null, error: 'YouTube API key is required' };
-    }
+    const response = await youtube.videos.list({
+      part: 'snippet,contentDetails,statistics',
+      id: videoId
+    });
     
-    if (!videoData || !videoData.title) {
-      return { success: false, videoId: null, error: 'Video data is incomplete' };
-    }
-    
-    // Simulate upload progress
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      if (progress <= 100) {
-        progressCallback(progress);
-      }
-      if (progress >= 100) {
-        clearInterval(interval);
-      }
-    }, 500);
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    
-    // Clear interval just in case
-    clearInterval(interval);
-    
-    // Ensure 100% progress is reported
-    progressCallback(100);
-    
-    // In a real implementation, this would return the actual YouTube video ID and URL
-    return { 
-      success: true, 
-      videoId: `youtube-${Date.now()}`,
-      videoUrl: `https://youtube.com/watch?v=demo-${Date.now()}`,
-      error: null 
-    };
+    return response.data.items[0];
   } catch (error) {
-    console.error('Error uploading to YouTube:', error);
-    return { success: false, videoId: null, error: error.message || 'Failed to upload video' };
+    console.error('Error getting video details:', error);
+    throw error;
   }
 };
 
-/**
- * Gets YouTube channel information
- * @param {string} apiKey - YouTube API key
- * @returns {Promise<{success: boolean, channelInfo: Object|null, error: string|null}>} - Channel info
- */
-export const getYouTubeChannelInfo = async (apiKey) => {
+// Get channel details
+export const getChannelDetails = async (channelId) => {
   try {
-    if (!apiKey) {
-      return { success: false, channelInfo: null, error: 'YouTube API key is required' };
-    }
+    const response = await youtube.channels.list({
+      part: 'snippet,contentDetails,statistics',
+      id: channelId
+    });
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock channel data for demo purposes
-    const mockChannelInfo = {
-      id: 'UC1234567890',
-      title: 'Demo YouTube Channel',
-      description: 'This is a demo YouTube channel for testing purposes',
-      customUrl: '@demochannel',
-      publishedAt: '2020-01-01T00:00:00Z',
-      thumbnails: {
-        default: 'https://via.placeholder.com/88x88',
-        medium: 'https://via.placeholder.com/240x240',
-        high: 'https://via.placeholder.com/800x800'
-      },
-      statistics: {
-        viewCount: '12500',
-        subscriberCount: '1250',
-        videoCount: '45'
-      }
+    return response.data.items[0];
+  } catch (error) {
+    console.error('Error getting channel details:', error);
+    throw error;
+  }
+};
+
+// Get trending videos
+export const getTrendingVideos = async (regionCode = 'US', category = '', maxResults = 10) => {
+  try {
+    const params = {
+      part: 'snippet,contentDetails,statistics',
+      chart: 'mostPopular',
+      regionCode,
+      maxResults
     };
     
-    return { success: true, channelInfo: mockChannelInfo, error: null };
+    if (category) {
+      params.videoCategoryId = category;
+    }
+    
+    const response = await youtube.videos.list(params);
+    
+    return response.data.items;
   } catch (error) {
-    console.error('Error getting YouTube channel info:', error);
-    return { success: false, channelInfo: null, error: error.message || 'Failed to get channel info' };
+    console.error('Error getting trending videos:', error);
+    throw error;
   }
 };
+
+// API route handler
+export const POST = withErrorHandling(async (request) => {
+  const { action, query, videoId, channelId, regionCode, category, maxResults } = await request.json();
+  
+  if (!action) {
+    return createApiError('Action is required', 400);
+  }
+  
+  // Search videos
+  if (action === 'search-videos') {
+    if (!query) {
+      return createApiError('Query is required', 400);
+    }
+    
+    try {
+      const videos = await searchVideos(query, maxResults);
+      return createApiResponse({ videos });
+    } catch (error) {
+      return createApiError(`Error searching videos: ${error.message}`, 500);
+    }
+  }
+  
+  // Get video details
+  if (action === 'get-video-details') {
+    if (!videoId) {
+      return createApiError('Video ID is required', 400);
+    }
+    
+    try {
+      const video = await getVideoDetails(videoId);
+      return createApiResponse({ video });
+    } catch (error) {
+      return createApiError(`Error getting video details: ${error.message}`, 500);
+    }
+  }
+  
+  // Get channel details
+  if (action === 'get-channel-details') {
+    if (!channelId) {
+      return createApiError('Channel ID is required', 400);
+    }
+    
+    try {
+      const channel = await getChannelDetails(channelId);
+      return createApiResponse({ channel });
+    } catch (error) {
+      return createApiError(`Error getting channel details: ${error.message}`, 500);
+    }
+  }
+  
+  // Get trending videos
+  if (action === 'get-trending-videos') {
+    try {
+      const videos = await getTrendingVideos(regionCode, category, maxResults);
+      return createApiResponse({ videos });
+    } catch (error) {
+      return createApiError(`Error getting trending videos: ${error.message}`, 500);
+    }
+  }
+  
+  return createApiError('Invalid action', 400);
+});
