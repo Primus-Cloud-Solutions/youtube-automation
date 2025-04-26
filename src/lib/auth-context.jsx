@@ -8,8 +8,25 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xyzcompany.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtaHl6Y29tcGFueSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjgyNDQyMzQyLCJleHAiOjE5OTgwMTgzNDJ9.mocked';
 
-// Create a Supabase client for authentication
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Get the current site URL for redirects
+const getSiteUrl = () => {
+  if (typeof window !== 'undefined') {
+    // In browser context, use the current origin
+    return window.location.origin;
+  }
+  // In server context, use environment variable or fallback
+  return process.env.NEXT_PUBLIC_SITE_URL || 'https://youtube-platform.netlify.app';
+};
+
+// Create a Supabase client for authentication with redirect URLs
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    redirectTo: `${getSiteUrl()}/auth/callback`
+  }
+});
 
 // Create auth context with default values
 const AuthContext = createContext({
@@ -138,11 +155,15 @@ export function AuthProvider({ children }) {
         throw new Error('Password must contain at least one number and one special character');
       }
       
-      // Use Supabase auth to create user
+      // Get the current site URL for redirects
+      const redirectTo = `${getSiteUrl()}/auth/callback`;
+      
+      // Use Supabase auth to create user with redirect URL
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectTo,
           data: {
             full_name: fullName,
             preferences: {

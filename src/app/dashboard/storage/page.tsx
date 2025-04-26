@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../lib/auth-context';
@@ -8,14 +8,13 @@ import DashboardHeader from '../../components/dashboard-header';
 const StorageManager = () => {
   const { user } = useAuth();
   const [files, setFiles] = useState([]);
+  const [videos, setVideos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [storageUsage, setStorageUsage] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [activeTab, setActiveTab] = useState('videos');
   
-  // Fetch user's files and storage usage on component mount
+  // Fetch user's files, videos and storage usage on component mount
   useEffect(() => {
     if (!user?.id) return;
     
@@ -60,6 +59,26 @@ const StorageManager = () => {
         } else {
           console.error('Error fetching files:', filesData.error);
         }
+        
+        // Fetch videos
+        const videosResponse = await fetch('/api/content', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'list-videos',
+            userId: user.id
+          }),
+        });
+        
+        const videosData = await videosResponse.json();
+        
+        if (videosData.success) {
+          setVideos(videosData.videos);
+        } else {
+          console.error('Error fetching videos:', videosData.error);
+        }
       } catch (error) {
         console.error('Error fetching storage data:', error);
       } finally {
@@ -69,117 +88,6 @@ const StorageManager = () => {
     
     fetchStorageData();
   }, [user]);
-  
-  // Handle file selection
-  const handleFileChange = (e) => {
-    if (e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-  
-  // Handle file upload
-  const handleUpload = async () => {
-    if (!selectedFile || !user?.id) return;
-    
-    setIsUploading(true);
-    setUploadProgress(0);
-    setMessage('');
-    
-    try {
-      // Get a pre-signed URL for upload
-      const urlResponse = await fetch('/api/storage', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'get-upload-url',
-          key: `users/${user.id}/uploads/${Date.now()}-${selectedFile.name}`,
-          fileType: selectedFile.type
-        }),
-      });
-      
-      const urlData = await urlResponse.json();
-      
-      if (!urlData.success) {
-        throw new Error(urlData.error || 'Failed to get upload URL');
-      }
-      
-      // Upload the file directly to S3 using the pre-signed URL
-      const xhr = new XMLHttpRequest();
-      
-      // Track upload progress
-      xhr.upload.addEventListener('progress', (event) => {
-        if (event.lengthComputable) {
-          const percentComplete = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(percentComplete);
-        }
-      });
-      
-      // Handle upload completion
-      xhr.addEventListener('load', async () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          setMessage('File uploaded successfully!');
-          
-          // Refresh file list and storage usage
-          const [filesResponse, usageResponse] = await Promise.all([
-            fetch('/api/storage', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                action: 'list-files',
-                prefix: `users/${user.id}/`
-              }),
-            }),
-            fetch('/api/storage', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                action: 'get-storage-usage',
-                userId: user.id
-              }),
-            })
-          ]);
-          
-          const filesData = await filesResponse.json();
-          const usageData = await usageResponse.json();
-          
-          if (filesData.success) {
-            setFiles(filesData.objects);
-          }
-          
-          if (usageData.success) {
-            setStorageUsage(usageData.usage);
-          }
-          
-          setSelectedFile(null);
-        } else {
-          setMessage(`Upload failed: ${xhr.statusText}`);
-        }
-        
-        setIsUploading(false);
-      });
-      
-      // Handle upload error
-      xhr.addEventListener('error', () => {
-        setMessage('Upload failed due to a network error');
-        setIsUploading(false);
-      });
-      
-      // Start the upload
-      xhr.open('PUT', urlData.url);
-      xhr.setRequestHeader('Content-Type', selectedFile.type);
-      xhr.send(selectedFile);
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      setMessage(`Error: ${error.message}`);
-      setIsUploading(false);
-    }
-  };
   
   // Handle file deletion
   const handleDelete = async (key) => {
@@ -261,6 +169,37 @@ const StorageManager = () => {
     }
   };
   
+  // Download a video
+  const handleVideoDownload = async (videoId) => {
+    if (!user?.id) return;
+    
+    try {
+      const response = await fetch('/api/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'get-video-download',
+          videoId,
+          userId: user.id
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Open the download URL in a new tab
+        window.open(data.downloadUrl, '_blank');
+      } else {
+        setMessage(`Error: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error downloading video:', error);
+      setMessage(`Error: ${error.message}`);
+    }
+  };
+  
   // Format file size for display
   const formatFileSize = (bytes) => {
     if (bytes < 1024) {
@@ -333,7 +272,7 @@ const StorageManager = () => {
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Storage Manager</h1>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Storage Usage */}
           <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
             <h2 className="text-2xl font-semibold mb-6">Storage Usage</h2>
@@ -385,117 +324,241 @@ const StorageManager = () => {
             )}
           </div>
           
-          {/* Upload File */}
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6">Upload File</h2>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Select File</label>
-              <input
-                type="file"
-                onChange={handleFileChange}
-                className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600"
-                disabled={isUploading}
-              />
-            </div>
-            
-            {selectedFile && (
-              <div className="mb-4 p-3 bg-gray-700 rounded-md">
-                <p className="text-sm font-medium">{selectedFile.name}</p>
-                <p className="text-xs text-gray-400">{formatFileSize(selectedFile.size)}</p>
-              </div>
-            )}
-            
-            {isUploading && (
-              <div className="mb-4">
-                <div className="relative pt-1">
-                  <div className="flex mb-2 items-center justify-between">
-                    <div>
-                      <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-green-200 bg-green-900">
-                        Uploading
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs font-semibold inline-block text-green-200">
-                        {uploadProgress}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-700">
-                    <div 
-                      style={{ width: `${uploadProgress}%` }} 
-                      className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500"
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <button
-              onClick={handleUpload}
-              disabled={!selectedFile || isUploading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isUploading ? 'Uploading...' : 'Upload File'}
-            </button>
-            
-            {message && (
-              <div className={`mt-4 p-3 rounded-md ${message.includes('Error') ? 'bg-red-900/50 text-red-200' : 'bg-green-900/50 text-green-200'}`}>
-                {message}
-              </div>
-            )}
-          </div>
-          
           {/* Storage Info */}
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+          <div className="lg:col-span-2 bg-gray-800 rounded-lg p-6 shadow-lg">
             <h2 className="text-2xl font-semibold mb-6">Storage Information</h2>
             
             <div className="space-y-4">
-              <div className="p-4 bg-gray-700 rounded-md">
-                <h3 className="font-medium mb-2">Supported File Types</h3>
-                <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                  <li>Videos: MP4, MOV, AVI, WEBM</li>
-                  <li>Audio: MP3, WAV, OGG</li>
-                  <li>Images: JPG, PNG, GIF</li>
-                  <li>Documents: PDF, DOCX, TXT</li>
-                </ul>
+              <div className="p-4 bg-gray-700 rounded-lg">
+                <h3 className="font-medium text-lg mb-2">About Your Storage</h3>
+                <p className="text-gray-300 text-sm mb-2">
+                  Your content is securely stored in our cloud storage system. Videos are automatically stored here before being processed and uploaded to YouTube.
+                </p>
+                <p className="text-gray-300 text-sm">
+                  You can download your videos at any time to use on other platforms. Videos are automatically removed from storage after successful upload to YouTube to save space.
+                </p>
               </div>
               
-              <div className="p-4 bg-gray-700 rounded-md">
-                <h3 className="font-medium mb-2">File Size Limits</h3>
-                <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                  <li>Videos: Up to 2 GB</li>
-                  <li>Audio: Up to 500 MB</li>
-                  <li>Images: Up to 50 MB</li>
-                  <li>Documents: Up to 100 MB</li>
-                </ul>
-              </div>
-              
-              <div className="p-4 bg-gray-700 rounded-md">
-                <h3 className="font-medium mb-2">Storage Tips</h3>
-                <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                  <li>Compress videos before uploading</li>
-                  <li>Use MP4 format for best compatibility</li>
-                  <li>Delete unused files to free up space</li>
-                  <li>Organize files with consistent naming</li>
+              <div className="p-4 bg-gray-700 rounded-lg">
+                <h3 className="font-medium text-lg mb-2">Storage Features</h3>
+                <ul className="text-gray-300 text-sm space-y-2">
+                  <li className="flex items-start">
+                    <svg className="w-5 h-5 text-green-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Automatic video storage before YouTube upload</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="w-5 h-5 text-green-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Download videos for use on other platforms</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="w-5 h-5 text-green-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Secure, encrypted storage for all your content</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="w-5 h-5 text-green-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Automatic cleanup to optimize your storage space</span>
+                  </li>
                 </ul>
               </div>
             </div>
           </div>
         </div>
         
-        {/* File List */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-semibold mb-6">Your Files</h2>
-          
-          {isLoading ? (
-            <div className="animate-pulse space-y-4">
-              <div className="h-12 bg-gray-800 rounded"></div>
-              <div className="h-12 bg-gray-800 rounded"></div>
-              <div className="h-12 bg-gray-800 rounded"></div>
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="border-b border-gray-700">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('videos')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'videos'
+                    ? 'border-green-500 text-green-500'
+                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                }`}
+              >
+                Your Videos
+              </button>
+              <button
+                onClick={() => setActiveTab('files')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'files'
+                    ? 'border-green-500 text-green-500'
+                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                }`}
+              >
+                All Files
+              </button>
+            </nav>
+          </div>
+        </div>
+        
+        {message && (
+          <div className={`mb-6 p-4 rounded-md ${message.includes('Error') ? 'bg-red-900/50 text-red-200' : 'bg-green-900/50 text-green-200'}`}>
+            {message}
+          </div>
+        )}
+        
+        {/* Content based on active tab */}
+        {activeTab === 'videos' ? (
+          <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <div className="p-6 border-b border-gray-700">
+              <h2 className="text-xl font-semibold">Your Videos</h2>
+              <p className="text-gray-400 text-sm mt-1">
+                Videos created and stored on the platform
+              </p>
             </div>
-          ) : files.length > 0 ? (
-            <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            
+            {isLoading ? (
+              <div className="p-6">
+                <div className="animate-pulse space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-20 bg-gray-700 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            ) : videos.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-700">
+                  <thead className="bg-gray-700">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Video
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Created
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Size
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-gray-800 divide-y divide-gray-700">
+                    {videos.map((video) => (
+                      <tr key={video.id} className="hover:bg-gray-750">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 bg-gray-700 rounded overflow-hidden">
+                              {video.thumbnailUrl ? (
+                                <img src={video.thumbnailUrl} alt="" className="h-10 w-10 object-cover" />
+                              ) : (
+                                <svg className="h-10 w-10 text-gray-500 p-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                              )}
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium">{video.title}</div>
+                              <div className="text-sm text-gray-400">{video.duration || '00:00'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          {formatDate(video.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            video.status === 'ready' ? 'bg-green-900 text-green-200' :
+                            video.status === 'processing' ? 'bg-blue-900 text-blue-200' :
+                            video.status === 'uploaded' ? 'bg-purple-900 text-purple-200' :
+                            'bg-gray-900 text-gray-200'
+                          }`}>
+                            {video.status === 'ready' ? 'Ready' :
+                             video.status === 'processing' ? 'Processing' :
+                             video.status === 'uploaded' ? 'Uploaded to YouTube' :
+                             video.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          {video.fileSize ? formatFileSize(video.fileSize) : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-3">
+                            {video.status === 'ready' && (
+                              <button
+                                onClick={() => handleVideoDownload(video.id)}
+                                className="text-green-400 hover:text-green-300"
+                                title="Download"
+                              >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                              </button>
+                            )}
+                            {video.youtubeVideoUrl && (
+                              <a
+                                href={video.youtubeVideoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300"
+                                title="View on YouTube"
+                              >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-6 text-center">
+                <svg className="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-300">No videos</h3>
+                <p className="mt-1 text-sm text-gray-400">
+                  You haven't created any videos yet.
+                </p>
+                <div className="mt-6">
+                  <button
+                    onClick={() => window.location.href = '/dashboard/manual-topics'}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  >
+                    <svg className="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Create a Video
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <div className="p-6 border-b border-gray-700">
+              <h2 className="text-xl font-semibold">All Files</h2>
+              <p className="text-gray-400 text-sm mt-1">
+                All files stored in your account
+              </p>
+            </div>
+            
+            {isLoading ? (
+              <div className="p-6">
+                <div className="animate-pulse space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-20 bg-gray-700 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            ) : files.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-700">
                   <thead className="bg-gray-700">
@@ -504,77 +567,87 @@ const StorageManager = () => {
                         File
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Last Modified
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Size
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Uploaded
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-gray-800 divide-y divide-gray-700">
-                    {files.map((file, index) => {
-                      // Extract filename from key
-                      const filename = file.key.split('/').pop();
-                      
-                      return (
-                        <tr key={index}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0">
-                                {getFileTypeIcon(file.key)}
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-white">{filename}</div>
-                                <div className="text-xs text-gray-400">{file.key}</div>
-                              </div>
+                    {files.map((file) => (
+                      <tr key={file.key} className="hover:bg-gray-750">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 text-gray-400">
+                              {getFileTypeIcon(file.key)}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-300">{formatFileSize(file.size)}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-300">{formatDate(file.lastModified)}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleDownload(file.key)}
-                                className="text-blue-400 hover:text-blue-300 transition duration-300"
-                              >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => handleDelete(file.key)}
-                                className="text-red-400 hover:text-red-300 transition duration-300"
-                              >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium">{file.key.split('/').pop()}</div>
+                              <div className="text-sm text-gray-400">{file.key}</div>
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          {formatDate(file.lastModified)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          {formatFileSize(file.size)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-3">
+                            <button
+                              onClick={() => handleDownload(file.key)}
+                              className="text-green-400 hover:text-green-300"
+                              title="Download"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(file.key)}
+                              className="text-red-400 hover:text-red-300"
+                              title="Delete"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-          ) : (
-            <div className="bg-gray-800 rounded-lg p-8 text-center">
-              <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-              </svg>
-              <h3 className="text-xl font-medium text-gray-300 mb-2">No files uploaded yet</h3>
-              <p className="text-gray-400">Upload your first file to get started</p>
-            </div>
-          )}
-        </div>
+            ) : (
+              <div className="p-6 text-center">
+                <svg className="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-300">No files</h3>
+                <p className="mt-1 text-sm text-gray-400">
+                  You don't have any files stored yet.
+                </p>
+                <div className="mt-6">
+                  <button
+                    onClick={() => window.location.href = '/dashboard/manual-topics'}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  >
+                    <svg className="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Create a Video
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

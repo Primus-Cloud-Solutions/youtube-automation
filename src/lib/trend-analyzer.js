@@ -75,7 +75,7 @@ const MOCK_TRENDS = {
     { title: 'Customer Experience Innovations', description: 'New approaches to delighting customers in the digital era.', score: 80 }
   ],
   travel: [
-    { title: 'Hidden Gems: Underrated Destinations', description: 'Spectacular locations that aren't overrun with tourists.', score: 93 },
+    { title: 'Hidden Gems: Underrated Destinations', description: 'Spectacular locations that are not overrun with tourists.', score: 93 },
     { title: 'Sustainable Travel Guide', description: 'How to explore the world while minimizing environmental impact.', score: 90 },
     { title: 'Digital Nomad Lifestyle', description: 'Working remotely while traveling the world.', score: 87 },
     { title: 'Budget Travel Hacks', description: 'See more of the world without breaking the bank.', score: 84 },
@@ -294,71 +294,46 @@ export async function predictViralPotential(topic, category, keywords = []) {
     
     baseScore += categoryBonus[category.toLowerCase()] || 0;
     
-    // Adjust score based on topic characteristics
-    if (topic.includes('2025') || topic.includes('future')) baseScore += 5;
-    if (topic.includes('guide') || topic.includes('how to')) baseScore += 3;
-    if (topic.includes('AI') || topic.includes('crypto')) baseScore += 4;
-    if (topic.length < 30) baseScore += 2; // Shorter titles tend to perform better
+    // Adjust score based on topic length (shorter titles tend to perform better)
+    const words = topic.split(' ').length;
+    if (words <= 5) baseScore += 5;
+    else if (words >= 10) baseScore -= 5;
     
-    // Adjust for keywords
-    keywords.forEach(keyword => {
-      if (['trending', 'viral', 'new', 'latest', 'breakthrough'].includes(keyword.toLowerCase())) {
-        baseScore += 2;
+    // Adjust score based on keywords
+    const trendyKeywords = ['AI', 'guide', 'how to', 'best', 'top', 'review', '2025', 'future', 'secrets', 'revealed'];
+    const keywordMatches = trendyKeywords.filter(kw => 
+      topic.toLowerCase().includes(kw.toLowerCase()) || 
+      keywords.some(k => k.toLowerCase().includes(kw.toLowerCase()))
+    );
+    
+    baseScore += keywordMatches.length * 2;
+    
+    // Cap the score at 100
+    const finalScore = Math.min(Math.round(baseScore), 100);
+    
+    // Generate insights
+    const insights = [
+      {
+        factor: 'Category Popularity',
+        impact: categoryBonus[category.toLowerCase()] || 0,
+        description: `The ${category} category has ${categoryBonus[category.toLowerCase()] > 5 ? 'high' : 'moderate'} viral potential.`
+      },
+      {
+        factor: 'Title Length',
+        impact: words <= 5 ? 5 : (words >= 10 ? -5 : 0),
+        description: `Your title has ${words} words, which is ${words <= 5 ? 'optimal' : (words >= 10 ? 'too long' : 'good')}.`
+      },
+      {
+        factor: 'Trending Keywords',
+        impact: keywordMatches.length * 2,
+        description: keywordMatches.length > 0 
+          ? `Your topic contains ${keywordMatches.length} trending keywords: ${keywordMatches.join(', ')}.`
+          : 'Your topic does not contain any trending keywords.'
       }
-    });
+    ];
     
-    // Cap the score at 95
-    const finalScore = Math.min(baseScore, 95);
-    
-    // Generate insights based on the score and topic
-    const insights = [];
-    
-    if (finalScore > 85) {
-      insights.push('High viral potential detected');
-      insights.push('Topic is highly relevant to current trends');
-    } else if (finalScore > 75) {
-      insights.push('Good viral potential');
-      insights.push('Topic has solid engagement metrics');
-    } else {
-      insights.push('Moderate viral potential');
-      insights.push('Consider refining the topic angle');
-    }
-    
-    // Add category-specific insights
-    if (category.toLowerCase() === 'technology') {
-      insights.push('Tech audiences respond well to detailed tutorials');
-      insights.push('Consider adding code examples or demonstrations');
-    } else if (category.toLowerCase() === 'gaming') {
-      insights.push('Gaming content performs best with gameplay footage');
-      insights.push('Consider reaction-style or review format');
-    } else if (category.toLowerCase() === 'finance') {
-      insights.push('Financial content benefits from data visualization');
-      insights.push('Include disclaimers for investment-related content');
-    } else if (category.toLowerCase() === 'health') {
-      insights.push('Health content should cite credible sources');
-      insights.push('Personal stories increase engagement in health topics');
-    } else if (category.toLowerCase() === 'entertainment') {
-      insights.push('Entertainment content benefits from visual appeal');
-      insights.push('Consider news or reaction format for higher engagement');
-    } else if (category.toLowerCase() === 'education') {
-      insights.push('Educational content performs well with clear structure');
-      insights.push('Consider creating a series for complex topics');
-    } else if (category.toLowerCase() === 'business') {
-      insights.push('Business content benefits from case studies');
-      insights.push('Include actionable takeaways for viewers');
-    } else if (category.toLowerCase() === 'travel') {
-      insights.push('Travel content needs high-quality visuals');
-      insights.push('Include practical tips viewers can use');
-    } else if (category.toLowerCase() === 'fashion') {
-      insights.push('Fashion content performs best with trend analysis');
-      insights.push('Consider before/after transformations');
-    } else if (category.toLowerCase() === 'food') {
-      insights.push('Food content benefits from clear recipe instructions');
-      insights.push('Close-up shots of food increase engagement');
-    }
-    
-    return { 
-      success: true, 
+    return {
+      success: true,
       score: finalScore,
       insights
     };
@@ -374,46 +349,12 @@ export async function predictViralPotential(topic, category, keywords = []) {
  */
 export async function getCategories() {
   try {
-    return { 
-      success: true, 
+    return {
+      success: true,
       categories: CATEGORIES
     };
   } catch (error) {
     console.error('Error getting categories:', error);
     return { success: false, categories: null, error: error.message || 'Failed to get categories' };
-  }
-}
-
-/**
- * Get trending topics across multiple categories
- * @param {Array} categories - List of categories to analyze
- * @param {number} countPerCategory - Number of trends to return per category
- * @param {string} apiKey - YouTube API key (optional)
- * @returns {Promise<{success: boolean, trendsByCategory: Object|null, error: string|null}>} - Trends by category
- */
-export async function analyzeTrendsMultiCategory(categories, countPerCategory = 3, apiKey = null) {
-  try {
-    const trendsByCategory = {};
-    
-    // Process each category
-    for (const category of categories) {
-      const result = await analyzeTrends(category, countPerCategory, apiKey);
-      
-      if (result.success) {
-        trendsByCategory[category] = result.trends;
-      } else {
-        console.warn(`Failed to get trends for category ${category}: ${result.error}`);
-        // Use mock data as fallback
-        trendsByCategory[category] = (MOCK_TRENDS[category.toLowerCase()] || MOCK_TRENDS.technology).slice(0, countPerCategory);
-      }
-    }
-    
-    return {
-      success: true,
-      trendsByCategory
-    };
-  } catch (error) {
-    console.error('Error analyzing multi-category trends:', error);
-    return { success: false, trendsByCategory: null, error: error.message || 'Failed to analyze multi-category trends' };
   }
 }

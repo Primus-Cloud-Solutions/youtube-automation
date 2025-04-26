@@ -1,17 +1,17 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 
 // Initialize Stripe with the publishable key from environment variables with fallback for build time
-const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_dummy_key_for_build';
-const stripePromise = typeof window !== 'undefined' ? loadStripe(stripePublishableKey) : null;
+const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51O4TvqLkdIwU5PVRJOBEeVlmASdLFDKkXBJRYbGzsSXUkRKI3VGdJUQhvIJVs8mOky7QECnPXdtpKrcUZlTHyJKX00vWrWnDDN';
+let stripePromise;
 
 // Create payment context with default values
 const PaymentContext = createContext({
   loading: false,
   error: null,
-  createCheckoutSession: async (planId, userId) => ({ success: false, error: 'PaymentProvider not initialized' }),
+  createCheckoutSession: async (planId, userId, email, successUrl, cancelUrl) => ({ success: false, error: 'PaymentProvider not initialized' }),
   getSubscription: async (userId) => ({ success: false, error: 'PaymentProvider not initialized', subscription: null }),
   cancelSubscription: async (userId) => ({ success: false, error: 'PaymentProvider not initialized' }),
 });
@@ -20,18 +20,32 @@ const PaymentContext = createContext({
 export function PaymentProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize Stripe on client side only
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      stripePromise = loadStripe(stripePublishableKey);
+      setIsInitialized(true);
+    }
+  }, []);
 
   // Function to create a checkout session and redirect to Stripe
-  const createCheckoutSession = async (planId, userId) => {
+  const createCheckoutSession = async (planId, userId, email, successUrl, cancelUrl) => {
     try {
+      if (!isInitialized && typeof window !== 'undefined') {
+        stripePromise = loadStripe(stripePublishableKey);
+        setIsInitialized(true);
+      }
+      
       setLoading(true);
       setError(null);
 
-      // Get the current URL for success and cancel redirects
+      // Use provided URLs or generate defaults
       const origin = window.location.origin;
-      const successUrl = `${origin}/dashboard?payment=success`;
-      const cancelUrl = `${origin}/pricing?payment=canceled`;
-
+      const defaultSuccessUrl = `${origin}/dashboard?payment=success`;
+      const defaultCancelUrl = `${origin}/pricing?payment=canceled`;
+      
       // Create checkout session
       const response = await fetch('/api/payment', {
         method: 'POST',
@@ -42,8 +56,9 @@ export function PaymentProvider({ children }) {
           action: 'create-checkout',
           planId,
           userId,
-          successUrl,
-          cancelUrl,
+          email,
+          successUrl: successUrl || defaultSuccessUrl,
+          cancelUrl: cancelUrl || defaultCancelUrl,
         }),
       });
 
@@ -165,5 +180,16 @@ export function PaymentProvider({ children }) {
 
 // Custom hook to use payment context
 export const usePayment = () => {
-  return useContext(PaymentContext);
+  const context = useContext(PaymentContext);
+  if (!context) {
+    console.warn('usePayment must be used within a PaymentProvider');
+    return {
+      loading: false,
+      error: 'PaymentProvider not found',
+      createCheckoutSession: async () => ({ success: false, error: 'PaymentProvider not found' }),
+      getSubscription: async () => ({ success: false, error: 'PaymentProvider not found', subscription: null }),
+      cancelSubscription: async () => ({ success: false, error: 'PaymentProvider not found' }),
+    };
+  }
+  return context;
 };
