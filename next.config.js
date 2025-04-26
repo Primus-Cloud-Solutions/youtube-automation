@@ -12,7 +12,10 @@ const nextConfig = {
     ignoreBuildErrors: true
   },
   output: 'standalone',
-  distDir: '.next'
+  distDir: '.next',
+  experimental: {
+    serverActions: true
+  }
 };
 
 module.exports = nextConfig;

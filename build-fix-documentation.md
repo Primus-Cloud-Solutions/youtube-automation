@@ -15,6 +15,7 @@ Replaced unavailable fonts with Google Fonts alternatives:
 ### 3. Server Component Issues
 Added "use client" directive to components using React hooks:
 - Fixed `/src/app/dashboard/storage/page.tsx` by adding "use client" at the top
+- Fixed `/src/app/dashboard/system-test/page.tsx` by adding "use client" at the top
 
 ### 4. Duplicate Pages Conflict
 Updated Netlify configuration to handle potential build cache issues:
@@ -25,6 +26,11 @@ Updated Netlify configuration to handle potential build cache issues:
 - Fixed invalid TOML syntax in netlify.toml file
 - Removed incorrect first line that was causing parsing errors
 - Ensured proper section formatting for Netlify configuration
+
+### 6. Server Actions Feature Flag
+- Enabled Server Actions in Next.js configuration
+- Added `experimental: { serverActions: true }` to next.config.js
+- Fixed errors related to 'use server' directives in API routes
 
 ## Deployment Instructions
 
@@ -43,3 +49,4 @@ Updated Netlify configuration to handle potential build cache issues:
 3. **Dependency Management**: Regularly audit and update dependencies
 4. **Build Testing**: Test builds locally before deploying to catch issues early
 5. **Configuration Files**: Validate configuration files like netlify.toml before deployment
+6. **Feature Flags**: Keep Next.js experimental features updated as they move to stable
