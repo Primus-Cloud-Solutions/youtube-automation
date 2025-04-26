@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -447,41 +449,41 @@ const PricingPage = () => {
             </div>
           </div>
         ) : (
-          <div className="text-center text-gray-400">
-            Error loading plans. Please try again later.
+          <div className="text-center py-12">
+            <p className="text-red-400">Error loading plans. Please try again later.</p>
           </div>
         )}
         
         {/* FAQ Section */}
-        <div className="max-w-3xl mx-auto mt-16">
-          <h2 className="text-2xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
+        <div className="mt-16 max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
           
           <div className="space-y-6">
             <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-medium mb-2">How does the free trial work?</h3>
-              <p className="text-gray-400">
-                Our 7-day free trial gives you access to basic features with no credit card required. You can create up to 3 videos during your trial period to test our platform.
+              <h3 className="text-xl font-semibold mb-3">Can I cancel my subscription at any time?</h3>
+              <p className="text-gray-300">
+                Yes, you can cancel your subscription at any time from your account settings. You'll continue to have access until the end of your current billing period.
               </p>
             </div>
             
             <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-medium mb-2">Can I upgrade or downgrade my plan?</h3>
-              <p className="text-gray-400">
-                Yes, you can change your plan at any time. When upgrading, you'll get immediate access to the new features. When downgrading, the change will take effect at the end of your current billing cycle.
+              <h3 className="text-xl font-semibold mb-3">How does the free trial work?</h3>
+              <p className="text-gray-300">
+                Our 7-day free trial gives you full access to all features of the Pro plan. No credit card is required to start your trial. You can upgrade to a paid plan at any time during or after your trial.
               </p>
             </div>
             
             <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-medium mb-2">What happens if I exceed my video limit?</h3>
-              <p className="text-gray-400">
-                If you reach your monthly video limit, you can upgrade to a higher plan to create more videos, or wait until your limit resets at the start of your next billing cycle.
+              <h3 className="text-xl font-semibold mb-3">What happens to my videos if I downgrade or cancel?</h3>
+              <p className="text-gray-300">
+                Any videos already created and uploaded to your YouTube channel will remain there. However, scheduled videos that haven't been processed yet will be canceled, and you'll lose access to features not included in your new plan.
               </p>
             </div>
             
             <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-medium mb-2">How do I cancel my subscription?</h3>
-              <p className="text-gray-400">
-                You can cancel your subscription at any time from your account settings. After cancellation, you'll still have access to your plan until the end of your current billing period.
+              <h3 className="text-xl font-semibold mb-3">Do I need to connect my YouTube account?</h3>
+              <p className="text-gray-300">
+                Yes, to enable automatic uploads to YouTube, you'll need to connect your YouTube account via API key. We provide detailed instructions on how to set this up in your account settings.
               </p>
             </div>
           </div>
