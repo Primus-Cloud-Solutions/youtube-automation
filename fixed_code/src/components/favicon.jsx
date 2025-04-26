@@ -1,0 +1,13 @@
+import React from 'react';
+import { Helmet } from 'react-helmet';
+
+const Favicon = () => {
+  return (
+    <Helmet>
+      <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyKSIvPgo8cGF0aCBkPSJNMjIuMDg2IDE0LjQxNDNDMjIuNDgxNCAxNC42NTcxIDIyLjQ4MTQgMTUuMjQyOSAyMi4wODYgMTUuNDg1N0wxMi42MzAzIDIxLjQ4NTdDMTIuMjM0OSAyMS43Mjg1IDExLjczMDMgMjEuNDM1NyAxMS43MzAzIDIwLjk3MTRWOC45Mjg1N0MxMS43MzAzIDguNDY0MjkgMTIuMjM0OSA4LjE3MTQzIDEyLjYzMDMgOC40MTQyOUwyMi4wODYgMTQuNDE0M1oiIGZpbGw9IndoaXRlIi8+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50MF9saW5lYXIiIHgxPSIwIiB5MT0iMCIgeDI9IjMyIiB5Mj0iMzIiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KPHN0b3Agc3RvcC1jb2xvcj0iIzNCODJGNiIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4QjVDRjYiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K" />
+      <title>TubeAutomator - YouTube Automation Platform</title>
+    </Helmet>
+  );
+};
+
+export default Favicon;
