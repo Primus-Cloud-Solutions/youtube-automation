@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/auth-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -10,8 +10,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const { signIn } = useAuth();
+  const { signIn, user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Check if user is already logged in
+  useEffect(() => {
+    if (user) {
+      console.log('User already logged in, redirecting to dashboard');
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,12 +27,15 @@ export default function LoginPage() {
     setErrorMessage('');
 
     try {
+      console.log('Submitting login form with:', email, password);
       const result = await signIn(email, password);
       
       if (result.success) {
+        console.log('Login successful, redirecting to dashboard');
         // Redirect to dashboard on successful login
         router.push('/dashboard');
       } else {
+        console.error('Login failed:', result.error);
         setErrorMessage(result.error || 'Invalid email or password');
       }
     } catch (error) {
@@ -42,12 +53,15 @@ export default function LoginPage() {
     setErrorMessage('');
 
     try {
+      console.log('Attempting demo login');
       const result = await signIn('test@example.com', 'Password123!');
       
       if (result.success) {
+        console.log('Demo login successful, redirecting to dashboard');
         // Redirect to dashboard on successful login
         router.push('/dashboard');
       } else {
+        console.error('Demo login failed:', result.error);
         setErrorMessage(result.error || 'Demo login failed');
       }
     } catch (error) {
@@ -56,6 +70,12 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Display demo credentials for easy access
+  const demoCredentials = {
+    email: 'test@example.com',
+    password: 'Password123!'
   };
 
   return (
@@ -153,6 +173,13 @@ export default function LoginPage() {
                 Use Demo Account
               </button>
             </div>
+          </div>
+          
+          {/* Demo credentials info box */}
+          <div className="mt-6 p-3 bg-green-900/30 border border-green-800 rounded-md">
+            <h3 className="text-sm font-medium text-green-400 mb-1">Demo Credentials</h3>
+            <p className="text-xs text-gray-300">Email: {demoCredentials.email}</p>
+            <p className="text-xs text-gray-300">Password: {demoCredentials.password}</p>
           </div>
           
           <div className="mt-8 text-center text-sm text-gray-400">

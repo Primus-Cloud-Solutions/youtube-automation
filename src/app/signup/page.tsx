@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/auth-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -12,8 +12,30 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const { signUp } = useAuth();
+  const [passwordStrength, setPasswordStrength] = useState({
+    length: false,
+    hasNumber: false,
+    hasSpecial: false
+  });
+  const { signUp, user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Check if user is already logged in
+  useEffect(() => {
+    if (user) {
+      console.log('User already logged in, redirecting to dashboard');
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
+  // Check password strength as user types
+  useEffect(() => {
+    setPasswordStrength({
+      length: password.length >= 8,
+      hasNumber: /\d/.test(password),
+      hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    });
+  }, [password]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,19 +50,22 @@ export default function SignupPage() {
     }
 
     // Validate password strength
-    if (password.length < 8) {
-      setErrorMessage('Password must be at least 8 characters long');
+    if (!passwordStrength.length || !passwordStrength.hasNumber || !passwordStrength.hasSpecial) {
+      setErrorMessage('Password does not meet the requirements');
       setIsLoading(false);
       return;
     }
 
     try {
+      console.log('Submitting signup form with:', email, password, fullName);
       const result = await signUp(email, password, fullName);
       
       if (result.success) {
+        console.log('Signup successful, redirecting to dashboard');
         // Redirect to dashboard on successful signup
         router.push('/dashboard');
       } else {
+        console.error('Signup failed:', result.error);
         setErrorMessage(result.error || 'Failed to create account');
       }
     } catch (error) {
@@ -114,9 +139,26 @@ export default function SignupPage() {
                 placeholder="••••••••"
                 required
               />
-              <p className="mt-1 text-sm text-gray-400">
-                Password must be at least 8 characters long
-              </p>
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center">
+                  <div className={`w-4 h-4 rounded-full mr-2 ${passwordStrength.length ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                  <p className={`text-xs ${passwordStrength.length ? 'text-green-400' : 'text-gray-400'}`}>
+                    At least 8 characters
+                  </p>
+                </div>
+                <div className="flex items-center">
+                  <div className={`w-4 h-4 rounded-full mr-2 ${passwordStrength.hasNumber ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                  <p className={`text-xs ${passwordStrength.hasNumber ? 'text-green-400' : 'text-gray-400'}`}>
+                    Contains at least one number
+                  </p>
+                </div>
+                <div className="flex items-center">
+                  <div className={`w-4 h-4 rounded-full mr-2 ${passwordStrength.hasSpecial ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                  <p className={`text-xs ${passwordStrength.hasSpecial ? 'text-green-400' : 'text-gray-400'}`}>
+                    Contains at least one special character
+                  </p>
+                </div>
+              </div>
             </div>
             
             <div>
@@ -128,10 +170,30 @@ export default function SignupPage() {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className={`w-full px-4 py-2 rounded-md bg-gray-700 border focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                  confirmPassword && password !== confirmPassword ? 'border-red-500' : 'border-gray-600'
+                }`}
                 placeholder="••••••••"
                 required
               />
+              {confirmPassword && password !== confirmPassword && (
+                <p className="mt-1 text-xs text-red-400">
+                  Passwords do not match
+                </p>
+              )}
+            </div>
+            
+            <div className="pt-2">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="form-checkbox h-4 w-4 text-green-500 rounded bg-gray-700 border-gray-600"
+                  required
+                />
+                <span className="ml-2 text-sm text-gray-300">
+                  I agree to the <Link href="#" className="text-green-500 hover:text-green-400">Terms of Service</Link> and <Link href="#" className="text-green-500 hover:text-green-400">Privacy Policy</Link>
+                </span>
+              </label>
             </div>
             
             <button
@@ -168,6 +230,18 @@ export default function SignupPage() {
               >
                 GitHub
               </button>
+            </div>
+          </div>
+          
+          {/* Demo account info */}
+          <div className="mt-6 p-3 bg-blue-900/30 border border-blue-800 rounded-md">
+            <h3 className="text-sm font-medium text-blue-400 mb-1">Already Have a Demo Account?</h3>
+            <p className="text-xs text-gray-300">Email: test@example.com</p>
+            <p className="text-xs text-gray-300">Password: Password123!</p>
+            <div className="mt-2">
+              <Link href="/login" className="text-xs text-blue-400 hover:text-blue-300">
+                Sign in with demo account →
+              </Link>
             </div>
           </div>
           

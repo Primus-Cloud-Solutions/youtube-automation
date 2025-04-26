@@ -1,58 +1,96 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../lib/auth-context';
 import withAuth from '../utils/with-auth';
 
 function AccountPage() {
   const { user, signOut, updateUserProfile } = useAuth();
-  const [name, setName] = useState(user?.name || '');
+  const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [isLoading, setIsLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({
+    length: false,
+    hasNumber: false,
+    hasSpecial: false
+  });
   
-  const handleProfileUpdate = (e) => {
+  // Check password strength as user types
+  useEffect(() => {
+    if (newPassword) {
+      setPasswordStrength({
+        length: newPassword.length >= 8,
+        hasNumber: /\d/.test(newPassword),
+        hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword)
+      });
+    }
+  }, [newPassword]);
+  
+  const handleProfileUpdate = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     
     try {
-      updateUserProfile({ name, email });
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      const result = await updateUserProfile({ 
+        fullName
+      });
+      
+      if (result.success) {
+        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Failed to update profile' });
+      }
       
       // Clear message after 3 seconds
       setTimeout(() => {
         setMessage({ type: '', text: '' });
       }, 3000);
     } catch (error) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: error.message || 'An error occurred' });
+    } finally {
+      setIsLoading(false);
     }
   };
   
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     
+    // Validate password
     if (newPassword !== confirmPassword) {
       setMessage({ type: 'error', text: 'New passwords do not match' });
+      setIsLoading(false);
       return;
     }
     
-    if (newPassword.length < 8) {
-      setMessage({ type: 'error', text: 'Password must be at least 8 characters long' });
+    if (!passwordStrength.length || !passwordStrength.hasNumber || !passwordStrength.hasSpecial) {
+      setMessage({ type: 'error', text: 'Password does not meet the requirements' });
+      setIsLoading(false);
       return;
     }
     
-    // In a real app, this would call an API to change the password
-    setMessage({ type: 'success', text: 'Password changed successfully!' });
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    
-    // Clear message after 3 seconds
-    setTimeout(() => {
-      setMessage({ type: '', text: '' });
-    }, 3000);
+    try {
+      // In a real app, this would call an API to change the password
+      // For demo, we'll simulate success
+      setMessage({ type: 'success', text: 'Password changed successfully!' });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setMessage({ type: '', text: '' });
+      }, 3000);
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'Failed to change password' });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   return (
@@ -117,14 +155,14 @@ function AccountPage() {
                 <h2 className="text-xl font-semibold mb-6">Profile Information</h2>
                 <form onSubmit={handleProfileUpdate}>
                   <div className="mb-4">
-                    <label htmlFor="name" className="block text-sm font-medium mb-2">
-                      Name
+                    <label htmlFor="fullName" className="block text-sm font-medium mb-2">
+                      Full Name
                     </label>
                     <input
-                      id="name"
+                      id="fullName"
                       type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
                       className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
                     />
@@ -140,15 +178,18 @@ function AccountPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      required
+                      disabled
+                      title="Email cannot be changed in demo mode"
                     />
+                    <p className="mt-1 text-xs text-gray-400">Email cannot be changed in demo mode</p>
                   </div>
                   
                   <button
                     type="submit"
-                    className="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md font-medium transition-colors"
+                    disabled={isLoading}
+                    className="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    Update Profile
+                    {isLoading ? 'Updating...' : 'Update Profile'}
                   </button>
                 </form>
               </div>
@@ -182,6 +223,29 @@ function AccountPage() {
                       className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
                     />
+                    
+                    {newPassword && (
+                      <div className="mt-2 space-y-1">
+                        <div className="flex items-center">
+                          <div className={`w-4 h-4 rounded-full mr-2 ${passwordStrength.length ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                          <p className={`text-xs ${passwordStrength.length ? 'text-green-400' : 'text-gray-400'}`}>
+                            At least 8 characters
+                          </p>
+                        </div>
+                        <div className="flex items-center">
+                          <div className={`w-4 h-4 rounded-full mr-2 ${passwordStrength.hasNumber ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                          <p className={`text-xs ${passwordStrength.hasNumber ? 'text-green-400' : 'text-gray-400'}`}>
+                            Contains at least one number
+                          </p>
+                        </div>
+                        <div className="flex items-center">
+                          <div className={`w-4 h-4 rounded-full mr-2 ${passwordStrength.hasSpecial ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                          <p className={`text-xs ${passwordStrength.hasSpecial ? 'text-green-400' : 'text-gray-400'}`}>
+                            Contains at least one special character
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="mb-6">
@@ -193,16 +257,24 @@ function AccountPage() {
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className={`w-full px-4 py-2 rounded-md bg-gray-700 border focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                        confirmPassword && newPassword !== confirmPassword ? 'border-red-500' : 'border-gray-600'
+                      }`}
                       required
                     />
+                    {confirmPassword && newPassword !== confirmPassword && (
+                      <p className="mt-1 text-xs text-red-400">
+                        Passwords do not match
+                      </p>
+                    )}
                   </div>
                   
                   <button
                     type="submit"
-                    className="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md font-medium transition-colors"
+                    disabled={isLoading}
+                    className="py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    Change Password
+                    {isLoading ? 'Changing Password...' : 'Change Password'}
                   </button>
                 </form>
               </div>
@@ -214,6 +286,10 @@ function AccountPage() {
                 <div className="mb-4">
                   <p className="font-medium text-lg">Professional Plan</p>
                   <p className="text-gray-400">20 AI-generated videos per month</p>
+                  <div className="mt-3 bg-gray-700 rounded-full h-2 w-full">
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full" style={{ width: '60%' }}></div>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">12 of 20 videos used this month</p>
                   <p className="text-green-500 mt-2">Active until May 25, 2025</p>
                 </div>
                 <Link href="/pricing" className="block w-full py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md font-medium transition-colors text-center">
@@ -224,13 +300,17 @@ function AccountPage() {
               <div className="bg-gray-800 rounded-lg shadow-lg p-6">
                 <h2 className="text-xl font-semibold mb-4">Account Actions</h2>
                 <div className="space-y-4">
-                  <Link href="/account/billing" className="block w-full py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md font-medium transition-colors text-center">
-                    Billing History
+                  <Link href="/dashboard/api-keys" className="block w-full py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md font-medium transition-colors text-center">
+                    YouTube API Keys
                   </Link>
-                  <Link href="/account/api" className="block w-full py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md font-medium transition-colors text-center">
-                    API Keys
+                  <Link href="/dashboard/analytics" className="block w-full py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md font-medium transition-colors text-center">
+                    View Analytics
                   </Link>
-                  <button className="block w-full py-2 px-4 bg-red-900/50 hover:bg-red-900 text-red-400 hover:text-white rounded-md font-medium transition-colors text-center">
+                  <button 
+                    className="block w-full py-2 px-4 bg-red-900/50 hover:bg-red-900 text-red-400 hover:text-white rounded-md font-medium transition-colors text-center"
+                    onClick={() => confirm('This action cannot be undone. Are you sure you want to delete your account?') && 
+                      alert('Account deletion is disabled in demo mode')}
+                  >
                     Delete Account
                   </button>
                 </div>
