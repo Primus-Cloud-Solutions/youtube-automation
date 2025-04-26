@@ -1,20 +1,15 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
-import { google } from 'googleapis';
-import { generateScript } from '../openai-api';
-import { getVoices, generateSpeech } from '../elevenlabs-api';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'example-anon-key';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Initialize YouTube client
-const youtube = google.youtube({
-  version: 'v3',
-  auth: process.env.YOUTUBE_API_KEY || ''
-});
+import { generateScript } from './openai-api';
+import { generateSpeech, getVoices } from './elevenlabs-api';
+import { 
+  getTrendingTopics, 
+  getTrendingVideos, 
+  analyzeContentPotential, 
+  generateTopicIdeas,
+  CONTENT_CATEGORIES
+} from '../../lib/trend-analyzer';
+import { uploadToS3, getSignedUrl } from './s3-storage';
 
 // Helper functions for API responses
 const createApiResponse = (data) => {
@@ -37,29 +32,105 @@ const withErrorHandling = (handler) => {
   };
 };
 
-// YouTube functions
-const searchVideos = async (query, maxResults = 10) => {
-  try {
-    const response = await youtube.search.list({
-      part: 'snippet',
-      q: query,
-      maxResults,
-      type: 'video'
-    });
-    
-    return response.data.items;
-  } catch (error) {
-    console.error('Error searching videos:', error);
-    throw error;
-  }
-};
-
 // API route handler
 export const POST = withErrorHandling(async (request) => {
-  const { action, topic, text, voiceId, query, length, tone } = await request.json();
+  const { 
+    action, 
+    topic, 
+    category,
+    region,
+    count,
+    userId,
+    text, 
+    voiceId,
+    videoId,
+    scriptId,
+    audioId,
+    length, 
+    tone,
+    scheduleDate,
+    scheduleTime,
+    visibility
+  } = await request.json();
   
   if (!action) {
     return createApiError('Action is required', 400);
+  }
+  
+  // Get trending topics
+  if (action === 'get-trending-topics') {
+    if (!category) {
+      return createApiError('Category is required', 400);
+    }
+    
+    try {
+      const result = await getTrendingTopics(category, region || 'US');
+      
+      if (!result.success) {
+        return createApiError(result.error || 'Failed to get trending topics', 500);
+      }
+      
+      return createApiResponse({ topics: result.topics });
+    } catch (error) {
+      return createApiError(`Error getting trending topics: ${error.message}`, 500);
+    }
+  }
+  
+  // Get trending videos
+  if (action === 'get-trending-videos') {
+    if (!category) {
+      return createApiError('Category is required', 400);
+    }
+    
+    try {
+      const result = await getTrendingVideos(category, region || 'US', count || 10);
+      
+      if (!result.success) {
+        return createApiError(result.error || 'Failed to get trending videos', 500);
+      }
+      
+      return createApiResponse({ videos: result.videos });
+    } catch (error) {
+      return createApiError(`Error getting trending videos: ${error.message}`, 500);
+    }
+  }
+  
+  // Analyze content potential
+  if (action === 'analyze-content-potential') {
+    if (!topic || !category) {
+      return createApiError('Topic and category are required', 400);
+    }
+    
+    try {
+      const result = await analyzeContentPotential(topic, category);
+      
+      if (!result.success) {
+        return createApiError(result.error || 'Failed to analyze content potential', 500);
+      }
+      
+      return createApiResponse({ analysis: result.analysis });
+    } catch (error) {
+      return createApiError(`Error analyzing content potential: ${error.message}`, 500);
+    }
+  }
+  
+  // Generate topic ideas
+  if (action === 'generate-topic-ideas') {
+    if (!category) {
+      return createApiError('Category is required', 400);
+    }
+    
+    try {
+      const result = await generateTopicIdeas(category, count || 5);
+      
+      if (!result.success) {
+        return createApiError(result.error || 'Failed to generate topic ideas', 500);
+      }
+      
+      return createApiResponse({ topics: result.topics });
+    } catch (error) {
+      return createApiError(`Error generating topic ideas: ${error.message}`, 500);
+    }
   }
   
   // Generate script
@@ -69,8 +140,22 @@ export const POST = withErrorHandling(async (request) => {
     }
     
     try {
-      const scriptContent = await generateScript(topic, length, tone);
-      return createApiResponse({ script: scriptContent });
+      const scriptContent = await generateScript(topic, length || 'medium', tone || 'informative');
+      
+      // In a real implementation, you would save this to a database
+      const scriptId = `script-${Date.now()}`;
+      
+      return createApiResponse({ 
+        script: scriptContent,
+        scriptId,
+        metadata: {
+          topic,
+          length: length || 'medium',
+          tone: tone || 'informative',
+          createdAt: new Date().toISOString(),
+          wordCount: scriptContent.split(' ').length
+        }
+      });
     } catch (error) {
       return createApiError(`Error generating script: ${error.message}`, 500);
     }
@@ -85,30 +170,167 @@ export const POST = withErrorHandling(async (request) => {
     try {
       const audioBuffer = await generateSpeech(text, voiceId);
       
-      // In a real implementation, you would save this to a file or return it directly
-      // For demo purposes, we'll just return a success message
+      // In a real implementation, you would save this to S3
+      const audioId = `audio-${Date.now()}`;
+      const s3Key = `audio/${userId}/${audioId}.mp3`;
+      
+      // Upload to S3
+      const uploadResult = await uploadToS3(s3Key, audioBuffer, 'audio/mpeg');
+      
+      if (!uploadResult.success) {
+        return createApiError(uploadResult.error || 'Failed to upload audio', 500);
+      }
+      
+      // Get a signed URL for the audio
+      const urlResult = await getSignedUrl(s3Key);
+      
+      if (!urlResult.success) {
+        return createApiError(urlResult.error || 'Failed to get audio URL', 500);
+      }
+      
       return createApiResponse({ 
-        message: 'Speech generated successfully',
-        audioUrl: '/api/audio/demo.mp3' // This would be a real URL in production
+        audioId,
+        audioUrl: urlResult.url,
+        metadata: {
+          voiceId,
+          duration: estimateAudioDuration(text),
+          createdAt: new Date().toISOString(),
+          textLength: text.length
+        }
       });
     } catch (error) {
       return createApiError(`Error generating speech: ${error.message}`, 500);
     }
   }
   
-  // Search videos
-  if (action === 'search-videos') {
-    if (!query) {
-      return createApiError('Query is required', 400);
+  // Get available voices
+  if (action === 'get-voices') {
+    try {
+      const voices = await getVoices();
+      return createApiResponse({ voices });
+    } catch (error) {
+      return createApiError(`Error getting voices: ${error.message}`, 500);
+    }
+  }
+  
+  // Create video
+  if (action === 'create-video') {
+    if (!scriptId || !audioId) {
+      return createApiError('Script ID and audio ID are required', 400);
     }
     
     try {
-      const videos = await searchVideos(query);
-      return createApiResponse({ videos });
+      // In a real implementation, you would use a video rendering service
+      // For now, we'll simulate the video creation process
+      
+      // Simulate processing delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const videoId = `video-${Date.now()}`;
+      const s3Key = `videos/${userId}/${videoId}.mp4`;
+      
+      // In a real implementation, this would be the actual video file
+      const mockVideoBuffer = Buffer.from('Mock video data');
+      
+      // Upload to S3
+      const uploadResult = await uploadToS3(s3Key, mockVideoBuffer, 'video/mp4');
+      
+      if (!uploadResult.success) {
+        return createApiError(uploadResult.error || 'Failed to upload video', 500);
+      }
+      
+      // Get a signed URL for the video
+      const urlResult = await getSignedUrl(s3Key);
+      
+      if (!urlResult.success) {
+        return createApiError(urlResult.error || 'Failed to get video URL', 500);
+      }
+      
+      // Generate a thumbnail
+      const thumbnailKey = `thumbnails/${userId}/${videoId}.jpg`;
+      const mockThumbnailBuffer = Buffer.from('Mock thumbnail data');
+      
+      // Upload thumbnail to S3
+      const thumbnailResult = await uploadToS3(thumbnailKey, mockThumbnailBuffer, 'image/jpeg');
+      
+      if (!thumbnailResult.success) {
+        return createApiError(thumbnailResult.error || 'Failed to upload thumbnail', 500);
+      }
+      
+      // Get a signed URL for the thumbnail
+      const thumbnailUrlResult = await getSignedUrl(thumbnailKey);
+      
+      if (!thumbnailUrlResult.success) {
+        return createApiError(thumbnailUrlResult.error || 'Failed to get thumbnail URL', 500);
+      }
+      
+      return createApiResponse({ 
+        videoId,
+        videoUrl: urlResult.url,
+        thumbnailUrl: thumbnailUrlResult.url,
+        metadata: {
+          scriptId,
+          audioId,
+          duration: '10:30', // This would be calculated from the actual video
+          resolution: '1920x1080',
+          format: 'MP4',
+          createdAt: new Date().toISOString(),
+          status: 'ready'
+        }
+      });
     } catch (error) {
-      return createApiError(`Error searching videos: ${error.message}`, 500);
+      return createApiError(`Error creating video: ${error.message}`, 500);
+    }
+  }
+  
+  // Schedule video
+  if (action === 'schedule-video') {
+    if (!videoId || !scheduleDate || !scheduleTime) {
+      return createApiError('Video ID, schedule date, and schedule time are required', 400);
+    }
+    
+    try {
+      // In a real implementation, you would save this to a database
+      const scheduleId = `schedule-${Date.now()}`;
+      
+      return createApiResponse({ 
+        scheduleId,
+        metadata: {
+          videoId,
+          scheduleDate,
+          scheduleTime,
+          visibility: visibility || 'public',
+          createdAt: new Date().toISOString(),
+          status: 'scheduled'
+        }
+      });
+    } catch (error) {
+      return createApiError(`Error scheduling video: ${error.message}`, 500);
+    }
+  }
+  
+  // Get content categories
+  if (action === 'get-categories') {
+    try {
+      return createApiResponse({ categories: Object.values(CONTENT_CATEGORIES) });
+    } catch (error) {
+      return createApiError(`Error getting categories: ${error.message}`, 500);
     }
   }
   
   return createApiError('Invalid action', 400);
 });
+
+// Helper function to estimate audio duration based on text length
+function estimateAudioDuration(text) {
+  // Average speaking rate is about 150 words per minute
+  const wordCount = text.split(' ').length;
+  const minutes = wordCount / 150;
+  
+  // Format as MM:SS
+  const totalSeconds = Math.round(minutes * 60);
+  const minutesPart = Math.floor(totalSeconds / 60);
+  const secondsPart = totalSeconds % 60;
+  
+  return `${minutesPart}:${secondsPart.toString().padStart(2, '0')}`;
+}

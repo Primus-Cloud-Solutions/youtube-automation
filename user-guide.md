@@ -2,111 +2,195 @@
 
 ## Getting Started
 
-Welcome to the YouTube Automation Platform! This guide will help you get started with creating and uploading videos to YouTube using our automated tools.
+Welcome to the YouTube Automation Platform! This guide will help you get started with creating, scheduling, and publishing automated YouTube content.
 
-### Logging In
+## Quick Start Guide
 
-1. Navigate to the login page
-2. Enter your credentials (email and password)
-3. For demo purposes, you can use:
-   - Email: test@example.com
-   - Password: Password123!
-4. If you don't have an account, click "Sign Up" to create one
+### 1. Create Your Account
 
-### Creating an Account
+1. Visit the signup page and create your account
+2. Verify your email address
+3. Choose a subscription plan or start with the 7-day free trial
 
-1. Navigate to the signup page
-2. Enter your email address
-3. Create a strong password (must include uppercase, lowercase, numbers, and be at least 8 characters)
-4. Agree to the terms of service
-5. Click "Create Account"
+### 2. Connect Your YouTube Channel
+
+1. Go to Account Settings
+2. Enter your YouTube API key
+   - To get an API key, visit the [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a project and enable the YouTube Data API v3
+   - Generate an API key with appropriate permissions
+3. Click "Verify Connection" to confirm your channel is properly connected
+
+### 3. Create Your First Video
+
+#### Using Manual Topics:
+
+1. Navigate to Dashboard > Manual Topics
+2. Choose from trending topics or enter your own topic
+3. Click "Generate Script" to create AI-powered content
+4. Select voice options for your voiceover
+5. Preview and edit the generated content
+6. Click "Create Video" to produce your video
+7. Upload directly to YouTube or save to your content library
+
+#### Using Automated Scheduling:
+
+1. Navigate to Dashboard > Topic Scheduler
+2. Select a content category that interests your audience
+3. Choose your preferred publishing frequency
+4. Set an optional end date or leave it running indefinitely
+5. Click "Create Automated Schedule"
+6. The system will automatically generate and publish videos based on your settings
 
 ## Dashboard Overview
 
-The dashboard provides a comprehensive view of your YouTube automation activities:
-
 ### Main Dashboard
-- **Statistics**: View key metrics including video count, views, and subscribers
-- **Recent Videos**: See your most recently created videos with status indicators
-- **Quick Actions**: Access common tasks like creating videos or scheduling uploads
-- **Subscription Status**: Check your current plan and usage limits
 
-### Navigation
-- Use the sidebar to navigate between different sections
-- The top bar provides quick access to your account settings and notifications
+The main dashboard provides an overview of:
+- Recent videos created and their performance
+- Upcoming scheduled videos
+- Content generation statistics
+- Storage usage
+- Subscription status
 
-## Creating Videos
+### Analytics
 
-### Generate Topics
-1. Navigate to "Create Video" from the dashboard
-2. Select your content niche from the dropdown
-3. Choose how many topic ideas you want to generate
-4. Click "Generate Topics"
-5. Review the generated topics with their engagement scores
+The Analytics section shows:
+- Video performance metrics
+- Audience engagement
+- Growth trends
+- Content category performance
+- Recommendations for improvement
 
-### Create a Video
-1. Select a topic from the generated list
-2. Customize the video title and description if desired
-3. Select video style, length, and voice options
-4. Click "Create Video"
-5. Wait for the video generation process to complete
+### Manual Topics
 
-### Preview and Edit
-1. Once the video is created, you can preview it
-2. Make any necessary edits to the title or description
-3. View detailed information about the video
+This section allows you to:
+- Browse trending topics across categories
+- Generate video scripts with AI
+- Create videos with customized settings
+- Preview content before publishing
+- Upload directly to YouTube
 
-## Uploading to YouTube
+### Topic Scheduler
 
-### Connect YouTube Account
-1. Enter your YouTube API key in the connection section
-2. For testing purposes, any key starting with "AIza" will work
-3. Click "Connect" to validate your API key
-4. Once connected, you'll see your channel information
+The scheduler enables you to:
+- Set up recurring content creation
+- Choose from multiple frequency options
+- Select content categories
+- Monitor scheduled content
+- Pause or cancel schedules as needed
 
-### Upload Process
-1. With a video created and YouTube connected, click "Upload to YouTube"
-2. Monitor the upload progress bar
-3. Once complete, you'll receive a success confirmation
-4. Click "View on YouTube" to see your uploaded video
+### Storage Manager
 
-### Schedule Videos
-1. After creating a video, click "Schedule This Video"
-2. Select the optimal date and time for posting
-3. Set visibility options (public, private, unlisted)
-4. Click "Schedule" to queue the video for upload
+The storage section lets you:
+- View all your stored videos and assets
+- Download files for offline use
+- Delete unnecessary content
+- Monitor storage usage
+- Manage file organization
 
-## Account Management
+## Content Creation Process
 
-### Profile Settings
-1. Navigate to the Account page
-2. Update your profile information
-3. Change your password if needed
-4. View and manage your subscription details
+### 1. Topic Selection
 
-### Subscription Plans
-1. Navigate to the Pricing page
-2. Review available subscription options
-3. Upgrade your plan to access additional features
-4. Manage your billing information
+- **Trending Topics**: The system analyzes current trends across YouTube, social media, and search engines to identify high-potential topics
+- **Category Filtering**: Filter trending topics by category to match your channel's focus
+- **Custom Topics**: Enter your own topics if you have specific content in mind
+
+### 2. Script Generation
+
+- **AI-Powered Writing**: Advanced AI creates engaging scripts based on your selected topic
+- **Style Options**: Choose from different content styles (educational, entertaining, news, tutorial)
+- **Length Control**: Select your preferred video length (short, medium, long)
+- **Customization**: Edit the generated script to add your personal touch
+
+### 3. Voice Synthesis
+
+- **Natural Voices**: Convert your script to lifelike voiceovers using ElevenLabs technology
+- **Voice Selection**: Choose from multiple voice options
+- **Tone Adjustment**: Set the tone (professional, casual, energetic)
+- **Language Support**: Multiple languages available (varies by subscription tier)
+
+### 4. Video Creation
+
+- **Visual Generation**: The system creates visuals to match your script
+- **Style Consistency**: Maintains your brand's visual identity
+- **Preview & Edit**: Review the video before finalizing
+- **Format Options**: Generate in various resolutions and aspect ratios
+
+### 5. YouTube Publishing
+
+- **Direct Upload**: Publish directly to your YouTube channel
+- **Metadata Generation**: Automatically creates optimized titles, descriptions, and tags
+- **Scheduling**: Choose when to publish for maximum impact
+- **Category & Privacy**: Set YouTube category and privacy settings
+
+## Subscription Features
+
+### Free Trial
+- 3 AI-generated videos
+- Basic voice options
+- Weekly scheduling
+- 7-day access
+
+### Basic Plan
+- 10 videos per month
+- 3 voice options
+- Weekly/monthly scheduling
+- 5GB storage
+- Basic analytics
+
+### Pro Plan
+- 30 videos per month
+- 10 voice options
+- All scheduling frequencies
+- 15GB storage
+- Advanced analytics
+- Trend predictions
+
+### Enterprise Plan
+- Unlimited videos
+- All voice options
+- Priority processing
+- 50GB storage
+- Advanced analytics
+- Dedicated support
+- Custom integrations
+
+## Tips for Success
+
+1. **Consistent Scheduling**: Regular content performs better than sporadic uploads
+2. **Topic Variety**: Mix trending topics with evergreen content
+3. **Optimize Thumbnails**: Create custom thumbnails for better click-through rates
+4. **Engage with Comments**: Respond to viewer comments to build community
+5. **Analyze Performance**: Use the analytics to understand what content works best
+6. **Refine Your Niche**: Focus on categories that perform well for your channel
+7. **Cross-Promote**: Share your videos on other social platforms
+8. **Use Tags Effectively**: The system generates optimal tags, but you can customize them
 
 ## Troubleshooting
 
-### Login Issues
-- Ensure you're using the correct email and password
-- Check if your session has expired
-- Clear browser cookies and try again
+### Common Questions
 
-### YouTube Connection
-- Verify your API key is entered correctly
-- Ensure your YouTube account has API access enabled
-- Check if you've reached API quota limits
+**Q: How do I change my subscription plan?**
+A: Go to the Pricing page and select "Change Plan" under your desired option.
 
-### Video Creation
-- If video generation fails, try a different topic
-- Ensure you have sufficient subscription credits
-- Check your internet connection stability
+**Q: What if I run out of storage?**
+A: You can delete unused files or upgrade to a higher tier with more storage.
 
-## Need Help?
+**Q: Can I download my videos?**
+A: Yes, all videos can be downloaded from the Storage Manager.
 
-Contact our support team at support@youtubeautomation.com for assistance with any issues not covered in this guide.
+**Q: How do I cancel scheduled videos?**
+A: Go to Topic Scheduler and click "Cancel Schedule" next to the schedule you want to stop.
+
+**Q: Can I edit videos after creation?**
+A: Currently, you can regenerate videos but not edit them directly in the platform.
+
+## Getting Help
+
+If you need assistance:
+- Check the comprehensive documentation
+- Email support@tubeautomator.com
+- Pro and Enterprise users can access live chat support
+- Visit our help center for tutorials and guides
