@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const { signIn, user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -21,13 +22,24 @@ export default function LoginPage() {
     }
   }, [user, router]);
 
+  // Check for verification success in URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('verified') === 'success') {
+        setSuccessMessage('Email verified successfully! You can now log in.');
+      }
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage('');
+    setSuccessMessage('');
 
     try {
-      console.log('Submitting login form with:', email, password);
+      console.log('Submitting login form with:', email);
       const result = await signIn(email, password);
       
       if (result.success) {
@@ -51,6 +63,7 @@ export default function LoginPage() {
     setPassword('Password123!');
     setIsLoading(true);
     setErrorMessage('');
+    setSuccessMessage('');
 
     try {
       console.log('Attempting demo login');
@@ -97,6 +110,12 @@ export default function LoginPage() {
             </div>
           )}
           
+          {successMessage && (
+            <div className="mb-6 p-3 bg-green-900/50 text-green-200 rounded-md">
+              {successMessage}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">
@@ -126,6 +145,15 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 required
               />
+              <div className="mt-1 text-right">
+                <button
+                  type="button"
+                  onClick={() => alert('Password reset functionality will be available soon')}
+                  className="text-sm text-green-500 hover:text-green-400"
+                >
+                  Forgot password?
+                </button>
+              </div>
             </div>
             
             <button

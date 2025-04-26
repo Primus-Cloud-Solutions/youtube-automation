@@ -1,5 +1,7 @@
 'use server';
 
+import fetch from 'node-fetch';
+
 /**
  * Trend Analyzer Module
  * 
@@ -7,7 +9,21 @@
  * It uses a combination of data sources to identify trending topics and calculate viral scores.
  */
 
-// Mock trending topics by category for build/SSG environments
+// Content categories
+const CATEGORIES = [
+  { id: 'technology', name: 'Technology', description: 'Tech news, gadgets, software, and digital transformation' },
+  { id: 'gaming', name: 'Gaming', description: 'Video games, esports, gaming hardware, and industry trends' },
+  { id: 'finance', name: 'Finance', description: 'Personal finance, investing, cryptocurrency, and economic trends' },
+  { id: 'health', name: 'Health & Wellness', description: 'Fitness, nutrition, mental health, and medical advances' },
+  { id: 'entertainment', name: 'Entertainment', description: 'Movies, TV shows, music, celebrities, and streaming content' },
+  { id: 'education', name: 'Education', description: 'Learning resources, academic topics, and educational trends' },
+  { id: 'business', name: 'Business', description: 'Entrepreneurship, marketing, management, and business strategies' },
+  { id: 'travel', name: 'Travel', description: 'Destinations, travel tips, adventures, and cultural experiences' },
+  { id: 'fashion', name: 'Fashion & Beauty', description: 'Style trends, beauty products, fashion industry news' },
+  { id: 'food', name: 'Food & Cooking', description: 'Recipes, cooking techniques, food trends, and culinary experiences' }
+];
+
+// Mock trending topics by category for fallback/development
 const MOCK_TRENDS = {
   technology: [
     { title: 'The Future of AI in 2025', description: 'Exploring how artificial intelligence will transform industries in the coming year.', score: 92 },
@@ -43,29 +59,154 @@ const MOCK_TRENDS = {
     { title: 'Rising Stars to Watch', description: 'Emerging talent in film, music, and television.', score: 87 },
     { title: 'Evolution of Content Creation', description: 'How digital media has transformed entertainment production and consumption.', score: 84 },
     { title: 'Music Industry Transformation', description: 'How streaming and social media have changed how music is made and distributed.', score: 81 }
+  ],
+  education: [
+    { title: 'The Future of Online Learning', description: 'How digital platforms are transforming education worldwide.', score: 90 },
+    { title: 'Learning Techniques Based on Neuroscience', description: 'Scientific approaches to improve knowledge retention and skill acquisition.', score: 87 },
+    { title: 'Alternative Education Paths', description: 'Non-traditional routes to career success beyond traditional degrees.', score: 84 },
+    { title: 'Teaching in the Digital Age', description: 'How educators are adapting to technology-driven classrooms.', score: 81 },
+    { title: 'Global Education Innovations', description: 'Revolutionary approaches to learning from around the world.', score: 78 }
+  ],
+  business: [
+    { title: 'Remote Work Strategies for Teams', description: 'Building effective collaboration in distributed workforces.', score: 92 },
+    { title: 'Small Business Digital Transformation', description: 'How local businesses can thrive in the online marketplace.', score: 89 },
+    { title: 'Sustainable Business Practices', description: 'Eco-friendly approaches that improve both planet and profit.', score: 86 },
+    { title: 'AI for Business Automation', description: 'Implementing artificial intelligence to streamline operations.', score: 83 },
+    { title: 'Customer Experience Innovations', description: 'New approaches to delighting customers in the digital era.', score: 80 }
+  ],
+  travel: [
+    { title: 'Hidden Gems: Underrated Destinations', description: 'Spectacular locations that aren't overrun with tourists.', score: 93 },
+    { title: 'Sustainable Travel Guide', description: 'How to explore the world while minimizing environmental impact.', score: 90 },
+    { title: 'Digital Nomad Lifestyle', description: 'Working remotely while traveling the world.', score: 87 },
+    { title: 'Budget Travel Hacks', description: 'See more of the world without breaking the bank.', score: 84 },
+    { title: 'Cultural Immersion Experiences', description: 'Going beyond tourism to truly understand local cultures.', score: 81 }
+  ],
+  fashion: [
+    { title: 'Sustainable Fashion Brands', description: 'Eco-friendly clothing companies changing the industry.', score: 91 },
+    { title: 'Capsule Wardrobe Guide', description: 'Building a versatile collection with fewer, better pieces.', score: 88 },
+    { title: 'Fashion Technology Innovations', description: 'How tech is transforming clothing design and retail.', score: 85 },
+    { title: 'Vintage Style Revival', description: 'Classic looks making a comeback in modern wardrobes.', score: 82 },
+    { title: 'Inclusive Beauty Trends', description: 'The movement toward representation in the beauty industry.', score: 79 }
+  ],
+  food: [
+    { title: 'Plant-Based Cooking Revolution', description: 'Delicious meat-free recipes even carnivores will love.', score: 94 },
+    { title: 'Global Cuisine Fusion', description: 'Innovative combinations of international cooking styles.', score: 91 },
+    { title: 'Fermentation Techniques for Home Cooks', description: 'Creating probiotic-rich foods in your own kitchen.', score: 88 },
+    { title: 'Restaurant-Quality Meals at Home', description: 'Chef techniques adapted for home cooking.', score: 85 },
+    { title: 'Food Sustainability Practices', description: 'Reducing waste and environmental impact in your kitchen.', score: 82 }
   ]
 };
 
-// Content categories
-const CATEGORIES = [
-  { id: 'technology', name: 'Technology', description: 'Tech news, gadgets, software, and digital transformation' },
-  { id: 'gaming', name: 'Gaming', description: 'Video games, esports, gaming hardware, and industry trends' },
-  { id: 'finance', name: 'Finance', description: 'Personal finance, investing, cryptocurrency, and economic trends' },
-  { id: 'health', name: 'Health & Wellness', description: 'Fitness, nutrition, mental health, and medical advances' },
-  { id: 'entertainment', name: 'Entertainment', description: 'Movies, TV shows, music, celebrities, and streaming content' }
-];
+/**
+ * Fetch trending topics from YouTube API
+ * @param {string} category - Content category
+ * @param {string} apiKey - YouTube API key
+ * @param {number} maxResults - Maximum number of results to return
+ * @returns {Promise<Array>} - Array of trending videos
+ */
+async function fetchYouTubeTrends(category, apiKey, maxResults = 10) {
+  try {
+    // Map our category to YouTube category ID
+    const categoryMap = {
+      'technology': '28',
+      'gaming': '20',
+      'finance': '27', // Using Education as closest match
+      'health': '26', // Using Howto & Style as closest match
+      'entertainment': '24',
+      'education': '27',
+      'business': '28', // Using Science & Technology as closest match
+      'travel': '19',
+      'fashion': '26', // Using Howto & Style as closest match
+      'food': '26' // Using Howto & Style as closest match
+    };
+    
+    const videoCategoryId = categoryMap[category.toLowerCase()] || '0';
+    
+    // Build the API URL
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&videoCategoryId=${videoCategoryId}&maxResults=${maxResults}&key=${apiKey}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`YouTube API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Transform the response into our trend format
+    return data.items.map(item => {
+      // Calculate a score based on views, likes, and comments
+      const views = parseInt(item.statistics.viewCount) || 0;
+      const likes = parseInt(item.statistics.likeCount) || 0;
+      const comments = parseInt(item.statistics.commentCount) || 0;
+      
+      // Simple algorithm to calculate viral potential score (0-100)
+      // This could be refined with more sophisticated algorithms
+      const viewScore = Math.min(views / 10000, 50); // Max 50 points for views
+      const engagementScore = Math.min((likes + comments) / 1000, 30); // Max 30 points for engagement
+      const recencyScore = 20; // Assuming these are recent, give 20 points
+      
+      const score = Math.round(viewScore + engagementScore + recencyScore);
+      
+      return {
+        title: item.snippet.title,
+        description: item.snippet.description.substring(0, 200) + (item.snippet.description.length > 200 ? '...' : ''),
+        score: score,
+        videoId: item.id,
+        publishedAt: item.snippet.publishedAt,
+        channelTitle: item.snippet.channelTitle,
+        thumbnailUrl: item.snippet.thumbnails.high.url,
+        statistics: {
+          viewCount: item.statistics.viewCount,
+          likeCount: item.statistics.likeCount,
+          commentCount: item.statistics.commentCount
+        }
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching YouTube trends:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch trending topics from Google Trends API
+ * @param {string} category - Content category
+ * @returns {Promise<Array>} - Array of trending topics
+ */
+async function fetchGoogleTrends(category) {
+  try {
+    // In a real implementation, you would use a Google Trends API
+    // For now, we'll simulate this with a mock response
+    
+    // This would be replaced with actual API call
+    const mockTrends = [
+      { title: `${category} Trend 1`, score: Math.floor(Math.random() * 20) + 80 },
+      { title: `${category} Trend 2`, score: Math.floor(Math.random() * 20) + 70 },
+      { title: `${category} Trend 3`, score: Math.floor(Math.random() * 20) + 60 },
+      { title: `${category} Trend 4`, score: Math.floor(Math.random() * 20) + 50 },
+      { title: `${category} Trend 5`, score: Math.floor(Math.random() * 20) + 40 }
+    ];
+    
+    return mockTrends;
+  } catch (error) {
+    console.error('Error fetching Google trends:', error);
+    throw error;
+  }
+}
 
 /**
  * Analyze trends in a specific content category
  * @param {string} category - Content category to analyze
  * @param {number} count - Number of trends to return (default: 5)
+ * @param {string} apiKey - YouTube API key (optional)
  * @returns {Promise<{success: boolean, trends: Array|null, error: string|null}>} - Trend analysis result
  */
-export async function analyzeTrends(category, count = 5) {
+export async function analyzeTrends(category, count = 5, apiKey = null) {
   try {
-    // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('Using mock trend data during build');
+    // If no API key is provided or we're in a build/SSG environment, use mock data
+    if (!apiKey || process.env.NODE_ENV === 'production') {
+      console.warn('Using mock trend data (no API key or production environment)');
       
       // Return mock data for the specified category
       const mockData = MOCK_TRENDS[category.toLowerCase()] || MOCK_TRENDS.technology;
@@ -75,18 +216,43 @@ export async function analyzeTrends(category, count = 5) {
       };
     }
     
-    // In a real implementation, you would:
-    // 1. Query trending topics APIs (YouTube, Google Trends, Twitter, etc.)
-    // 2. Analyze recent popular content in the category
-    // 3. Apply NLP to identify common themes and topics
-    // 4. Calculate engagement metrics and potential scores
+    // Fetch trends from YouTube API
+    let youtubeTrends = [];
+    try {
+      youtubeTrends = await fetchYouTubeTrends(category, apiKey, count * 2);
+    } catch (error) {
+      console.warn('Error fetching YouTube trends, falling back to mock data:', error);
+      youtubeTrends = MOCK_TRENDS[category.toLowerCase()] || MOCK_TRENDS.technology;
+    }
     
-    // For now, we'll return mock data
-    const mockData = MOCK_TRENDS[category.toLowerCase()] || MOCK_TRENDS.technology;
+    // Fetch trends from Google Trends API
+    let googleTrends = [];
+    try {
+      googleTrends = await fetchGoogleTrends(category);
+    } catch (error) {
+      console.warn('Error fetching Google trends, skipping:', error);
+    }
+    
+    // Combine and deduplicate trends
+    const allTrends = [...youtubeTrends];
+    
+    // Add Google trends that don't overlap with YouTube trends
+    googleTrends.forEach(gTrend => {
+      if (!allTrends.some(yTrend => yTrend.title.toLowerCase().includes(gTrend.title.toLowerCase()))) {
+        allTrends.push({
+          title: gTrend.title,
+          description: `Trending topic in ${category}`,
+          score: gTrend.score
+        });
+      }
+    });
+    
+    // Sort by score (descending) and take the requested number
+    const sortedTrends = allTrends.sort((a, b) => b.score - a.score).slice(0, count);
     
     return { 
       success: true, 
-      trends: mockData.slice(0, count)
+      trends: sortedTrends
     };
   } catch (error) {
     console.error('Error analyzing trends:', error);
@@ -103,25 +269,6 @@ export async function analyzeTrends(category, count = 5) {
  */
 export async function predictViralPotential(topic, category, keywords = []) {
   try {
-    // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('Using mock viral potential data during build');
-      
-      // Generate a mock score between 65 and 95
-      const mockScore = Math.floor(Math.random() * 30) + 65;
-      
-      return { 
-        success: true, 
-        score: mockScore,
-        insights: [
-          'Topic aligns with current trends',
-          'Moderate to high engagement potential',
-          'Consider adding more visual elements',
-          'Opportunity for series content'
-        ]
-      };
-    }
-    
     // In a real implementation, you would:
     // 1. Analyze the topic against current trends
     // 2. Check search volume and growth
@@ -137,7 +284,12 @@ export async function predictViralPotential(topic, category, keywords = []) {
       gaming: 8,
       finance: 3,
       health: 4,
-      entertainment: 10
+      entertainment: 10,
+      education: 2,
+      business: 4,
+      travel: 6,
+      fashion: 5,
+      food: 7
     };
     
     baseScore += categoryBonus[category.toLowerCase()] || 0;
@@ -147,6 +299,13 @@ export async function predictViralPotential(topic, category, keywords = []) {
     if (topic.includes('guide') || topic.includes('how to')) baseScore += 3;
     if (topic.includes('AI') || topic.includes('crypto')) baseScore += 4;
     if (topic.length < 30) baseScore += 2; // Shorter titles tend to perform better
+    
+    // Adjust for keywords
+    keywords.forEach(keyword => {
+      if (['trending', 'viral', 'new', 'latest', 'breakthrough'].includes(keyword.toLowerCase())) {
+        baseScore += 2;
+      }
+    });
     
     // Cap the score at 95
     const finalScore = Math.min(baseScore, 95);
@@ -181,6 +340,21 @@ export async function predictViralPotential(topic, category, keywords = []) {
     } else if (category.toLowerCase() === 'entertainment') {
       insights.push('Entertainment content benefits from visual appeal');
       insights.push('Consider news or reaction format for higher engagement');
+    } else if (category.toLowerCase() === 'education') {
+      insights.push('Educational content performs well with clear structure');
+      insights.push('Consider creating a series for complex topics');
+    } else if (category.toLowerCase() === 'business') {
+      insights.push('Business content benefits from case studies');
+      insights.push('Include actionable takeaways for viewers');
+    } else if (category.toLowerCase() === 'travel') {
+      insights.push('Travel content needs high-quality visuals');
+      insights.push('Include practical tips viewers can use');
+    } else if (category.toLowerCase() === 'fashion') {
+      insights.push('Fashion content performs best with trend analysis');
+      insights.push('Consider before/after transformations');
+    } else if (category.toLowerCase() === 'food') {
+      insights.push('Food content benefits from clear recipe instructions');
+      insights.push('Close-up shots of food increase engagement');
     }
     
     return { 
@@ -207,5 +381,39 @@ export async function getCategories() {
   } catch (error) {
     console.error('Error getting categories:', error);
     return { success: false, categories: null, error: error.message || 'Failed to get categories' };
+  }
+}
+
+/**
+ * Get trending topics across multiple categories
+ * @param {Array} categories - List of categories to analyze
+ * @param {number} countPerCategory - Number of trends to return per category
+ * @param {string} apiKey - YouTube API key (optional)
+ * @returns {Promise<{success: boolean, trendsByCategory: Object|null, error: string|null}>} - Trends by category
+ */
+export async function analyzeTrendsMultiCategory(categories, countPerCategory = 3, apiKey = null) {
+  try {
+    const trendsByCategory = {};
+    
+    // Process each category
+    for (const category of categories) {
+      const result = await analyzeTrends(category, countPerCategory, apiKey);
+      
+      if (result.success) {
+        trendsByCategory[category] = result.trends;
+      } else {
+        console.warn(`Failed to get trends for category ${category}: ${result.error}`);
+        // Use mock data as fallback
+        trendsByCategory[category] = (MOCK_TRENDS[category.toLowerCase()] || MOCK_TRENDS.technology).slice(0, countPerCategory);
+      }
+    }
+    
+    return {
+      success: true,
+      trendsByCategory
+    };
+  } catch (error) {
+    console.error('Error analyzing multi-category trends:', error);
+    return { success: false, trendsByCategory: null, error: error.message || 'Failed to analyze multi-category trends' };
   }
 }

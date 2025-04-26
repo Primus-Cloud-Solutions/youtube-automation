@@ -3,8 +3,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client with mock values for development/demo
-// In production, these would be real environment variables
+// Initialize Supabase client with environment variables
+// These will be properly set in the deployed environment
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xyzcompany.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtaHl6Y29tcGFueSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjgyNDQyMzQyLCJleHAiOjE5OTgwMTgzNDJ9.mocked';
 
@@ -23,48 +23,6 @@ const AuthContext = createContext({
   error: null,
 });
 
-// Mock user database for demo purposes - using an array that persists during the session
-// In a real app, this would be stored in a database
-const MOCK_USERS = [
-  {
-    id: 'test-user-id-1',
-    email: 'test@example.com',
-    password: 'Password123!',
-    fullName: 'Test User',
-    role: 'user',
-    createdAt: '2025-01-01T00:00:00.000Z',
-    preferences: {
-      contentNiche: 'Technology',
-      uploadFrequency: 'weekly',
-      notificationsEnabled: true
-    }
-  }
-];
-
-// Try to load any previously registered users from localStorage
-if (typeof window !== 'undefined') {
-  try {
-    const storedUsers = localStorage.getItem('tubeautomator_users');
-    if (storedUsers) {
-      const parsedUsers = JSON.parse(storedUsers);
-      // Only use stored users if they're in the expected format
-      if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
-        // Merge with default users, avoiding duplicates by email
-        const existingEmails = new Set(MOCK_USERS.map(u => u.email));
-        parsedUsers.forEach(user => {
-          if (!existingEmails.has(user.email)) {
-            MOCK_USERS.push(user);
-            existingEmails.add(user.email);
-          }
-        });
-        console.log('Loaded registered users from localStorage');
-      }
-    }
-  } catch (e) {
-    console.error('Error loading stored users:', e);
-  }
-}
-
 // Auth provider component
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -72,52 +30,50 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Save MOCK_USERS to localStorage whenever it changes
-  const saveUsersToStorage = () => {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('tubeautomator_users', JSON.stringify(MOCK_USERS));
-        console.log('Saved users to localStorage');
-      } catch (e) {
-        console.error('Error saving users to localStorage:', e);
-      }
-    }
-  };
-
   useEffect(() => {
-    // Check for stored session in localStorage
-    const checkSession = () => {
-      if (typeof window !== 'undefined') {
-        try {
-          const storedSession = localStorage.getItem('tubeautomator_session');
-          if (storedSession) {
-            const parsedSession = JSON.parse(storedSession);
-            
-            // Check if session is expired
-            if (parsedSession.expires_at && parsedSession.expires_at > Date.now()) {
-              setSession(parsedSession);
-              setUser(parsedSession.user);
-              console.log('Valid session restored from localStorage:', parsedSession);
-            } else {
-              console.log('Stored session expired, removing');
-              localStorage.removeItem('tubeautomator_session');
-            }
-          }
-        } catch (e) {
-          console.error('Error parsing stored session:', e);
-          localStorage.removeItem('tubeautomator_session');
-        } finally {
-          setIsLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        console.log('Auth state changed:', event);
+        
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+        } else {
+          setSession(null);
+          setUser(null);
         }
+        
+        setIsLoading(false);
+      }
+    );
+
+    // Check for existing session
+    const checkSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error.message);
+          throw error;
+        }
+        
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+        }
+      } catch (error) {
+        console.error('Session check error:', error.message);
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    // Run immediately and set up interval to check session periodically
     checkSession();
     
-    // Clean up interval on unmount
+    // Clean up subscription on unmount
     return () => {
-      // No interval to clean up in this implementation
+      subscription?.unsubscribe();
     };
   }, []);
 
@@ -127,49 +83,25 @@ export function AuthProvider({ children }) {
       setIsLoading(true);
       setError(null);
       
-      console.log('Attempting to sign in with:', email, password);
+      console.log('Attempting to sign in with:', email);
       
-      // For demo purposes, use mock authentication
-      const mockUser = MOCK_USERS.find(u => u.email === email && u.password === password);
+      // Use Supabase auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      if (mockUser) {
-        console.log('Mock user found:', mockUser);
-        
-        // Create a mock session
-        const mockSession = {
-          access_token: 'mock-jwt-token',
-          refresh_token: 'mock-refresh-token',
-          expires_at: Date.now() + 3600 * 1000, // 1 hour from now
-          user: {
-            id: mockUser.id,
-            email: mockUser.email,
-            user_metadata: {
-              full_name: mockUser.fullName,
-              preferences: mockUser.preferences || {}
-            }
-          }
-        };
-        
-        // Store session in localStorage
-        if (typeof window !== 'undefined') {
-          try {
-            localStorage.setItem('tubeautomator_session', JSON.stringify(mockSession));
-            console.log('Session stored in localStorage');
-          } catch (e) {
-            console.error('Error storing session in localStorage:', e);
-          }
-        }
-        
-        // Update state
-        setUser(mockSession.user);
-        setSession(mockSession);
-        
-        return { success: true, user: mockSession.user };
-      } else {
-        console.log('No matching mock user found');
-        setError('Invalid email or password');
-        return { success: false, error: 'Invalid email or password' };
+      if (error) {
+        console.error('Sign in error:', error.message);
+        setError(error.message);
+        return { success: false, error: error.message };
       }
+      
+      console.log('Sign in successful:', data);
+      setSession(data.session);
+      setUser(data.user);
+      
+      return { success: true, user: data.user };
     } catch (error) {
       console.error('Error signing in:', error.message);
       setError(error.message || 'Failed to sign in');
@@ -185,7 +117,7 @@ export function AuthProvider({ children }) {
       setIsLoading(true);
       setError(null);
       
-      console.log('Attempting to sign up with:', email, password, fullName);
+      console.log('Attempting to sign up with:', email, fullName);
       
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -206,64 +138,46 @@ export function AuthProvider({ children }) {
         throw new Error('Password must contain at least one number and one special character');
       }
       
-      // Check if email already exists
-      const existingUser = MOCK_USERS.find(u => u.email === email);
-      if (existingUser) {
-        throw new Error('Email already in use');
-      }
-      
-      // For demo purposes, create a mock user
-      const newMockUser = {
-        id: `user-${Date.now()}`,
+      // Use Supabase auth to create user
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        fullName,
-        role: 'user',
-        createdAt: new Date().toISOString(),
-        preferences: {
-          contentNiche: 'General',
-          uploadFrequency: 'weekly',
-          notificationsEnabled: true
-        }
-      };
-      
-      // Add to mock database
-      MOCK_USERS.push(newMockUser);
-      console.log('New user added to mock database:', newMockUser);
-      
-      // Save updated users to localStorage
-      saveUsersToStorage();
-      
-      // Create a mock session
-      const mockSession = {
-        access_token: 'mock-jwt-token',
-        refresh_token: 'mock-refresh-token',
-        expires_at: Date.now() + 3600 * 1000, // 1 hour from now
-        user: {
-          id: newMockUser.id,
-          email: newMockUser.email,
-          user_metadata: {
-            full_name: newMockUser.fullName,
-            preferences: newMockUser.preferences
+        options: {
+          data: {
+            full_name: fullName,
+            preferences: {
+              contentNiche: 'General',
+              uploadFrequency: 'weekly',
+              notificationsEnabled: true
+            }
           }
         }
-      };
+      });
       
-      // Store session in localStorage
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('tubeautomator_session', JSON.stringify(mockSession));
-          console.log('Session stored in localStorage');
-        } catch (e) {
-          console.error('Error storing session in localStorage:', e);
-        }
+      if (error) {
+        console.error('Sign up error:', error.message);
+        setError(error.message);
+        return { success: false, error: error.message };
       }
       
-      // Update state
-      setUser(mockSession.user);
-      setSession(mockSession);
+      console.log('Sign up successful:', data);
       
-      return { success: true, user: mockSession.user };
+      // If email confirmation is required
+      if (data.user && !data.session) {
+        return { 
+          success: true, 
+          user: data.user,
+          message: 'Please check your email for a confirmation link'
+        };
+      }
+      
+      // If auto-confirmed
+      if (data.session) {
+        setSession(data.session);
+        setUser(data.user);
+      }
+      
+      return { success: true, user: data.user };
     } catch (error) {
       console.error('Error signing up:', error.message);
       setError(error.message || 'Failed to create account');
@@ -285,52 +199,21 @@ export function AuthProvider({ children }) {
       
       console.log('Updating user profile:', userData);
       
-      // Find the user in the mock database
-      const userIndex = MOCK_USERS.findIndex(u => u.id === user.id);
+      // Update user metadata in Supabase
+      const { data, error } = await supabase.auth.updateUser({
+        data: userData
+      });
       
-      if (userIndex === -1) {
-        throw new Error('User not found in database');
+      if (error) {
+        console.error('Update profile error:', error.message);
+        setError(error.message);
+        return { success: false, error: error.message };
       }
       
-      // Update the user in the mock database
-      const updatedUser = {
-        ...MOCK_USERS[userIndex],
-        ...userData,
-      };
+      console.log('Profile updated successfully:', data);
+      setUser(data.user);
       
-      MOCK_USERS[userIndex] = updatedUser;
-      console.log('User updated in mock database:', updatedUser);
-      
-      // Save updated users to localStorage
-      saveUsersToStorage();
-      
-      // Update the session with the new user data
-      const updatedSession = {
-        ...session,
-        user: {
-          ...session.user,
-          user_metadata: {
-            ...session.user.user_metadata,
-            ...userData,
-          }
-        }
-      };
-      
-      // Store updated session in localStorage
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('tubeautomator_session', JSON.stringify(updatedSession));
-          console.log('Updated session stored in localStorage');
-        } catch (e) {
-          console.error('Error storing updated session in localStorage:', e);
-        }
-      }
-      
-      // Update state
-      setUser(updatedSession.user);
-      setSession(updatedSession);
-      
-      return { success: true, user: updatedSession.user };
+      return { success: true, user: data.user };
     } catch (error) {
       console.error('Error updating user profile:', error.message);
       setError(error.message || 'Failed to update profile');
@@ -348,14 +231,13 @@ export function AuthProvider({ children }) {
       
       console.log('Signing out user');
       
-      // Remove session from localStorage
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.removeItem('tubeautomator_session');
-          console.log('Session removed from localStorage');
-        } catch (e) {
-          console.error('Error removing session from localStorage:', e);
-        }
+      // Use Supabase auth to sign out
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Sign out error:', error.message);
+        setError(error.message);
+        return { success: false, error: error.message };
       }
       
       // Reset state

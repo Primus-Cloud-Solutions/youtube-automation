@@ -12,6 +12,7 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [passwordStrength, setPasswordStrength] = useState({
     length: false,
     hasNumber: false,
@@ -41,6 +42,7 @@ export default function SignupPage() {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage('');
+    setSuccessMessage('');
 
     // Validate passwords match
     if (password !== confirmPassword) {
@@ -57,13 +59,24 @@ export default function SignupPage() {
     }
 
     try {
-      console.log('Submitting signup form with:', email, password, fullName);
+      console.log('Submitting signup form with:', email, fullName);
       const result = await signUp(email, password, fullName);
       
       if (result.success) {
-        console.log('Signup successful, redirecting to dashboard');
-        // Redirect to dashboard on successful signup
-        router.push('/dashboard');
+        console.log('Signup successful:', result);
+        
+        // Check if email confirmation is required
+        if (result.message && result.message.includes('check your email')) {
+          setSuccessMessage('Registration successful! Please check your email for a confirmation link.');
+          // Clear form
+          setFullName('');
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+        } else {
+          // Redirect to dashboard on successful signup with auto-confirmation
+          router.push('/dashboard');
+        }
       } else {
         console.error('Signup failed:', result.error);
         setErrorMessage(result.error || 'Failed to create account');
@@ -92,6 +105,12 @@ export default function SignupPage() {
           {errorMessage && (
             <div className="mb-6 p-3 bg-red-900/50 text-red-200 rounded-md">
               {errorMessage}
+            </div>
+          )}
+          
+          {successMessage && (
+            <div className="mb-6 p-3 bg-green-900/50 text-green-200 rounded-md">
+              {successMessage}
             </div>
           )}
           
