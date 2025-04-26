@@ -4,31 +4,95 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, List
 import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Initialize S3 client with environment variables
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
+const initializeS3Client = () => {
+  // Check if required environment variables are set
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+  const region = process.env.AWS_REGION || 'us-east-1';
+  
+  if (!accessKeyId || !secretAccessKey) {
+    console.error('AWS credentials not configured. S3 operations will fail.');
+    return null;
   }
-});
+  
+  return new S3Client({
+    region,
+    credentials: {
+      accessKeyId,
+      secretAccessKey
+    }
+  });
+};
 
-// S3 bucket name
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'youtube-automation-storage';
+// Initialize S3 client
+const s3Client = initializeS3Client();
+
+// S3 bucket name from environment variable
+const BUCKET_NAME = process.env.S3_BUCKET_NAME;
+
+// Check if S3 is properly configured
+const isS3Configured = () => {
+  if (!s3Client) {
+    console.error('S3 client not initialized. Check AWS credentials.');
+    return false;
+  }
+  
+  if (!BUCKET_NAME) {
+    console.error('S3_BUCKET_NAME environment variable not set.');
+    return false;
+  }
+  
+  return true;
+};
+
+/**
+ * Create a user folder in S3 if it doesn't exist
+ * @param {string} userId - User ID
+ * @returns {Promise<{success: boolean, error: string|null}>} - Result
+ */
+export async function createUserFolder(userId) {
+  try {
+    if (!isS3Configured()) {
+      return { 
+        success: false, 
+        error: 'S3 not configured. Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and S3_BUCKET_NAME environment variables.' 
+      };
+    }
+
+    // Create an empty object with the user folder prefix to establish the "directory"
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: `users/${userId}/`,
+      Body: ''
+    });
+
+    await s3Client.send(command);
+    return { success: true };
+  } catch (error) {
+    console.error('Error creating user folder:', error);
+    return { success: false, error: error.message || 'Failed to create user folder' };
+  }
+}
 
 /**
  * Upload a file to S3
- * @param {string} key - S3 object key (path)
+ * @param {string} userId - User ID
+ * @param {string} filename - File name
  * @param {Buffer|string} body - File content
  * @param {string} contentType - MIME type of the file
  * @returns {Promise<{success: boolean, key: string|null, error: string|null}>} - Upload result
  */
-export async function uploadToS3(key, body, contentType) {
+export async function uploadToS3(userId, filename, body, contentType) {
   try {
-    // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
-      console.warn('AWS credentials not available during build, returning mock data');
-      return { success: true, key, url: `https://example.com/${key}` };
+    if (!isS3Configured()) {
+      return { 
+        success: false, 
+        error: 'S3 not configured. Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and S3_BUCKET_NAME environment variables.' 
+      };
     }
+
+    // Create the key with user ID prefix
+    const key = `users/${userId}/${filename}`;
 
     // Create the upload command
     const command = new PutObjectCommand({
@@ -50,17 +114,22 @@ export async function uploadToS3(key, body, contentType) {
 
 /**
  * Get a signed URL for an S3 object
- * @param {string} key - S3 object key (path)
+ * @param {string} userId - User ID
+ * @param {string} filename - File name
  * @param {number} expiresIn - URL expiration time in seconds (default: 3600)
  * @returns {Promise<{success: boolean, url: string|null, error: string|null}>} - Signed URL result
  */
-export async function getSignedUrl(key, expiresIn = 3600) {
+export async function getSignedUrl(userId, filename, expiresIn = 3600) {
   try {
-    // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
-      console.warn('AWS credentials not available during build, returning mock URL');
-      return { success: true, url: `https://example.com/${key}` };
+    if (!isS3Configured()) {
+      return { 
+        success: false, 
+        error: 'S3 not configured. Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and S3_BUCKET_NAME environment variables.' 
+      };
     }
+
+    // Create the key with user ID prefix
+    const key = `users/${userId}/${filename}`;
 
     // Create the get object command
     const command = new GetObjectCommand({
@@ -80,16 +149,21 @@ export async function getSignedUrl(key, expiresIn = 3600) {
 
 /**
  * Delete an object from S3
- * @param {string} key - S3 object key (path)
+ * @param {string} userId - User ID
+ * @param {string} filename - File name
  * @returns {Promise<{success: boolean, error: string|null}>} - Delete result
  */
-export async function deleteFromS3(key) {
+export async function deleteFromS3(userId, filename) {
   try {
-    // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
-      console.warn('AWS credentials not available during build, returning mock result');
-      return { success: true };
+    if (!isS3Configured()) {
+      return { 
+        success: false, 
+        error: 'S3 not configured. Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and S3_BUCKET_NAME environment variables.' 
+      };
     }
+
+    // Create the key with user ID prefix
+    const key = `users/${userId}/${filename}`;
 
     // Create the delete command
     const command = new DeleteObjectCommand({
@@ -108,28 +182,27 @@ export async function deleteFromS3(key) {
 }
 
 /**
- * List objects in an S3 directory
- * @param {string} prefix - Directory prefix
+ * List objects in a user's S3 directory
+ * @param {string} userId - User ID
+ * @param {string} prefix - Additional prefix (optional)
  * @returns {Promise<{success: boolean, objects: Array|null, error: string|null}>} - List result
  */
-export async function listS3Objects(prefix) {
+export async function listUserObjects(userId, prefix = '') {
   try {
-    // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
-      console.warn('AWS credentials not available during build, returning mock data');
+    if (!isS3Configured()) {
       return { 
-        success: true, 
-        objects: [
-          { key: `${prefix}/example1.mp4`, size: 1024000, lastModified: new Date() },
-          { key: `${prefix}/example2.mp4`, size: 2048000, lastModified: new Date() }
-        ] 
+        success: false, 
+        error: 'S3 not configured. Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and S3_BUCKET_NAME environment variables.' 
       };
     }
+
+    // Create the full prefix with user ID
+    const fullPrefix = `users/${userId}/${prefix}`;
 
     // Create the list command
     const command = new ListObjectsV2Command({
       Bucket: BUCKET_NAME,
-      Prefix: prefix
+      Prefix: fullPrefix
     });
 
     // List the objects
@@ -138,9 +211,10 @@ export async function listS3Objects(prefix) {
     // Format the response
     const objects = response.Contents?.map(item => ({
       key: item.Key,
+      filename: item.Key.replace(fullPrefix, ''),
       size: item.Size,
       lastModified: item.LastModified
-    })) || [];
+    })).filter(item => item.filename !== '') || [];
 
     return { success: true, objects };
   } catch (error) {
@@ -156,22 +230,14 @@ export async function listS3Objects(prefix) {
  */
 export async function getStorageUsage(userId) {
   try {
-    // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
-      console.warn('AWS credentials not available during build, returning mock data');
+    if (!isS3Configured()) {
       return { 
-        success: true, 
-        usage: {
-          bytes: 3072000,
-          megabytes: "3.07",
-          gigabytes: "0.00",
-          fileCount: 2
-        }
+        success: false, 
+        error: 'S3 not configured. Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and S3_BUCKET_NAME environment variables.' 
       };
     }
 
-    const userPrefix = `users/${userId}/`;
-    const result = await listS3Objects(userPrefix);
+    const result = await listUserObjects(userId);
     
     if (!result.success) {
       return { success: false, usage: null, error: result.error };
@@ -197,4 +263,41 @@ export async function getStorageUsage(userId) {
   }
 }
 
-// No default export in 'use server' files - only async functions are allowed
+/**
+ * Check if S3 is properly configured
+ * @returns {Promise<{success: boolean, configured: boolean, error: string|null}>} - Configuration status
+ */
+export async function checkS3Configuration() {
+  try {
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+    const bucketName = process.env.S3_BUCKET_NAME;
+    
+    const missingVars = [];
+    if (!accessKeyId) missingVars.push('AWS_ACCESS_KEY_ID');
+    if (!secretAccessKey) missingVars.push('AWS_SECRET_ACCESS_KEY');
+    if (!bucketName) missingVars.push('S3_BUCKET_NAME');
+    
+    if (missingVars.length > 0) {
+      return { 
+        success: true, 
+        configured: false, 
+        error: `Missing required environment variables: ${missingVars.join(', ')}` 
+      };
+    }
+    
+    // If we have all variables but s3Client failed to initialize
+    if (!s3Client) {
+      return { 
+        success: true, 
+        configured: false, 
+        error: 'S3 client failed to initialize despite having environment variables' 
+      };
+    }
+    
+    return { success: true, configured: true };
+  } catch (error) {
+    console.error('Error checking S3 configuration:', error);
+    return { success: false, configured: false, error: error.message || 'Failed to check S3 configuration' };
+  }
+}
