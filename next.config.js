@@ -15,6 +15,18 @@ const nextConfig = {
   distDir: '.next',
   experimental: {
     serverActions: true
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Don't resolve 'fs', 'net', 'child_process' modules on the client
+      config.resolve.fallback = {
+        fs: false,
+        net: false,
+        child_process: false,
+        tls: false
+      };
+    }
+    return config;
   }
 };
 

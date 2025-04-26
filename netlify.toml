@@ -5,6 +5,8 @@
 [build.environment]
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
   NEXT_USE_NETLIFY_EDGE = "true"
+  # Skip the creation of pages directory during build
+  NEXT_IGNORE_PAGES_FOLDER = "true"
 
 [[headers]]
   for = "/*"
@@ -14,5 +16,6 @@
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+# Comment out the plugin to prevent duplicate page detection issues
+# [[plugins]]
+#  package = "@netlify/plugin-nextjs"

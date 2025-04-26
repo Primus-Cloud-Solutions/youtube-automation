@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 // Higher-order component to protect routes
-export default function withAuth(Component) {
+const withAuth = function(Component) {
   return function ProtectedRoute(props) {
     // Wrap the component with AuthProvider to ensure useAuth works properly
     return (
@@ -88,3 +88,6 @@ function AuthGuard({ Component, props }) {
   // Render the protected component if authenticated
   return <Component {...props} />;
 }
+
+export { withAuth };
+export default withAuth;
