@@ -1,25 +1,19 @@
+netlify.toml
 [build]
   command = "npm install && npm run build"
   publish = ".next"
 
 [build.environment]
-  NEXT_PUBLIC_SUPABASE_URL = "https://eurztwdqjncuypqbrcmw.supabase.co"
-  NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-supabase-anon-key"
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = "your-stripe-publishable-key"
-  STRIPE_SECRET_KEY = "your-stripe-secret-key"
-  OPENAI_API_KEY = "your-openai-api-key"
-  ELEVENLABS_API_KEY = "your-elevenlabs-api-key"
-  YOUTUBE_API_KEY = "your-youtube-api-key"
-  NETLIFY_NEXT_PLUGIN_SKIP = "false"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
   NEXT_USE_NETLIFY_EDGE = "true"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
 
 [[headers]]
   for = "/*"
   [headers.values]
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
