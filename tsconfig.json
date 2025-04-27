@@ -25,17 +25,26 @@
     "strictNullChecks": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["*"],
-      "@/lib/*": ["src/lib/*"],
-      "@/app/*": ["src/app/*"],
-      "@/components/*": ["src/components/*"]
+      "@/*": [
+        "*"
+      ],
+      "@/lib/*": [
+        "src/lib/*"
+      ],
+      "@/app/*": [
+        "src/app/*"
+      ],
+      "@/components/*": [
+        "src/components/*"
+      ]
     }
   },
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "out/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

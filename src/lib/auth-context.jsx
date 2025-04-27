@@ -1,5 +1,14 @@
 'use client';
 
+import { 
+  loginUser, 
+  registerUser, 
+  logoutUser, 
+  checkAuthStatus, 
+  socialLogin as apiSocialLogin,
+  getSubscription
+} from './api-client';
+
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();

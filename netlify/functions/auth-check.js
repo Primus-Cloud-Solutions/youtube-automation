@@ -13,6 +13,9 @@ const createApiResponse = (data) => {
     body: JSON.stringify({ success: true, ...data }),
     headers: {
       'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
     },
   };
 };
@@ -23,43 +26,58 @@ const createApiError = (message, status = 400) => {
     body: JSON.stringify({ success: false, error: message }),
     headers: {
       'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
     },
   };
 };
 
 // Auth check handler
 exports.handler = async (event) => {
-  // Only allow GET requests
-  if (event.httpMethod !== 'GET') {
-    return createApiError('Method not allowed', 405);
+  // Handle CORS preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+      },
+      body: ''
+    };
   }
   
   try {
-    // In a real implementation, you would check the session cookie
-    // For demo purposes, we'll create a mock user
-    
-    // Check if there's a cookie with user information
+    // Get the auth cookie
     const cookies = event.headers.cookie || '';
-    const authUserCookie = cookies.split(';').find(c => c.trim().startsWith('auth_user='));
+    const authCookie = cookies.split(';').find(c => c.trim().startsWith('auth_user='));
     
-    if (authUserCookie) {
-      // Parse the user information from the cookie
-      const userCookie = authUserCookie.split('=')[1].trim();
-      const user = JSON.parse(Buffer.from(userCookie, 'base64').toString());
-      
-      return createApiResponse({ user });
+    if (!authCookie) {
+      return createApiResponse({ 
+        authenticated: false,
+        user: null
+      });
     }
     
-    // For demo purposes, always return a test user
-    const testUser = {
-      id: 'test_user_id',
-      name: 'Test User',
-      email: 'test@example.com',
-      provider: 'email',
-      avatar: 'https://ui-avatars.com/api/?name=Test+User&background=random',
-    };
+    // Parse the auth cookie
+    const authUserBase64 = authCookie.split('=')[1];
+    const authUserJson = Buffer.from(authUserBase64, 'base64').toString();
+    const user = JSON.parse(authUserJson);
     
-    return createApiResponse({ user: testUser });
+    if (!user || !user.id) {
+      return createApiResponse({ 
+        authenticated: false,
+        user: null
+      });
+    }
+    
+    // For demo purposes, always return the user from the cookie
+    // In a real implementation, you would verify with Supabase
+    return createApiResponse({
+      authenticated: true,
+      user
+    });
   } catch (error) {
     console.error('Auth check error:', error);
     return createApiError('Internal server error', 500);

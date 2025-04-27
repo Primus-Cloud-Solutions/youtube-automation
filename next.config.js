@@ -11,11 +11,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true
   },
-  output: 'standalone',
-  distDir: '.next',
-  experimental: {
-    serverActions: true
-  },
+  output: 'export',
+  distDir: 'out',
+  // Server Actions are available by default in Next.js 14.1.0
+  experimental: {},
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Don't resolve 'fs', 'net', 'child_process' modules on the client
