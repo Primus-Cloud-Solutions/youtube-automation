@@ -192,7 +192,10 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
-    updateSubscription
+    updateSubscription,
+    // Add aliases for compatibility with existing code
+    signIn: login,
+    signUp: register
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,112 +1,9 @@
-import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 
-// Initialize Stripe with the secret key from environment variables with fallback for build time
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_dummy_key_for_build';
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2023-10-16', // Specify API version
-  appInfo: {
-    name: 'TubeAutomator',
-    version: '1.0.0',
-  },
-});
-
-// Define the pricing plans
-const PLANS = {
-  basic: {
-    id: 'price_basic',
-    name: 'Basic',
-    price: 1900, // $19.00
-    interval: 'month',
-    currency: 'usd',
-    features: [
-      '10 AI-generated videos per month',
-      'Basic voice synthesis',
-      'Standard scheduling',
-      'Basic analytics',
-      'Email support',
-      '5GB storage'
-    ],
-    limits: {
-      videosPerMonth: 10,
-      storageGB: 5,
-      schedulingFrequency: ['weekly', 'monthly'],
-      voiceOptions: 3,
-      analyticsRetention: 30, // days
-    }
-  },
-  pro: {
-    id: 'price_pro',
-    name: 'Pro',
-    price: 4900, // $49.00
-    interval: 'month',
-    currency: 'usd',
-    features: [
-      '30 AI-generated videos per month',
-      'Advanced voice synthesis',
-      'Smart scheduling',
-      'Comprehensive analytics',
-      'Priority support',
-      'Trend analysis',
-      '15GB storage'
-    ],
-    limits: {
-      videosPerMonth: 30,
-      storageGB: 15,
-      schedulingFrequency: ['daily', 'every3days', 'weekly', 'biweekly', 'monthly'],
-      voiceOptions: 10,
-      analyticsRetention: 90, // days
-    }
-  },
-  enterprise: {
-    id: 'price_enterprise',
-    name: 'Enterprise',
-    price: 9900, // $99.00
-    interval: 'month',
-    currency: 'usd',
-    features: [
-      'Unlimited AI-generated videos',
-      'Premium voice synthesis',
-      'Advanced scheduling',
-      'Advanced analytics & reporting',
-      'Dedicated account manager',
-      'API access',
-      'Custom integrations',
-      'Viral video rebranding',
-      '50GB storage'
-    ],
-    limits: {
-      videosPerMonth: 999999, // Unlimited
-      storageGB: 50,
-      schedulingFrequency: ['daily', 'every3days', 'weekly', 'biweekly', 'monthly'],
-      voiceOptions: 30,
-      analyticsRetention: 365, // days
-    }
-  },
-  free: {
-    id: 'price_free',
-    name: 'Free Trial',
-    price: 0, // Free
-    interval: 'once',
-    currency: 'usd',
-    features: [
-      '3 AI-generated videos',
-      'Basic voice synthesis',
-      'Standard scheduling',
-      'Basic analytics',
-      'Email support',
-      '1GB storage',
-      '7-day trial'
-    ],
-    limits: {
-      videosPerMonth: 3,
-      storageGB: 1,
-      schedulingFrequency: ['weekly'],
-      voiceOptions: 2,
-      analyticsRetention: 7, // days
-      trialDays: 7
-    }
-  }
-};
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'example-anon-key';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Helper functions for API responses
 const createApiResponse = (data) => {
@@ -123,267 +20,118 @@ const withErrorHandling = (handler) => {
     try {
       return await handler(request);
     } catch (error) {
-      console.error('API error:', error);
+      console.error('Payment API error:', error);
       return createApiError('Internal server error', 500);
     }
   };
 };
 
-export const POST = withErrorHandling(async (request) => {
-  // Check if we're in a build/SSG environment
-  if (process.env.NODE_ENV === 'production' && !process.env.STRIPE_SECRET_KEY) {
-    console.warn('Stripe API key not available during build, returning mock data');
-    return createApiResponse({
-      sessionId: 'mock_session_id',
-      url: 'https://example.com/checkout',
+// Get user subscription
+export const GET = withErrorHandling(async (request) => {
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get('userId');
+  
+  if (!userId) {
+    return createApiResponse({ 
       subscription: {
-        id: 'sub_mock',
-        status: 'active',
-        currentPeriodEnd: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-        planId: 'pro',
-        planName: 'Pro',
-        limits: PLANS.pro.limits,
-        features: {
-          scheduling: true,
-          analytics: true
+        planName: 'Free',
+        planId: 'free',
+        limits: {
+          videosPerMonth: 5,
+          storageGB: 1,
+          schedulingFrequency: 'weekly'
         },
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        features: {
+          scheduling: false,
+          analytics: false,
+          viralVideoRebranding: false
+        },
+        expiresAt: null
       }
     });
   }
+  
+  // In a real implementation, you would fetch the user's subscription from a database
+  // For now, we'll return a mock subscription based on the user ID
+  
+  // Generate a random plan for demo purposes
+  const plans = ['free', 'basic', 'pro', 'enterprise'];
+  const randomPlan = plans[Math.floor(Math.random() * plans.length)];
+  
+  // Create expiration date 30 days from now
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 30);
+  
+  const subscription = {
+    planName: randomPlan === 'free' ? 'Free' : 
+              randomPlan === 'basic' ? 'Basic' : 
+              randomPlan === 'pro' ? 'Professional' : 'Enterprise',
+    planId: randomPlan,
+    limits: {
+      videosPerMonth: randomPlan === 'free' ? 5 : 
+                      randomPlan === 'basic' ? 20 : 
+                      randomPlan === 'pro' ? 50 : 100,
+      storageGB: randomPlan === 'free' ? 1 : 
+                randomPlan === 'basic' ? 10 : 
+                randomPlan === 'pro' ? 50 : 500,
+      schedulingFrequency: randomPlan === 'free' ? 'weekly' : 
+                          randomPlan === 'basic' ? 'daily' : 'hourly'
+    },
+    features: {
+      scheduling: randomPlan !== 'free',
+      analytics: randomPlan !== 'basic',
+      viralVideoRebranding: randomPlan === 'enterprise'
+    },
+    expiresAt: expiresAt.toISOString()
+  };
+  
+  return createApiResponse({ subscription });
+});
 
-  const { action, planId, userId, successUrl, cancelUrl, email, trialDays } = await request.json();
+// Update subscription
+export const POST = withErrorHandling(async (request) => {
+  const { userId, planId } = await request.json();
   
-  if (!action) {
-    return createApiError('Action is required', 400);
+  if (!userId) {
+    return createApiError('User ID is required', 400);
   }
   
-  // Get available plans
-  if (action === 'get-plans') {
-    return createApiResponse({ plans: PLANS });
+  if (!planId) {
+    return createApiError('Plan ID is required', 400);
   }
   
-  // Start free trial
-  if (action === 'start-trial') {
-    if (!userId || !email) {
-      return createApiError('User ID and email are required', 400);
-    }
-    
-    try {
-      // In a real implementation, you would create a customer in Stripe
-      // and set up a subscription with a trial period
-      
-      // Create a customer
-      const customer = await stripe.customers.create({
-        email,
-        metadata: {
-          userId
-        }
-      });
-      
-      // Store the trial information
-      const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + (trialDays || 7));
-      
-      return createApiResponse({
-        trialStarted: true,
-        customerId: customer.id,
-        trialEndDate: trialEndDate.toISOString(),
-        plan: PLANS.free
-      });
-    } catch (error) {
-      console.error('Stripe error:', error);
-      return createApiError(`Error starting trial: ${error.message}`, 500);
-    }
-  }
+  // In a real implementation, you would update the user's subscription in a database
+  // For now, we'll return a mock response
   
-  // Create a checkout session for subscription
-  if (action === 'create-checkout') {
-    if (!planId || !successUrl || !cancelUrl || !userId || !email) {
-      return createApiError('Plan ID, success URL, cancel URL, user ID, and email are required', 400);
-    }
-    
-    const plan = PLANS[planId];
-    if (!plan) {
-      return createApiError('Invalid plan ID', 400);
-    }
-    
-    try {
-      // Create or retrieve customer
-      let customer;
-      
-      // Check if customer already exists
-      const customers = await stripe.customers.list({
-        email,
-        limit: 1
-      });
-      
-      if (customers.data.length > 0) {
-        customer = customers.data[0];
-      } else {
-        // Create a new customer
-        customer = await stripe.customers.create({
-          email,
-          metadata: {
-            userId
-          }
-        });
-      }
-      
-      // Create checkout session
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        customer: customer.id,
-        line_items: [
-          {
-            price_data: {
-              currency: plan.currency,
-              product_data: {
-                name: `${plan.name} Plan`,
-                description: `TubeAutomator ${plan.name} Subscription`,
-              },
-              unit_amount: plan.price,
-              recurring: {
-                interval: plan.interval === 'once' ? 'month' : plan.interval,
-              },
-            },
-            quantity: 1,
-          },
-        ],
-        mode: 'subscription',
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-        client_reference_id: userId,
-        metadata: {
-          planId,
-          userId
-        }
-      });
-      
-      return createApiResponse({ sessionId: session.id, url: session.url });
-    } catch (error) {
-      console.error('Stripe error:', error);
-      return createApiError(`Payment processing error: ${error.message}`, 500);
-    }
-  }
+  // Create expiration date 30 days from now
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 30);
   
-  // Get subscription details
-  if (action === 'get-subscription') {
-    if (!userId) {
-      return createApiError('User ID is required', 400);
-    }
-    
-    try {
-      // In a real implementation, you would fetch the subscription from Stripe
-      // For now, we'll return a mock subscription
-      
-      // Determine if the user is in a trial period
-      const isInTrial = Math.random() > 0.7; // 30% chance of being in trial for demo
-      
-      if (isInTrial) {
-        const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + Math.floor(Math.random() * 7) + 1); // 1-7 days remaining
-        
-        return createApiResponse({
-          subscription: {
-            id: 'sub_trial',
-            status: 'trialing',
-            currentPeriodEnd: Math.floor(trialEndDate.getTime() / 1000),
-            planId: 'free',
-            planName: 'Free Trial',
-            trialEnd: Math.floor(trialEndDate.getTime() / 1000),
-            trialDaysRemaining: Math.ceil((trialEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-            limits: PLANS.free.limits,
-            features: {
-              scheduling: PLANS.free.limits.schedulingFrequency.length > 0,
-              analytics: false
-            },
-            expiresAt: new Date(trialEndDate).toISOString()
-          }
-        });
-      }
-      
-      // Random plan for demo purposes
-      const planKeys = ['basic', 'pro', 'enterprise'];
-      const randomPlan = planKeys[Math.floor(Math.random() * planKeys.length)];
-      const plan = PLANS[randomPlan];
-      
-      return createApiResponse({
-        subscription: {
-          id: `sub_mock_${randomPlan}`,
-          status: 'active',
-          currentPeriodEnd: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days from now
-          planId: randomPlan,
-          planName: plan.name,
-          limits: plan.limits,
-          features: {
-            scheduling: plan.limits.schedulingFrequency.length > 0,
-            analytics: randomPlan !== 'basic',
-            viralVideoRebranding: randomPlan === 'enterprise'
-          },
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
-        }
-      });
-    } catch (error) {
-      console.error('Stripe error:', error);
-      return createApiError(`Error fetching subscription: ${error.message}`, 500);
-    }
-  }
+  const subscription = {
+    planName: planId === 'free' ? 'Free' : 
+              planId === 'basic' ? 'Basic' : 
+              planId === 'pro' ? 'Professional' : 'Enterprise',
+    planId: planId,
+    limits: {
+      videosPerMonth: planId === 'free' ? 5 : 
+                      planId === 'basic' ? 20 : 
+                      planId === 'pro' ? 50 : 100,
+      storageGB: planId === 'free' ? 1 : 
+                planId === 'basic' ? 10 : 
+                planId === 'pro' ? 50 : 500,
+      schedulingFrequency: planId === 'free' ? 'weekly' : 
+                          planId === 'basic' ? 'daily' : 'hourly'
+    },
+    features: {
+      scheduling: planId !== 'free',
+      analytics: planId !== 'basic',
+      viralVideoRebranding: planId === 'enterprise'
+    },
+    expiresAt: expiresAt.toISOString()
+  };
   
-  // Cancel subscription
-  if (action === 'cancel-subscription') {
-    if (!userId) {
-      return createApiError('User ID is required', 400);
-    }
-    
-    try {
-      // In a real implementation, you would cancel the subscription in Stripe
-      // For now, we'll return a mock canceled subscription
-      
-      return createApiResponse({
-        subscription: {
-          id: 'sub_mock',
-          status: 'active',
-          cancelAtPeriodEnd: true,
-          currentPeriodEnd: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60 // 30 days from now
-        }
-      });
-    } catch (error) {
-      console.error('Stripe error:', error);
-      return createApiError(`Error canceling subscription: ${error.message}`, 500);
-    }
-  }
-  
-  // Change subscription plan
-  if (action === 'change-plan') {
-    if (!userId || !planId) {
-      return createApiError('User ID and plan ID are required', 400);
-    }
-    
-    const plan = PLANS[planId];
-    if (!plan) {
-      return createApiError('Invalid plan ID', 400);
-    }
-    
-    try {
-      // In a real implementation, you would update the subscription in Stripe
-      // For now, we'll return a mock updated subscription
-      
-      return createApiResponse({
-        subscription: {
-          id: 'sub_mock',
-          status: 'active',
-          currentPeriodEnd: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days from now
-          planId,
-          planName: plan.name,
-          limits: plan.limits
-        }
-      });
-    } catch (error) {
-      console.error('Stripe error:', error);
-      return createApiError(`Error changing plan: ${error.message}`, 500);
-    }
-  }
-  
-  return createApiError('Invalid action', 400);
+  return createApiResponse({ 
+    subscription,
+    message: 'Subscription updated successfully'
+  });
 });
