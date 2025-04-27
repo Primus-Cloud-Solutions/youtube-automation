@@ -14,27 +14,11 @@
     "@next/font": "^13.5.4",
     "@stripe/stripe-js": "^2.1.0",
     "@supabase/supabase-js": "^2.38.4",
-    "assert": "^2.1.0",
-    "browserify-zlib": "^0.2.0",
-    "buffer": "^6.0.3",
-    "crypto-browserify": "^3.12.1",
-    "events": "^3.3.0",
     "googleapis": "^126.0.1",
-    "https-browserify": "^1.0.0",
-    "ignore-loader": "^0.1.2",
     "next": "13.5.4",
-    "os-browserify": "^0.3.0",
-    "path-browserify": "^1.0.1",
-    "process": "^0.11.10",
-    "querystring-es3": "^0.2.1",
     "react": "^18",
     "react-dom": "^18",
-    "recharts": "^2.15.3",
-    "stream-browserify": "^3.0.0",
-    "stream-http": "^3.2.0",
-    "stripe": "^14.1.0",
-    "url": "^0.11.4",
-    "util": "^0.12.5"
+    "stripe": "^14.1.0"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -46,5 +30,9 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.9",
+    "utf-8-validate": "^6.0.5"
   }
 }

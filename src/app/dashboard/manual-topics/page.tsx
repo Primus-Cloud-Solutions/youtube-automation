@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/auth-context';
+import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import DashboardHeader from '../components/dashboard-header';
+import DashboardHeader from '@/app/components/dashboard-header';
 
 export default function ManualTopicsPage() {
   const { user, isLoading, subscription } = useAuth();

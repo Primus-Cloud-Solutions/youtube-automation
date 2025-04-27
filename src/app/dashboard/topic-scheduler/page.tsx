@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/auth-context';
+import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import DashboardHeader from '../components/dashboard-header';
+import DashboardHeader from '@/app/components/dashboard-header';
 
 export default function TopicSchedulerPage() {
   const { user, isLoading, subscription } = useAuth();
@@ -451,7 +451,7 @@ export default function TopicSchedulerPage() {
                           <td className="px-6 py-4">{topic.topic}</td>
                           <td className="px-6 py-4">{topic.category}</td>
                           <td className="px-6 py-4">{topic.frequency}</td>
-                          <td className="px-6 py-4">{formatDate(topic.next_scheduled)}</td>
+                          <td className="px-6 py-4">{formatDate(topic.nextScheduled)}</td>
                           <td className="px-6 py-4">
                             <button
                               onClick={() => deleteScheduledTopic(topic.id)}
@@ -471,7 +471,7 @@ export default function TopicSchedulerPage() {
           
           <div>
             <div className="bg-gray-800 rounded-lg p-6 shadow-lg mb-6">
-              <h2 className="text-xl font-semibold mb-4">Schedule Settings</h2>
+              <h2 className="text-xl font-semibold mb-4">Scheduling Options</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Frequency</label>
@@ -486,20 +486,16 @@ export default function TopicSchedulerPage() {
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1 text-xs text-gray-400">
-                    How often you want to publish videos
-                  </p>
                 </div>
                 
-                <div>
-                  <p className="text-sm text-gray-400">Scheduled Videos</p>
-                  <p className="font-medium">{scheduledTopics.length} / {subscription?.limits?.videosPerMonth || 3}</p>
-                  <div className="w-full bg-gray-700 rounded-full h-2.5 mt-1">
-                    <div 
-                      className="bg-blue-600 h-2.5 rounded-full" 
-                      style={{ width: `${(scheduledTopics.length / (subscription?.limits?.videosPerMonth || 3)) * 100}%` }}
-                    ></div>
-                  </div>
+                <div className="p-4 bg-gray-700 rounded-md">
+                  <h3 className="font-medium mb-2">Scheduling Limits</h3>
+                  <p className="text-sm text-gray-400 mb-2">
+                    Your current plan allows you to schedule up to {subscription?.limits?.videosPerMonth || 3} videos per month.
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    You have scheduled {scheduledTopics.length} out of {subscription?.limits?.videosPerMonth || 3} videos.
+                  </p>
                 </div>
               </div>
             </div>
@@ -512,14 +508,12 @@ export default function TopicSchedulerPage() {
                   <p className="font-medium">{subscription?.planName || 'Free Trial'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Videos Per Month</p>
-                  <p className="font-medium">{subscription?.limits?.videosPerMonth || 3} videos</p>
+                  <p className="text-sm text-gray-400">Videos Remaining</p>
+                  <p className="font-medium">{(subscription?.limits?.videosPerMonth || 3) - scheduledTopics.length} videos</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Available Frequencies</p>
-                  <p className="font-medium">
-                    {getAvailableFrequencies().map(f => f.label).join(', ')}
-                  </p>
+                  <p className="text-sm text-gray-400">Storage Limit</p>
+                  <p className="font-medium">{subscription?.limits?.storageGB || 1} GB</p>
                 </div>
                 <button 
                   className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors w-full"

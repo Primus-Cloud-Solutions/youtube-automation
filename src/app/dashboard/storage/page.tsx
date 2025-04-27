@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/auth-context';
+import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import DashboardHeader from '../components/dashboard-header';
+import DashboardHeader from '@/app/components/dashboard-header';
 
 export default function StoragePage() {
   const { user, isLoading, subscription } = useAuth();
@@ -547,9 +547,13 @@ export default function StoragePage() {
               </div>
             )}
             
-            {Object.values(files).every(arr => arr.length === 0) && (
+            {/* No Files */}
+            {(!files.videos || files.videos.length === 0) && 
+             (!files.images || files.images.length === 0) && 
+             (!files.audio || files.audio.length === 0) && 
+             (!files.other || files.other.length === 0) && (
               <div className="bg-gray-800 rounded-lg p-6 shadow-lg text-center">
-                <p className="text-gray-400 mb-4">You haven't uploaded any files yet.</p>
+                <p className="text-gray-400 mb-4">You don't have any files stored yet.</p>
                 <label
                   htmlFor="file-upload"
                   className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors cursor-pointer"
