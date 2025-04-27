@@ -260,7 +260,10 @@ export default function TopicSchedulerPage() {
       monthly: 'Monthly'
     };
     
-    return frequencies.map(freq => ({
+    // Ensure frequencies is always an array
+    const frequencyArray = Array.isArray(frequencies) ? frequencies : [frequencies];
+    
+    return frequencyArray.map(freq => ({
       value: freq,
       label: frequencyOptions[freq] || freq
     }));

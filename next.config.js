@@ -28,5 +28,14 @@ const nextConfig = {
     }
     
     return config;
-  }
+  },
+  // Add this to resolve the duplicate pages issue
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js'].filter(extension => {
+    // During build, only include .tsx and .jsx files to avoid duplicates
+    return process.env.NODE_ENV === 'production' 
+      ? ['tsx', 'jsx'].includes(extension) 
+      : true;
+  })
 }
+
+module.exports = nextConfig
