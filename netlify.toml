@@ -7,6 +7,8 @@
   NEXT_USE_NETLIFY_EDGE = "true"
   # Skip the creation of pages directory during build
   NEXT_IGNORE_PAGES_FOLDER = "true"
+  # Prefer .tsx files over .jsx files to avoid duplicate page errors
+  NEXT_PREFER_TSX_EXTENSIONS = "true"
 
 [[headers]]
   for = "/*"
@@ -15,6 +17,15 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
+    # Add CORS headers for all routes
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 # Enable the Netlify Next.js plugin to handle API routes properly
 [[plugins]]
@@ -26,6 +37,45 @@
   to = "/.netlify/functions/api/:splat"
   status = 200
   force = true
+
+# Add redirects for auth routes
+[[redirects]]
+  from = "/api/auth/login"
+  to = "/.netlify/functions/auth-login"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/register"
+  to = "/.netlify/functions/auth-register"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/logout"
+  to = "/.netlify/functions/auth-logout"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/check"
+  to = "/.netlify/functions/auth-check"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/auth/social-login"
+  to = "/.netlify/functions/social-login"
+  status = 200
+  force = true
+
+# Handle CORS preflight requests
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 204
+  force = true
+  conditions = {Methods = ["OPTIONS"]}
 
 # Add fallback for client-side navigation
 [[redirects]]
