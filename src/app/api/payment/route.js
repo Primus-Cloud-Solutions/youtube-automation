@@ -71,6 +71,7 @@ const PLANS = {
       'Dedicated account manager',
       'API access',
       'Custom integrations',
+      'Viral video rebranding',
       '50GB storage'
     ],
     limits: {
@@ -317,7 +318,8 @@ export const POST = withErrorHandling(async (request) => {
           limits: plan.limits,
           features: {
             scheduling: plan.limits.schedulingFrequency.length > 0,
-            analytics: randomPlan !== 'basic'
+            analytics: randomPlan !== 'basic',
+            viralVideoRebranding: randomPlan === 'enterprise'
           },
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
         }

@@ -14,9 +14,7 @@ const nextConfig = {
   output: 'standalone',
   distDir: '.next',
   experimental: {
-    serverActions: {
-      allowedOrigins: ["localhost:3000", "*.manus.computer"]
-    }
+    serverActions: true
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {

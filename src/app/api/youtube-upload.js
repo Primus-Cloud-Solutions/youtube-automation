@@ -1,4 +1,4 @@
-'use server';
+
 
 import { google } from 'googleapis';
 import { deleteFromS3, getSignedUrl } from '@/app/api/s3-storage';
