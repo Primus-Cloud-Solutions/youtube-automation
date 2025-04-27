@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AuthProvider } from "../lib/auth-context";
-import { PaymentProvider } from "../lib/payment-context";
-import { YouTubeApiProvider } from "./context/youtube-api-context";
+import { AuthProvider } from "@/lib/auth-context";
+import { PaymentProvider } from "@/lib/payment-context";
+import { YouTubeApiProvider } from "@/app/context/youtube-api-context";
 
 export const metadata: Metadata = {
   title: "TubeAutomator - AI-Powered YouTube Content Creation",

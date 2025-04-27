@@ -1,5 +1,3 @@
-'use server';
-
 import * as youtubeApi from '../../lib/youtube-api';
 
 // Initialize Supabase client
@@ -475,12 +473,51 @@ function getCategoryId(category) {
     'Gaming': 'Gaming',
     'Finance': 'Education',
     'Health': 'Howto & Style',
-    'Entertainment': 'Entertainment'
+    'Lifestyle': 'People & Blogs',
+    'Entertainment': 'Entertainment',
+    'Education': 'Education',
+    'News': 'News & Politics',
+    'Sports': 'Sports',
+    'Travel': 'Travel & Events',
+    'Food': 'Howto & Style',
+    'Fashion': 'Howto & Style',
+    'Beauty': 'Howto & Style',
+    'DIY': 'Howto & Style',
+    'Business': 'Education',
+    'Marketing': 'Education',
+    'Productivity': 'Education',
+    'Personal Development': 'Education',
+    'Motivation': 'People & Blogs',
+    'Spirituality': 'People & Blogs',
+    'Relationships': 'People & Blogs',
+    'Parenting': 'People & Blogs',
+    'Pets': 'Pets & Animals',
+    'Music': 'Music',
+    'Art': 'Film & Animation',
+    'Design': 'Howto & Style',
+    'Photography': 'Howto & Style',
+    'Science': 'Science & Technology',
+    'History': 'Education',
+    'Politics': 'News & Politics',
+    'Philosophy': 'Education',
+    'Psychology': 'Education',
+    'Fitness': 'Howto & Style',
+    'Nutrition': 'Howto & Style',
+    'Meditation': 'Howto & Style',
+    'Yoga': 'Howto & Style',
+    'Outdoors': 'Travel & Events',
+    'Adventure': 'Travel & Events',
+    'Automotive': 'Autos & Vehicles',
+    'Real Estate': 'Howto & Style',
+    'Investing': 'Education',
+    'Cryptocurrency': 'Education',
+    'Stocks': 'Education',
+    'Personal Finance': 'Education'
   };
   
-  // Get the YouTube category name
-  const youtubeCategoryName = categoryMap[category] || 'Entertainment';
+  // Get the YouTube category
+  const youtubeCategory = categoryMap[category] || 'Entertainment';
   
-  // Get the YouTube category ID
-  return categoryIds[youtubeCategoryName] || '24'; // Default to Entertainment
+  // Return the category ID
+  return categoryIds[youtubeCategory] || '24'; // Default to Entertainment
 }

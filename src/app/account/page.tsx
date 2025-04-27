@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useAuth } from '../../lib/auth-context';
+import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import DashboardHeader from '../components/dashboard-header';
+import DashboardHeader from '@/app/components/dashboard-header';
 
 export default function AccountPage() {
   const { user, isLoading, updateUserProfile } = useAuth();

@@ -12,6 +12,7 @@
     "@aws-sdk/client-s3": "^3.450.0",
     "@aws-sdk/s3-request-presigner": "^3.450.0",
     "@next/font": "^13.5.4",
+    "@sentry/nextjs": "^9.14.0",
     "@stripe/stripe-js": "^2.1.0",
     "@supabase/supabase-js": "^2.38.4",
     "googleapis": "^126.0.1",

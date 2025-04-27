@@ -1,5 +1,3 @@
-'use server';
-
 import * as openaiApi from '../openai-api';
 import * as elevenlabsApi from '../elevenlabs-api';
 import * as trendAnalyzer from '../../../lib/trend-analyzer';

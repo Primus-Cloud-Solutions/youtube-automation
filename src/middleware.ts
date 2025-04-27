@@ -1,27 +1,35 @@
-// This middleware ensures API routes work correctly on Netlify
-// by setting the correct headers and handling CORS
-
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  // Get response from the origin
+// This middleware runs on every request
+export function middleware(request) {
+  // Set CORS headers to allow external access
   const response = NextResponse.next();
-
-  // Add CORS headers
+  
+  // Allow requests from any origin
   response.headers.set('Access-Control-Allow-Origin', '*');
+  
+  // Allow specific HTTP methods
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  
+  // Allow specific headers
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
-  // Ensure correct content type for API routes
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    response.headers.set('Content-Type', 'application/json');
-  }
-
+  // Allow credentials
+  response.headers.set('Access-Control-Allow-Credentials', 'true');
+  
   return response;
 }
 
-// Only run middleware on API routes
+// Configure middleware to run on all routes
 export const config = {
-  matcher: '/api/:path*',
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+  ],
 };

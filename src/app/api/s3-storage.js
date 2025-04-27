@@ -1,14 +1,12 @@
-'use server';
-
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Initialize S3 client with environment variables
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
+  region: process.env.YOUTUBE_AWS_REGION || 'us-east-1',
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
+    accessKeyId: process.env.YOUTUBE_AWS_ACCESS_KEY || '',
+    secretAccessKey: process.env.YOUTUBE_AWS_SECRET_KEY || ''
   }
 });
 
@@ -25,7 +23,7 @@ const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'youtube-automation-storage';
 export async function uploadToS3(key, body, contentType) {
   try {
     // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
+    if (process.env.NODE_ENV === 'production' && !process.env.YOUTUBE_AWS_ACCESS_KEY) {
       console.warn('AWS credentials not available during build, returning mock data');
       return { success: true, key, url: `https://example.com/${key}` };
     }
@@ -57,7 +55,7 @@ export async function uploadToS3(key, body, contentType) {
 export async function getSignedUrl(key, expiresIn = 3600) {
   try {
     // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
+    if (process.env.NODE_ENV === 'production' && !process.env.YOUTUBE_AWS_ACCESS_KEY) {
       console.warn('AWS credentials not available during build, returning mock URL');
       return { success: true, url: `https://example.com/${key}` };
     }
@@ -86,7 +84,7 @@ export async function getSignedUrl(key, expiresIn = 3600) {
 export async function deleteFromS3(key) {
   try {
     // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
+    if (process.env.NODE_ENV === 'production' && !process.env.YOUTUBE_AWS_ACCESS_KEY) {
       console.warn('AWS credentials not available during build, returning mock result');
       return { success: true };
     }
@@ -115,7 +113,7 @@ export async function deleteFromS3(key) {
 export async function listS3Objects(prefix) {
   try {
     // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production' && !process.env.AWS_ACCESS_KEY_ID) {
+    if (process.env.NODE_ENV === 'production' && !process.env.YOUTUBE_AWS_ACCESS_KEY) {
       console.warn('AWS credentials not available during build, returning mock data');
       return { 
         success: true, 
@@ -196,5 +194,3 @@ export async function getStorageUsage(userId) {
     return { success: false, usage: null, error: error.message || 'Failed to get storage usage' };
   }
 }
-
-// No default export in 'use server' files - only async functions are allowed

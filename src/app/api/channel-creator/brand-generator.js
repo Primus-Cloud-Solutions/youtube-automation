@@ -1,5 +1,3 @@
-'use server';
-
 import { createApiResponse, createApiError } from '../../../lib/api-helpers';
 
 /**

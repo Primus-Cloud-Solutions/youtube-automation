@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { useAuth } from '../../context/auth-context';
-import { useYouTubeApi } from '../../context/youtube-api-context';
-import withAuth from '../../utils/with-auth';
-import DashboardHeader from '../../components/dashboard-header';
+import { useAuth } from '@/lib/auth-context';
+import { useYouTubeApi } from '@/app/context/youtube-api-context';
+import withAuth from '@/app/utils/with-auth';
+import DashboardHeader from '@/app/components/dashboard-header';
 
 function ApiKeysPage() {
   const { user } = useAuth();

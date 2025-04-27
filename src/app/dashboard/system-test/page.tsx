@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../../lib/auth-context';
-import { withAuth } from '../../utils/with-auth';
-import DashboardHeader from '../../components/dashboard-header';
+import { useAuth } from '@/lib/auth-context';
+import { withAuth } from '@/app/utils/with-auth';
+import DashboardHeader from '@/app/components/dashboard-header';
 
 const SystemTest = () => {
   const { user } = useAuth();

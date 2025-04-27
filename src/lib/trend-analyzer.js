@@ -1,4 +1,4 @@
-'use server';
+// Trend analyzer module
 
 import fetch from 'node-fetch';
 

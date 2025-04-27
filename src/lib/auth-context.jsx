@@ -1,312 +1,301 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client with environment variables
-// These will be properly set in the deployed environment
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xyzcompany.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtaHl6Y29tcGFueSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjgyNDQyMzQyLCJleHAiOjE5OTgwMTgzNDJ9.mocked';
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Get the current site URL for redirects
-const getSiteUrl = () => {
-  if (typeof window !== 'undefined') {
-    // In browser context, use the current origin
-    return window.location.origin;
-  }
-  // In server context, use environment variable or fallback
-  return process.env.NEXT_PUBLIC_SITE_URL || 'https://youtube-platform.netlify.app';
-};
+// Create auth context
+const AuthContext = createContext();
 
-// Create a Supabase client for authentication with redirect URLs
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    redirectTo: `${getSiteUrl()}/auth/callback`
-  }
-});
-
-// Create auth context with default values
-const AuthContext = createContext({
-  user: null,
-  session: null,
-  isLoading: true,
-  signIn: async (email, password) => ({ success: false }),
-  signUp: async (email, password, fullName) => ({ success: false }),
-  signOut: async () => ({ success: false }),
-  updateUserProfile: async (userData) => ({ success: false }),
-  error: null,
-});
-
-// Auth provider component
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [session, setSession] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [subscription, setSubscription] = useState({
+    planName: 'Free Trial',
+    planId: 'free',
+    limits: {
+      videosPerMonth: 5,
+      storageGB: 0.1, // 100 MB
+      schedulingFrequency: ['weekly']
+    },
+    features: {
+      scheduling: false,
+      analytics: false
+    },
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+  });
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        console.log('Auth state changed:', event);
-        
-        if (currentSession) {
-          setSession(currentSession);
-          setUser(currentSession.user);
-        } else {
-          setSession(null);
-          setUser(null);
-        }
-        
-        setIsLoading(false);
-      }
-    );
-
-    // Check for existing session
+    // Check active session
     const checkSession = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session:', error.message);
-          throw error;
-        }
-        
-        if (data.session) {
-          setSession(data.session);
+          console.error('Error checking session:', error);
+          setUser(null);
+        } else if (data?.session) {
           setUser(data.session.user);
+          // Fetch user subscription data
+          await fetchUserSubscription(data.session.user.id);
+        } else {
+          setUser(null);
         }
       } catch (error) {
-        console.error('Session check error:', error.message);
+        console.error('Session check error:', error);
+        setUser(null);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    
+
     checkSession();
-    
-    // Clean up subscription on unmount
+
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          setUser(session.user);
+          // Fetch user subscription data
+          await fetchUserSubscription(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          // Reset subscription to default
+          setSubscription({
+            plan: 'Free Trial',
+            videoQuota: 5,
+            storageQuota: 100,
+            schedulingEnabled: false,
+            analyticsEnabled: false,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          });
+        }
+      }
+    );
+
     return () => {
-      subscription?.unsubscribe();
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
     };
   }, []);
 
-  // Sign in function
-  const signIn = async (email, password) => {
+  // Fetch user subscription data from the database
+  const fetchUserSubscription = async (userId) => {
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      console.log('Attempting to sign in with:', email);
-      
-      // Use Supabase auth
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+      // In a real app, this would fetch from your database or payment API
+      // For now, we'll use the payment API to get subscription data
+      const response = await fetch('/api/payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'get-subscription',
+          userId,
+        }),
       });
+
+      const data = await response.json();
       
-      if (error) {
-        console.error('Sign in error:', error.message);
-        setError(error.message);
-        return { success: false, error: error.message };
+      if (data.success && data.subscription) {
+        setSubscription(data.subscription);
+      } else {
+        // Fallback to default subscription if API call fails
+        setSubscription({
+          planName: 'Free Trial',
+          planId: 'free',
+          limits: {
+            videosPerMonth: 5,
+            storageGB: 0.1, // 100 MB
+            schedulingFrequency: ['weekly']
+          },
+          features: {
+            scheduling: false,
+            analytics: false
+          },
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        });
       }
-      
-      console.log('Sign in successful:', data);
-      setSession(data.session);
-      setUser(data.user);
-      
-      return { success: true, user: data.user };
     } catch (error) {
-      console.error('Error signing in:', error.message);
-      setError(error.message || 'Failed to sign in');
-      return { success: false, error: error.message || 'Invalid email or password' };
-    } finally {
-      setIsLoading(false);
+      console.error('Error fetching subscription:', error);
+      // Fallback to Free Trial if there's an error
+      setSubscription({
+        planName: 'Free Trial',
+        planId: 'free',
+        limits: {
+          videosPerMonth: 5,
+          storageGB: 0.1, // 100 MB
+          schedulingFrequency: ['weekly']
+        },
+        features: {
+          scheduling: false,
+          analytics: false
+        },
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      });
     }
   };
 
-  // Sign up function
-  const signUp = async (email, password, fullName) => {
+  // Sign up with email and password
+  const signUp = async (email, password) => {
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      console.log('Attempting to sign up with:', email, fullName);
-      
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        throw new Error('Please enter a valid email address');
-      }
-      
-      // Validate password strength
-      if (password.length < 8) {
-        throw new Error('Password must be at least 8 characters long');
-      }
-      
-      // Check for at least one number and one special character
-      const hasNumber = /\d/.test(password);
-      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-      
-      if (!hasNumber || !hasSpecial) {
-        throw new Error('Password must contain at least one number and one special character');
-      }
-      
-      // Get the current site URL for redirects
-      const redirectTo = `${getSiteUrl()}/auth/callback`;
-      
-      // Use Supabase auth to create user with redirect URL
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: redirectTo,
-          data: {
-            full_name: fullName,
-            preferences: {
-              contentNiche: 'General',
-              uploadFrequency: 'weekly',
-              notificationsEnabled: true
-            }
-          }
-        }
       });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Sign up error:', error);
+      return { data: null, error };
+    }
+  };
+
+  // Sign in with email and password
+  const signIn = async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return { data: null, error };
+    }
+  };
+
+  // Sign in with OAuth provider
+  const signInWithOAuth = async (provider) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+      });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('OAuth sign in error:', error);
+      return { data: null, error };
+    }
+  };
+
+  // Sign out
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      console.error('Sign out error:', error);
+      return { error };
+    }
+  };
+
+  // Update user profile
+  const updateProfile = async (updates) => {
+    try {
+      const { data, error } = await supabase.auth.updateUser(updates);
+      if (error) throw error;
+      setUser({ ...user, ...data.user });
+      return { data, error: null };
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return { data: null, error };
+    }
+  };
+
+  // Update subscription plan
+  const updateSubscription = async (newPlan) => {
+    try {
+      // In a real app, this would update the subscription in your database
+      // For now, we'll just update the local state
+      let updatedSubscription = { ...subscription, planName: newPlan.planName, planId: newPlan.planId };
       
-      if (error) {
-        console.error('Sign up error:', error.message);
-        setError(error.message);
-        return { success: false, error: error.message };
-      }
-      
-      console.log('Sign up successful:', data);
-      
-      // If email confirmation is required
-      if (data.user && !data.session) {
-        return { 
-          success: true, 
-          user: data.user,
-          message: 'Please check your email for a confirmation link'
+      // Set appropriate quotas and features based on plan
+      if (newPlan.planId === 'pro') {
+        updatedSubscription = {
+          ...updatedSubscription,
+          limits: {
+            videosPerMonth: 50,
+            storageGB: 1,
+            schedulingFrequency: ['daily', 'every3days', 'weekly', 'biweekly', 'monthly']
+          },
+          features: {
+            scheduling: true,
+            analytics: true
+          },
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+        };
+      } else if (newPlan.planId === 'business') {
+        updatedSubscription = {
+          ...updatedSubscription,
+          limits: {
+            videosPerMonth: 100,
+            storageGB: 5,
+            schedulingFrequency: ['daily', 'every3days', 'weekly', 'biweekly', 'monthly']
+          },
+          features: {
+            scheduling: true,
+            analytics: true
+          },
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+        };
+      } else if (newPlan.planId === 'basic') {
+        updatedSubscription = {
+          ...updatedSubscription,
+          limits: {
+            videosPerMonth: 20,
+            storageGB: 0.5,
+            schedulingFrequency: ['weekly', 'biweekly', 'monthly']
+          },
+          features: {
+            scheduling: true,
+            analytics: false
+          },
+          expiresAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000)
         };
       }
       
-      // If auto-confirmed
-      if (data.session) {
-        setSession(data.session);
-        setUser(data.user);
-      }
-      
-      return { success: true, user: data.user };
+      setSubscription(updatedSubscription);
+      return { data: updatedSubscription, error: null };
     } catch (error) {
-      console.error('Error signing up:', error.message);
-      setError(error.message || 'Failed to create account');
-      return { success: false, error: error.message || 'Failed to create account' };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Update user profile function
-  const updateUserProfile = async (userData) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      if (!user) {
-        throw new Error('No authenticated user');
-      }
-      
-      console.log('Updating user profile:', userData);
-      
-      // Update user metadata in Supabase
-      const { data, error } = await supabase.auth.updateUser({
-        data: userData
-      });
-      
-      if (error) {
-        console.error('Update profile error:', error.message);
-        setError(error.message);
-        return { success: false, error: error.message };
-      }
-      
-      console.log('Profile updated successfully:', data);
-      setUser(data.user);
-      
-      return { success: true, user: data.user };
-    } catch (error) {
-      console.error('Error updating user profile:', error.message);
-      setError(error.message || 'Failed to update profile');
-      return { success: false, error: error.message || 'Failed to update profile' };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Sign out function
-  const signOut = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      console.log('Signing out user');
-      
-      // Use Supabase auth to sign out
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('Sign out error:', error.message);
-        setError(error.message);
-        return { success: false, error: error.message };
-      }
-      
-      // Reset state
-      setUser(null);
-      setSession(null);
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Error signing out:', error.message);
-      setError(error.message || 'Failed to sign out');
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
+      console.error('Update subscription error:', error);
+      return { data: null, error };
     }
   };
 
   const value = {
     user,
-    session,
-    isLoading,
-    error,
-    signIn,
+    subscription,
+    loading,
     signUp,
+    signIn,
+    signInWithOAuth,
     signOut,
-    updateUserProfile,
+    updateProfile,
+    updateSubscription,
+    supabase
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 // Custom hook to use auth context
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
-  
-  // Instead of throwing an error, return the default context during SSR
-  if (!context) {
-    console.warn('useAuth must be used within an AuthProvider, returning default context');
-    return {
-      user: null,
-      session: null,
-      isLoading: false,
-      error: null,
-      signIn: async () => ({ success: false }),
-      signUp: async () => ({ success: false }),
-      signOut: async () => ({ success: false }),
-      updateUserProfile: async () => ({ success: false }),
-    };
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  
   return context;
-};
+}
+
+export default AuthContext;

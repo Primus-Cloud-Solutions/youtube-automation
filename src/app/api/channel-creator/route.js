@@ -1,5 +1,3 @@
-'use server';
-
 import * as youtubeApi from '../../../lib/youtube-api';
 import { createApiResponse, createApiError } from '../../../lib/api-helpers';
 import { generateLogo, generateBanner } from './brand-generator';

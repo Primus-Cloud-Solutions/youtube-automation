@@ -1,8 +1,8 @@
 'use client'
 
 import { createContext, useContext, useState } from 'react'
-import { stripePayment } from '../../../stripe-payment-integration'
-import { useAuth, AuthProvider } from './auth-context'
+import { stripePayment } from '@/utils/stripe-payment-integration'
+import { useAuth, AuthProvider } from '@/lib/auth-context'
 
 // Create subscription context
 const SubscriptionContext = createContext(null)

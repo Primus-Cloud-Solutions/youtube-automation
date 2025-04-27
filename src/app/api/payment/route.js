@@ -1,5 +1,3 @@
-'use server';
-
 import Stripe from 'stripe';
 
 // Initialize Stripe with the secret key from environment variables with fallback for build time
@@ -142,7 +140,13 @@ export const POST = withErrorHandling(async (request) => {
         status: 'active',
         currentPeriodEnd: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
         planId: 'pro',
-        planName: 'Pro'
+        planName: 'Pro',
+        limits: PLANS.pro.limits,
+        features: {
+          scheduling: true,
+          analytics: true
+        },
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
       }
     });
   }
@@ -288,7 +292,12 @@ export const POST = withErrorHandling(async (request) => {
             planName: 'Free Trial',
             trialEnd: Math.floor(trialEndDate.getTime() / 1000),
             trialDaysRemaining: Math.ceil((trialEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-            limits: PLANS.free.limits
+            limits: PLANS.free.limits,
+            features: {
+              scheduling: PLANS.free.limits.schedulingFrequency.length > 0,
+              analytics: false
+            },
+            expiresAt: new Date(trialEndDate).toISOString()
           }
         });
       }
@@ -305,7 +314,12 @@ export const POST = withErrorHandling(async (request) => {
           currentPeriodEnd: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days from now
           planId: randomPlan,
           planName: plan.name,
-          limits: plan.limits
+          limits: plan.limits,
+          features: {
+            scheduling: plan.limits.schedulingFrequency.length > 0,
+            analytics: randomPlan !== 'basic'
+          },
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
         }
       });
     } catch (error) {
