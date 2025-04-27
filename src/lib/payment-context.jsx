@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
+import { createCheckout, getSubscription as fetchSubscription, cancelSubscription as cancelUserSubscription } from '../lib/api-client';
 
 // Initialize Stripe with the publishable key from environment variables with fallback for build time
 const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_dummy_key_for_build';
@@ -22,32 +23,13 @@ export function PaymentProvider({ children }) {
   const [error, setError] = useState(null);
 
   // Function to create a checkout session and redirect to Stripe
-  const createCheckoutSession = async (planId, userId) => {
+  const createCheckoutSession = async (planId, userId, userEmail, successUrl, cancelUrl) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Get the current URL for success and cancel redirects
-      const origin = window.location.origin;
-      const successUrl = `${origin}/dashboard?payment=success`;
-      const cancelUrl = `${origin}/pricing?payment=canceled`;
-
-      // Create checkout session
-      const response = await fetch('/api/payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'create-checkout',
-          planId,
-          userId,
-          successUrl,
-          cancelUrl,
-        }),
-      });
-
-      const data = await response.json();
+      // Use the api-client function instead of direct fetch
+      const data = await createCheckout(planId, userId);
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to create checkout session');
@@ -92,18 +74,8 @@ export function PaymentProvider({ children }) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'get-subscription',
-          userId,
-        }),
-      });
-
-      const data = await response.json();
+      // Use the api-client function instead of direct fetch
+      const data = await fetchSubscription(userId);
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to get subscription');
@@ -125,18 +97,8 @@ export function PaymentProvider({ children }) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'cancel-subscription',
-          userId,
-        }),
-      });
-
-      const data = await response.json();
+      // Use the api-client function instead of direct fetch
+      const data = await cancelUserSubscription(userId);
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to cancel subscription');

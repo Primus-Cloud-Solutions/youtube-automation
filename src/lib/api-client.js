@@ -108,6 +108,20 @@ export async function createCheckout(planId, userId) {
 }
 
 /**
+ * Cancel subscription function
+ */
+export async function cancelSubscription(userId) {
+  return fetchFromApi('api', {
+    method: 'POST',
+    body: JSON.stringify({ 
+      path: '/payment',
+      action: 'cancel-subscription',
+      userId 
+    }),
+  });
+}
+
+/**
  * Storage API functions
  */
 export async function getStorageFiles(userId) {

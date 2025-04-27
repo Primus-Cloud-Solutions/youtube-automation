@@ -36,9 +36,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Use relative URL that works with Netlify redirects
-        const response = await fetch('/api/auth/check');
-        const data = await response.json();
+        // Use the api-client function instead of direct fetch
+        const data = await checkAuthStatus();
         
         if (data.success && data.user) {
           setUser(data.user);
@@ -60,9 +59,8 @@ export function AuthProvider({ children }) {
   // Fetch user subscription data
   const fetchUserSubscription = async (userId) => {
     try {
-      // Use relative URL that works with Netlify redirects
-      const response = await fetch(`/api/payment?userId=${userId}`);
-      const data = await response.json();
+      // Use the api-client function instead of direct fetch
+      const data = await getSubscription(userId);
       
       if (data.success && data.subscription) {
         // Update subscription with proper structure
@@ -120,16 +118,8 @@ export function AuthProvider({ children }) {
   // Login user
   const login = async (email, password) => {
     try {
-      // Use relative URL that works with Netlify redirects
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
-      
-      const data = await response.json();
+      // Use the api-client function instead of direct fetch
+      const data = await loginUser(email, password);
       
       if (data.success && data.user) {
         setUser(data.user);
@@ -145,18 +135,10 @@ export function AuthProvider({ children }) {
   };
 
   // Register user
-  const register = async (name, email, password) => {
+  const register = async (email, password, name) => {
     try {
-      // Use relative URL that works with Netlify redirects
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ name, email, password })
-      });
-      
-      const data = await response.json();
+      // Use the api-client function instead of direct fetch
+      const data = await registerUser(email, password, name);
       
       if (data.success && data.user) {
         setUser(data.user);
@@ -174,8 +156,9 @@ export function AuthProvider({ children }) {
   // Logout user
   const logout = async () => {
     try {
-      // Use relative URL that works with Netlify redirects
-      await fetch('/api/auth/logout', { method: 'POST' });
+      // Use the api-client function instead of direct fetch
+      const data = await logoutUser();
+      
       setUser(null);
       setSubscription({
         planName: 'Free',
@@ -202,19 +185,9 @@ export function AuthProvider({ children }) {
   // Social login (Google, GitHub)
   const socialLogin = async (provider) => {
     try {
-      // Use relative URL that works with Netlify redirects
-      const response = await fetch('/api/auth/social-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          provider,
-          redirectTo: window.location.origin + '/dashboard'
-        })
-      });
-      
-      const data = await response.json();
+      // Use the api-client function instead of direct fetch
+      const redirectTo = window.location.origin + '/dashboard';
+      const data = await apiSocialLogin(provider, redirectTo);
       
       if (data.success && data.url) {
         // Redirect to the social login URL

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../../lib/auth-context';
 import { usePayment } from '../../lib/payment-context';
+import { getPlans, getSubscription } from '../../lib/api-client';
 
 const PricingPage = () => {
   const { user } = useAuth();
@@ -21,18 +22,8 @@ const PricingPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch plans - use relative URL that works with Netlify redirects
-        const plansResponse = await fetch('/api/payment', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'get-plans'
-          }),
-        });
-        
-        const plansData = await plansResponse.json();
+        // Use the api-client function instead of direct fetch
+        const plansData = await getPlans();
         
         if (plansData.success) {
           setPlans(plansData.plans);
@@ -42,19 +33,8 @@ const PricingPage = () => {
         
         // Fetch current subscription if user is logged in
         if (user?.id) {
-          // Use relative URL that works with Netlify redirects
-          const subscriptionResponse = await fetch('/api/payment', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              action: 'get-subscription',
-              userId: user.id
-            }),
-          });
-          
-          const subscriptionData = await subscriptionResponse.json();
+          // Use the api-client function instead of direct fetch
+          const subscriptionData = await getSubscription(user.id);
           
           if (subscriptionData.success) {
             setCurrentSubscription(subscriptionData.subscription);
@@ -113,12 +93,13 @@ const PricingPage = () => {
     
     try {
       // Use relative URL that works with Netlify redirects
-      const response = await fetch('/api/payment', {
+      const response = await fetch('/.netlify/functions/api', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          path: '/payment',
           action: 'start-trial',
           userId: user.id,
           email: user.email,
@@ -438,7 +419,7 @@ const PricingPage = () => {
                   className={`w-full py-2 px-4 rounded-md font-medium transition ${
                     isOnPlan('enterprise')
                       ? 'bg-green-900 text-green-200 cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700 text-white'
+                      : 'bg-purple-600 hover:bg-purple-700 text-white'
                   }`}
                 >
                   {isOnPlan('enterprise')
@@ -452,41 +433,39 @@ const PricingPage = () => {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-red-400">Error loading plans. Please try again later.</p>
+            <p className="text-red-400 text-lg">Error loading plans. Please try again later.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-md transition"
+            >
+              Retry
+            </button>
           </div>
         )}
         
         {/* FAQ Section */}
-        <div className="mt-16 max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
+        <div className="mt-24 max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
           
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="bg-gray-800 rounded-lg p-6">
               <h3 className="text-xl font-semibold mb-3">Can I cancel my subscription at any time?</h3>
-              <p className="text-gray-300">
-                Yes, you can cancel your subscription at any time from your account settings. You'll continue to have access until the end of your current billing period.
-              </p>
+              <p className="text-gray-300">Yes, you can cancel your subscription at any time. You'll continue to have access to your plan features until the end of your current billing period.</p>
             </div>
             
             <div className="bg-gray-800 rounded-lg p-6">
               <h3 className="text-xl font-semibold mb-3">How does the free trial work?</h3>
-              <p className="text-gray-300">
-                Our 7-day free trial gives you full access to all features of the Pro plan. No credit card is required to start your trial. You can upgrade to a paid plan at any time during or after your trial.
-              </p>
+              <p className="text-gray-300">Our 7-day free trial gives you access to all features of the Professional plan. No credit card is required to start your trial, and you can upgrade to a paid plan at any time.</p>
             </div>
             
             <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-xl font-semibold mb-3">What happens to my videos if I downgrade or cancel?</h3>
-              <p className="text-gray-300">
-                Any videos already created and uploaded to your YouTube channel will remain there. However, scheduled videos that haven't been processed yet will be canceled, and you'll lose access to features not included in your new plan.
-              </p>
+              <h3 className="text-xl font-semibold mb-3">Can I upgrade or downgrade my plan?</h3>
+              <p className="text-gray-300">Yes, you can upgrade or downgrade your plan at any time. When upgrading, you'll be charged the prorated difference immediately. When downgrading, your new plan will take effect at the start of your next billing cycle.</p>
             </div>
             
             <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-xl font-semibold mb-3">Do I need to connect my YouTube account?</h3>
-              <p className="text-gray-300">
-                Yes, to enable automatic uploads to YouTube, you'll need to connect your YouTube account via API key. We provide detailed instructions on how to set this up in your account settings.
-              </p>
+              <h3 className="text-xl font-semibold mb-3">What payment methods do you accept?</h3>
+              <p className="text-gray-300">We accept all major credit cards, including Visa, Mastercard, American Express, and Discover. We also support payment via PayPal.</p>
             </div>
           </div>
         </div>

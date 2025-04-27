@@ -13,6 +13,9 @@ const createApiResponse = (data) => {
     body: JSON.stringify({ success: true, ...data }),
     headers: {
       'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
     },
   };
 };
@@ -23,19 +26,35 @@ const createApiError = (message, status = 400) => {
     body: JSON.stringify({ success: false, error: message }),
     headers: {
       'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
     },
   };
 };
 
 // Social login handler
 exports.handler = async (event) => {
+  // Handle CORS preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+      },
+      body: ''
+    };
+  }
+  
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return createApiError('Method not allowed', 405);
   }
   
   try {
-    const body = JSON.parse(event.body);
+    const body = JSON.parse(event.body || '{}');
     const { provider, redirectTo } = body;
     
     if (!provider) {
