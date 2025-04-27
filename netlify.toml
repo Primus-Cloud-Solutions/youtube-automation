@@ -3,10 +3,20 @@
   publish = ".next"
 
 [build.environment]
+  ELEVENLABS_API_KEY = ""
+  EMAIL_FROM = ""
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = ""
+  NEXT_PUBLIC_SUPABASE_URL = ""
+  OPENAI_API_KEY = ""
+  S3_BUCKET_NAME = ""
+  SENDGRID_API_KEY = ""
+  STRIPE_MONTHLY_PRICE_ID = ""
+  STRIPE_SECRET_KEY = ""
+  YOUTUBE_API_KEY = ""
+  YOUTUBE_AWS_ACCESS_KEY = ""
+  YOUTUBE_AWS_REGION = ""
+  YOUTUBE_AWS_SECRET_KEY = ""
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
-  NEXT_USE_NETLIFY_EDGE = "true"
-  # Skip the creation of pages directory during build
-  NEXT_IGNORE_PAGES_FOLDER = "true"
 
 [[headers]]
   for = "/*"
@@ -15,7 +25,3 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
-
-# Comment out the plugin to prevent duplicate page detection issues
-# [[plugins]]
-#  package = "@netlify/plugin-nextjs"
