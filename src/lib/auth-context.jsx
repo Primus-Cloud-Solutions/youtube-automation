@@ -27,6 +27,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Use relative URL that works with Netlify redirects
         const response = await fetch('/api/auth/check');
         const data = await response.json();
         
@@ -50,6 +51,7 @@ export function AuthProvider({ children }) {
   // Fetch user subscription data
   const fetchUserSubscription = async (userId) => {
     try {
+      // Use relative URL that works with Netlify redirects
       const response = await fetch(`/api/payment?userId=${userId}`);
       const data = await response.json();
       
@@ -109,6 +111,7 @@ export function AuthProvider({ children }) {
   // Login user
   const login = async (email, password) => {
     try {
+      // Use relative URL that works with Netlify redirects
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -135,6 +138,7 @@ export function AuthProvider({ children }) {
   // Register user
   const register = async (name, email, password) => {
     try {
+      // Use relative URL that works with Netlify redirects
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -161,6 +165,7 @@ export function AuthProvider({ children }) {
   // Logout user
   const logout = async () => {
     try {
+      // Use relative URL that works with Netlify redirects
       await fetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
       setSubscription({
@@ -185,6 +190,36 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Social login (Google, GitHub)
+  const socialLogin = async (provider) => {
+    try {
+      // Use relative URL that works with Netlify redirects
+      const response = await fetch('/api/auth/social-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          provider,
+          redirectTo: window.location.origin + '/dashboard'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.url) {
+        // Redirect to the social login URL
+        window.location.href = data.url;
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || `${provider} login failed` };
+      }
+    } catch (error) {
+      console.error(`${provider} login error:`, error);
+      return { success: false, error: `${provider} login failed` };
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -193,9 +228,12 @@ export function AuthProvider({ children }) {
     register,
     logout,
     updateSubscription,
+    socialLogin,
     // Add aliases for compatibility with existing code
     signIn: login,
-    signUp: register
+    signUp: register,
+    googleLogin: () => socialLogin('google'),
+    githubLogin: () => socialLogin('github')
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

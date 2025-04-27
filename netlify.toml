@@ -3,7 +3,7 @@
   publish = ".next"
 
 [build.environment]
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
   NEXT_USE_NETLIFY_EDGE = "true"
   # Skip the creation of pages directory during build
   NEXT_IGNORE_PAGES_FOLDER = "true"
@@ -16,6 +16,19 @@
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
 
-# Comment out the plugin to prevent duplicate page detection issues
-# [[plugins]]
-#  package = "@netlify/plugin-nextjs"
+# Enable the Netlify Next.js plugin to handle API routes properly
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Add redirects for API routes
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+# Add fallback for client-side navigation
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

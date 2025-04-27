@@ -21,7 +21,7 @@ const PricingPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch plans
+        // Fetch plans - use relative URL that works with Netlify redirects
         const plansResponse = await fetch('/api/payment', {
           method: 'POST',
           headers: {
@@ -42,6 +42,7 @@ const PricingPage = () => {
         
         // Fetch current subscription if user is logged in
         if (user?.id) {
+          // Use relative URL that works with Netlify redirects
           const subscriptionResponse = await fetch('/api/payment', {
             method: 'POST',
             headers: {
@@ -111,6 +112,7 @@ const PricingPage = () => {
     setMessage('');
     
     try {
+      // Use relative URL that works with Netlify redirects
       const response = await fetch('/api/payment', {
         method: 'POST',
         headers: {
