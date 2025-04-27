@@ -144,6 +144,74 @@ export function AuthProvider({ children }) {
     }
   };
   
+  // Sign in with GitHub
+  const signInWithGitHub = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'github'
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to sign in with GitHub');
+      }
+      
+      // Redirect to GitHub OAuth URL
+      window.location.href = data.url;
+      return { success: true };
+    } catch (err) {
+      console.error('GitHub sign in error:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Sign in with demo account
+  const signInWithDemo = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'demo'
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to sign in with demo account');
+      }
+      
+      setUser(data.user);
+      router.push('/dashboard');
+      return { success: true, user: data.user };
+    } catch (err) {
+      console.error('Demo sign in error:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   // Sign out function
   const signOut = async () => {
     try {
@@ -178,14 +246,70 @@ export function AuthProvider({ children }) {
     }
   };
   
+  // State for subscription information
+  const [subscription, setSubscription] = useState(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(false);
+
+  // Fetch subscription information when user is logged in
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (!user || !user.id) return;
+      
+      try {
+        setLoadingSubscription(true);
+        const response = await fetch('/api/payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'get-subscription',
+            userId: user.id
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.subscription) {
+          setSubscription(data.subscription);
+        } else {
+          // If no subscription found, set to free plan
+          setSubscription({
+            id: null,
+            status: 'inactive',
+            planId: 'free',
+            planName: 'Free Trial',
+            limits: {
+              videosPerMonth: 3,
+              storageGB: 1,
+              schedulingFrequency: ['weekly'],
+              voiceOptions: 2,
+              analyticsRetention: 7
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+      } finally {
+        setLoadingSubscription(false);
+      }
+    };
+    
+    fetchSubscription();
+  }, [user]);
+
   // Auth context value
   const value = {
     user,
     loading,
     error,
+    subscription,
+    loadingSubscription,
     signUp,
     signIn,
     signInWithGoogle,
+    signInWithGitHub,
+    signInWithDemo,
     signOut
   };
   

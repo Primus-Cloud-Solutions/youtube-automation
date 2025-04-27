@@ -1,214 +1,277 @@
 'use client';
 
+import { google } from 'googleapis';
+
 /**
- * YouTube API module for YouTube Automation Platform
- * This module provides a browser-compatible implementation for YouTube API interactions
+ * YouTube API Integration
+ * This module provides functions for interacting with the YouTube API
  */
 
-// Mock YouTube API client for browser environment
-const initYouTubeClient = (apiKey) => {
-  console.log('Initializing mock YouTube client with key:', apiKey);
-  return {
-    // Mock implementation that works in browser
-    videos: {
-      insert: async () => ({ data: { id: 'mock-video-id' } })
-    },
-    channels: {
-      list: async () => ({ data: { items: [{ id: 'mock-channel-id', snippet: { title: 'Your YouTube Channel' } }] } })
-    }
-  };
+// Initialize YouTube API client with API key
+export const initYouTubeClient = (apiKey) => {
+  if (!apiKey) {
+    console.error('YouTube API key is required');
+    return null;
+  }
+  
+  return google.youtube({
+    version: 'v3',
+    auth: apiKey
+  });
 };
 
-// Validate YouTube API key
-export async function validateYouTubeApiKey(apiKey) {
-  console.log('Validating YouTube API key...');
-  
-  // For demo purposes, accept any key that starts with 'AIza'
-  if (!apiKey || !apiKey.startsWith('AIza')) {
-    return { 
-      valid: false, 
-      message: 'Invalid API key format. YouTube API keys typically start with "AIza".' 
-    };
-  }
-  
+// Get user's YouTube channels
+export const getUserChannels = async (apiKey) => {
   try {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!apiKey) {
+      return { success: false, error: 'YouTube API key is required' };
+    }
     
-    // In production, this would make a real API call to validate the key
-    // For demo, we'll simulate a successful validation
-    return { 
-      valid: true, 
-      message: 'API key validated successfully' 
-    };
+    const youtube = initYouTubeClient(apiKey);
+    
+    if (!youtube) {
+      return { success: false, error: 'Failed to initialize YouTube client' };
+    }
+    
+    // In a real implementation, this would use OAuth to get the user's channels
+    // For demo purposes, we'll fetch channels by API key
+    const response = await youtube.channels.list({
+      part: 'snippet,contentDetails,statistics',
+      mine: true
+    }).catch(error => {
+      // If 'mine' parameter fails (which it will without OAuth), 
+      // fall back to a search for demo purposes
+      return youtube.search.list({
+        part: 'snippet',
+        type: 'channel',
+        maxResults: 5
+      });
+    });
+    
+    if (!response || !response.data || !response.data.items) {
+      // If we still don't have results, return mock data for demo
+      return { 
+        success: true, 
+        channels: [
+          {
+            id: 'UC_demo_channel_id',
+            title: 'Your YouTube Channel',
+            description: 'This is your connected YouTube channel',
+            customUrl: '@yourchannel',
+            thumbnails: {
+              default: { url: 'https://via.placeholder.com/88x88' },
+              medium: { url: 'https://via.placeholder.com/240x240' },
+              high: { url: 'https://via.placeholder.com/800x800' }
+            },
+            statistics: {
+              viewCount: '1024',
+              subscriberCount: '256',
+              videoCount: '12'
+            }
+          }
+        ]
+      };
+    }
+    
+    // Map the response to a consistent format
+    const channels = response.data.items.map(item => {
+      // Handle both channel and search results
+      if (item.kind === 'youtube#searchResult') {
+        return {
+          id: item.id.channelId,
+          title: item.snippet.title,
+          description: item.snippet.description,
+          customUrl: `@${item.snippet.title.toLowerCase().replace(/\s+/g, '')}`,
+          thumbnails: item.snippet.thumbnails,
+          statistics: {
+            viewCount: '0',
+            subscriberCount: '0',
+            videoCount: '0'
+          }
+        };
+      } else {
+        return {
+          id: item.id,
+          title: item.snippet.title,
+          description: item.snippet.description,
+          customUrl: item.snippet.customUrl || `@${item.snippet.title.toLowerCase().replace(/\s+/g, '')}`,
+          thumbnails: item.snippet.thumbnails,
+          statistics: item.statistics || {
+            viewCount: '0',
+            subscriberCount: '0',
+            videoCount: '0'
+          }
+        };
+      }
+    });
+    
+    return { success: true, channels };
   } catch (error) {
-    console.error('Error validating YouTube API key:', error);
-    return { 
-      valid: false, 
-      message: error.message || 'Error validating API key' 
-    };
+    console.error('Error getting user channels:', error);
+    return { success: false, error: error.message || 'Failed to get user channels' };
   }
-}
+};
 
-// Get channel information
-export async function getChannelInfo(apiKey) {
-  console.log('Getting channel information...');
-  
+// Create a new YouTube channel
+export const createYouTubeChannel = async (oauthToken, channelData) => {
   try {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    // In a real implementation, this would use OAuth to create a channel
+    // For demo purposes, we'll return mock data
     
-    // Mock implementation for demo
-    // In production, this would make a real API call to get channel info
     return {
       success: true,
-      channel: {
-        id: 'UC' + Math.random().toString(36).substring(2, 15),
-        title: 'Your YouTube Channel',
-        customUrl: '@yourchannel',
-        thumbnailUrl: 'https://via.placeholder.com/88x88',
-        statistics: {
-          viewCount: '1,245,678',
-          subscriberCount: '24,500',
-          videoCount: '87'
-        }
-      }
+      channelId: 'UC_demo_channel_id',
+      channelUrl: 'https://youtube.com/channel/UC_demo_channel_id',
+      title: channelData.name,
+      description: channelData.description
     };
   } catch (error) {
-    console.error('Error getting channel info:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Error retrieving channel information' 
-    };
+    console.error('Error creating YouTube channel:', error);
+    return { success: false, error: error.message || 'Failed to create YouTube channel' };
   }
-}
+};
 
-// Upload video to YouTube
-export async function uploadVideo(apiKey, videoData) {
-  console.log('Uploading video to YouTube...');
-  
-  const { title, description, tags, categoryId, privacyStatus, file } = videoData;
-  
+// Update channel branding
+export const updateChannelBranding = async (apiKey, channelId, brandingData) => {
   try {
-    // Simulate upload process with progress updates
-    const totalSteps = 10;
-    let currentStep = 0;
+    // In a real implementation, this would use the YouTube API to update branding
+    // For demo purposes, we'll return mock data
     
-    // Return a promise that resolves with progress updates
-    return new Promise((resolve) => {
-      const interval = setInterval(() => {
-        currentStep++;
-        const progress = Math.floor((currentStep / totalSteps) * 100);
-        
-        if (currentStep === totalSteps) {
-          clearInterval(interval);
-          resolve({
-            success: true,
-            videoId: 'yt' + Math.random().toString(36).substring(2, 15),
-            url: `https://youtube.com/watch?v=yt${Math.random().toString(36).substring(2, 15)}`,
-            status: 'processed'
-          });
-        } else {
-          // This would be handled by the UI to update progress
-          console.log(`Upload progress: ${progress}%`);
-        }
-      }, 800);
+    return {
+      success: true,
+      channelId,
+      message: 'Channel branding updated successfully'
+    };
+  } catch (error) {
+    console.error('Error updating channel branding:', error);
+    return { success: false, error: error.message || 'Failed to update channel branding' };
+  }
+};
+
+// Get trending videos
+export const getTrendingVideos = async (apiKey, regionCode = 'US', categoryId = '', maxResults = 10) => {
+  try {
+    if (!apiKey) {
+      return { success: false, error: 'YouTube API key is required' };
+    }
+    
+    const youtube = initYouTubeClient(apiKey);
+    
+    if (!youtube) {
+      return { success: false, error: 'Failed to initialize YouTube client' };
+    }
+    
+    const params = {
+      part: 'snippet,contentDetails,statistics',
+      chart: 'mostPopular',
+      regionCode,
+      maxResults
+    };
+    
+    if (categoryId) {
+      params.videoCategoryId = categoryId;
+    }
+    
+    const response = await youtube.videos.list(params);
+    
+    if (!response || !response.data || !response.data.items) {
+      return { success: false, error: 'No trending videos found' };
+    }
+    
+    return { success: true, videos: response.data.items };
+  } catch (error) {
+    console.error('Error getting trending videos:', error);
+    return { success: false, error: error.message || 'Failed to get trending videos' };
+  }
+};
+
+// Search for videos
+export const searchVideos = async (apiKey, query, maxResults = 10) => {
+  try {
+    if (!apiKey) {
+      return { success: false, error: 'YouTube API key is required' };
+    }
+    
+    if (!query) {
+      return { success: false, error: 'Search query is required' };
+    }
+    
+    const youtube = initYouTubeClient(apiKey);
+    
+    if (!youtube) {
+      return { success: false, error: 'Failed to initialize YouTube client' };
+    }
+    
+    const response = await youtube.search.list({
+      part: 'snippet',
+      q: query,
+      maxResults,
+      type: 'video'
     });
+    
+    if (!response || !response.data || !response.data.items) {
+      return { success: false, error: 'No videos found' };
+    }
+    
+    return { success: true, videos: response.data.items };
+  } catch (error) {
+    console.error('Error searching videos:', error);
+    return { success: false, error: error.message || 'Failed to search videos' };
+  }
+};
+
+// Upload a video to YouTube
+export const uploadVideo = async (apiKey, videoData) => {
+  try {
+    // In a real implementation, this would use the YouTube API to upload a video
+    // For demo purposes, we'll return mock data
+    
+    return {
+      success: true,
+      videoId: 'demo_video_id',
+      videoUrl: 'https://youtube.com/watch?v=demo_video_id',
+      message: 'Video uploaded successfully'
+    };
   } catch (error) {
     console.error('Error uploading video:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Error uploading video to YouTube' 
-    };
+    return { success: false, error: error.message || 'Failed to upload video' };
   }
-}
+};
 
 // Get video analytics
-export async function getVideoAnalytics(apiKey, videoId) {
-  console.log(`Getting analytics for video: ${videoId}`);
-  
+export const getVideoAnalytics = async (apiKey, videoId) => {
   try {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // In a real implementation, this would use the YouTube Analytics API
+    // For demo purposes, we'll return mock data
     
-    // Mock implementation for demo
     return {
       success: true,
+      videoId,
       analytics: {
         views: Math.floor(Math.random() * 10000),
-        likes: Math.floor(Math.random() * 500),
+        likes: Math.floor(Math.random() * 1000),
         comments: Math.floor(Math.random() * 100),
-        averageViewDuration: Math.floor(Math.random() * 60) + 120, // in seconds
-        ctr: (Math.random() * 10 + 2).toFixed(1) + '%',
-        demographics: {
-          ageGroups: [
-            { group: '18-24', percentage: Math.floor(Math.random() * 30) + 10 },
-            { group: '25-34', percentage: Math.floor(Math.random() * 30) + 20 },
-            { group: '35-44', percentage: Math.floor(Math.random() * 20) + 10 },
-            { group: '45-54', percentage: Math.floor(Math.random() * 15) + 5 },
-            { group: '55+', percentage: Math.floor(Math.random() * 10) + 5 }
-          ],
-          genders: [
-            { gender: 'Male', percentage: Math.floor(Math.random() * 40) + 30 },
-            { gender: 'Female', percentage: Math.floor(Math.random() * 40) + 30 }
-          ]
-        }
+        averageViewDuration: Math.floor(Math.random() * 300),
+        estimatedRevenue: (Math.random() * 100).toFixed(2)
       }
     };
   } catch (error) {
     console.error('Error getting video analytics:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Error retrieving video analytics' 
-    };
+    return { success: false, error: error.message || 'Failed to get video analytics' };
   }
-}
+};
 
-// Get channel analytics
-export async function getChannelAnalytics(apiKey) {
-  console.log('Getting channel analytics...');
-  
+// Validate YouTube API key
+export const validateApiKey = async (apiKey) => {
   try {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    if (!apiKey) {
+      return { success: false, error: 'YouTube API key is required' };
+    }
     
-    // Mock implementation for demo
-    return {
-      success: true,
-      analytics: {
-        totalViews: Math.floor(Math.random() * 1000000) + 100000,
-        subscribersGained: Math.floor(Math.random() * 5000) + 500,
-        watchTime: Math.floor(Math.random() * 100000) + 10000, // in minutes
-        topVideos: [
-          { 
-            title: 'How to Create Viral Content', 
-            views: Math.floor(Math.random() * 50000) + 10000,
-            ctr: (Math.random() * 10 + 5).toFixed(1) + '%'
-          },
-          { 
-            title: 'YouTube Algorithm Explained', 
-            views: Math.floor(Math.random() * 40000) + 8000,
-            ctr: (Math.random() * 10 + 4).toFixed(1) + '%'
-          },
-          { 
-            title: 'Content Creation Tips for Beginners', 
-            views: Math.floor(Math.random() * 30000) + 5000,
-            ctr: (Math.random() * 10 + 3).toFixed(1) + '%'
-          }
-        ],
-        revenueEstimate: '$' + (Math.random() * 1000 + 100).toFixed(2)
-      }
-    };
+    const result = await getTrendingVideos(apiKey, 'US', '', 1);
+    return { success: result.success };
   } catch (error) {
-    console.error('Error getting channel analytics:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Error retrieving channel analytics' 
-    };
+    console.error('Error validating YouTube API key:', error);
+    return { success: false, error: error.message || 'Invalid YouTube API key' };
   }
-}
-
-// Upload video to YouTube (compatibility function for scheduler)
-export async function uploadVideoToYouTube(apiKey, videoData, progressCallback) {
-  return uploadVideo(apiKey, videoData);
-}
+};

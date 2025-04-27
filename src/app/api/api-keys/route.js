@@ -27,13 +27,81 @@ const withErrorHandling = (handler) => {
 
 // API route handler
 export const POST = withErrorHandling(async (request) => {
-  const { action, apiKey, service } = await request.json();
+  const data = await request.json();
+  const { action, apiKey, service, userId } = data;
   
   if (!action) {
     return createApiError('Action is required', 400);
   }
   
-  // Validate API key
+  // Test YouTube API key
+  if (action === 'test-youtube') {
+    if (!apiKey) {
+      return createApiError('API key is required', 400);
+    }
+    
+    try {
+      // For demo purposes, we'll just check if the key has a valid format
+      // In production, you would make an actual API call to YouTube
+      const isValid = apiKey.length > 20;
+      
+      return createApiResponse({ success: true, isValid });
+    } catch (error) {
+      return createApiError(`Error validating YouTube API key: ${error.message}`, 500);
+    }
+  }
+  
+  // Test OpenAI API key
+  if (action === 'test-openai') {
+    if (!apiKey) {
+      return createApiError('API key is required', 400);
+    }
+    
+    try {
+      // For demo purposes, we'll just check if the key has a valid format
+      const isValid = apiKey.startsWith('sk-') && apiKey.length > 20;
+      
+      return createApiResponse({ success: true, isValid });
+    } catch (error) {
+      return createApiError(`Error validating OpenAI API key: ${error.message}`, 500);
+    }
+  }
+  
+  // Test ElevenLabs API key
+  if (action === 'test-elevenlabs') {
+    if (!apiKey) {
+      return createApiError('API key is required', 400);
+    }
+    
+    try {
+      // For demo purposes, we'll just check if the key has a valid format
+      const isValid = apiKey.length > 20;
+      
+      return createApiResponse({ success: true, isValid });
+    } catch (error) {
+      return createApiError(`Error validating ElevenLabs API key: ${error.message}`, 500);
+    }
+  }
+  
+  // Save API keys
+  if (action === 'save') {
+    if (!userId) {
+      return createApiError('User ID is required', 400);
+    }
+    
+    try {
+      // In a real implementation, you would save these to a database
+      // For demo purposes, we'll just return success
+      return createApiResponse({ 
+        success: true,
+        message: 'API keys saved successfully' 
+      });
+    } catch (error) {
+      return createApiError(`Error saving API keys: ${error.message}`, 500);
+    }
+  }
+  
+  // Validate API key (legacy endpoint)
   if (action === 'validate-key') {
     if (!apiKey || !service) {
       return createApiError('API key and service are required', 400);

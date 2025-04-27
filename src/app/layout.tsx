@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AuthProvider } from "../lib/auth-context";
-import { PaymentProvider } from "../lib/payment-context";
+import { AuthProvider } from "./context/auth-context";
+import { PaymentProvider } from "./context/payment-context";
 import { YouTubeApiProvider } from "./context/youtube-api-context";
 
 export const metadata: Metadata = {
@@ -35,8 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body className="antialiased bg-gray-900 text-white">
         <AuthProvider>

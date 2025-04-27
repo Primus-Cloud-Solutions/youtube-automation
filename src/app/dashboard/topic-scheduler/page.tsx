@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../lib/auth-context';
+import { useAuth } from '../../context/auth-context';
 import { withAuth } from '../../utils/with-auth';
 import DashboardHeader from '../../components/dashboard-header';
 
 const TopicScheduler = () => {
-  const { user } = useAuth();
+  const { user, subscription } = useAuth();
   const router = useRouter();
   
   // State for scheduling settings
@@ -92,6 +92,12 @@ const TopicScheduler = () => {
     
     if (!user?.id) {
       setMessage('You must be logged in to create a schedule');
+      return;
+    }
+    
+    // Check subscription limits
+    if (subscription && subscription.planId === 'free' && frequency !== 'weekly') {
+      setMessage('Free plan only supports weekly scheduling. Please upgrade to use more frequent scheduling options.');
       return;
     }
     
@@ -263,14 +269,28 @@ const TopicScheduler = () => {
                   className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 >
-                  <option value="daily">Daily</option>
-                  <option value="every3days">Every 3 Days</option>
+                  {/* Filter frequency options based on subscription plan */}
+                  {subscription && subscription.limits && subscription.limits.schedulingFrequency.includes('daily') && (
+                    <option value="daily">Daily</option>
+                  )}
+                  {subscription && subscription.limits && subscription.limits.schedulingFrequency.includes('every3days') && (
+                    <option value="every3days">Every 3 Days</option>
+                  )}
                   <option value="weekly">Weekly</option>
-                  <option value="biweekly">Bi-Weekly</option>
-                  <option value="monthly">Monthly</option>
+                  {subscription && subscription.limits && subscription.limits.schedulingFrequency.includes('biweekly') && (
+                    <option value="biweekly">Bi-Weekly</option>
+                  )}
+                  {subscription && subscription.limits && subscription.limits.schedulingFrequency.includes('monthly') && (
+                    <option value="monthly">Monthly</option>
+                  )}
                 </select>
                 <p className="text-sm text-gray-400 mt-1">
                   How often should new videos be generated and scheduled
+                  {subscription && subscription.planId === 'free' && (
+                    <span className="block mt-1 text-yellow-400">
+                      Upgrade to Pro or Enterprise for more scheduling options
+                    </span>
+                  )}
                 </p>
               </div>
               

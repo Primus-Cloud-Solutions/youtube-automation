@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useAuth } from '../../lib/auth-context';
+import { useAuth } from '../context/auth-context';
 import Link from 'next/link';
 
 export default function MainLayout({ children }) {

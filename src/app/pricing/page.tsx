@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '../../lib/auth-context';
-import { usePayment } from '../../lib/payment-context';
+import { useAuth } from '../context/auth-context';
+import { usePayment } from '../context/payment-context';
 
 const PricingPage = () => {
   const { user } = useAuth();

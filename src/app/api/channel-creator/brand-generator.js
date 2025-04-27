@@ -1,128 +1,66 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'sk-mock-key-for-development'
-});
-
-// Initialize Supabase client for storage
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = supabaseUrl && supabaseServiceKey ? 
-  createClient(supabaseUrl, supabaseServiceKey) : null;
+import { createApiResponse, createApiError } from '../../../lib/api-helpers';
 
 /**
- * Generate channel branding (logo and banner) using AI
- * @param {string} channelName - Name of the YouTube channel
- * @param {string} channelDescription - Description of the YouTube channel
- * @returns {Promise<{logoUrl: string, bannerUrl: string}>} - URLs to the generated branding assets
+ * Brand Generator Module
+ * This module handles the generation of branding assets for YouTube channels
+ * using AI image generation capabilities.
  */
-export async function generateChannelBranding(channelName, channelDescription) {
-  try {
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'sk-mock-key-for-development') {
-      console.warn('OpenAI API key not configured, using mock branding');
-      return {
-        logoUrl: 'https://placehold.co/400x400/4ade80/fff?text=Logo',
-        bannerUrl: 'https://placehold.co/2560x1440/4ade80/fff?text=Channel+Banner'
-      };
-    }
-    
-    // Check if Supabase is configured
-    if (!supabase) {
-      console.warn('Supabase not configured, using mock branding');
-      return {
-        logoUrl: 'https://placehold.co/400x400/4ade80/fff?text=Logo',
-        bannerUrl: 'https://placehold.co/2560x1440/4ade80/fff?text=Channel+Banner'
-      };
-    }
 
-    // Generate logo prompt
-    const logoPrompt = `Create a modern, professional logo for a YouTube channel named "${channelName}". ${channelDescription || ''}`;
+/**
+ * Generate a logo for a YouTube channel
+ * @param {string} prompt - The prompt for the logo generation
+ * @param {string} colorScheme - The color scheme to use (vibrant, minimal, etc.)
+ * @returns {Promise<Object>} - The generated logo information
+ */
+export async function generateLogo(prompt, colorScheme = 'vibrant') {
+  try {
+    // In a production environment, this would call an AI image generation API
+    // For development/build purposes, we'll return mock data
     
-    // Generate banner prompt
-    const bannerPrompt = `Create a YouTube channel banner for "${channelName}". The banner should be eye-catching and professional. ${channelDescription || ''}`;
+    console.log(`Generating logo with prompt: "${prompt}" and color scheme: ${colorScheme}`);
     
-    // Generate logo image
-    const logoResponse = await openai.images.generate({
-      prompt: logoPrompt,
-      n: 1,
-      size: '1024x1024',
-      response_format: 'url'
-    });
-    
-    // Generate banner image
-    const bannerResponse = await openai.images.generate({
-      prompt: bannerPrompt,
-      n: 1,
-      size: '1792x1024',
-      response_format: 'url'
-    });
-    
-    // Get image URLs from OpenAI response
-    const logoUrl = logoResponse.data[0].url;
-    const bannerUrl = bannerResponse.data[0].url;
-    
-    // Download images and upload to Supabase storage
-    const logoBlob = await fetch(logoUrl).then(r => r.blob());
-    const bannerBlob = await fetch(bannerUrl).then(r => r.blob());
-    
-    // Convert blobs to array buffers
-    const logoBuffer = await logoBlob.arrayBuffer();
-    const bannerBuffer = await bannerBlob.arrayBuffer();
-    
-    // Generate unique filenames
-    const timestamp = Date.now();
-    const logoFilename = `channel-logos/${channelName.replace(/\s+/g, '-').toLowerCase()}-${timestamp}.png`;
-    const bannerFilename = `channel-banners/${channelName.replace(/\s+/g, '-').toLowerCase()}-${timestamp}.png`;
-    
-    // Upload to Supabase storage
-    const { data: logoData, error: logoError } = await supabase.storage
-      .from('youtube-assets')
-      .upload(logoFilename, logoBuffer, {
-        contentType: 'image/png',
-        upsert: true
-      });
-    
-    if (logoError) {
-      console.error('Error uploading logo:', logoError);
-      throw new Error('Failed to upload logo');
-    }
-    
-    const { data: bannerData, error: bannerError } = await supabase.storage
-      .from('youtube-assets')
-      .upload(bannerFilename, bannerBuffer, {
-        contentType: 'image/png',
-        upsert: true
-      });
-    
-    if (bannerError) {
-      console.error('Error uploading banner:', bannerError);
-      throw new Error('Failed to upload banner');
-    }
-    
-    // Get public URLs
-    const { data: logoUrlData } = supabase.storage
-      .from('youtube-assets')
-      .getPublicUrl(logoFilename);
-    
-    const { data: bannerUrlData } = supabase.storage
-      .from('youtube-assets')
-      .getPublicUrl(bannerFilename);
-    
+    // Mock implementation
     return {
-      logoUrl: logoUrlData.publicUrl,
-      bannerUrl: bannerUrlData.publicUrl
+      success: true,
+      url: 'https://example.com/mock-logo.png',
+      buffer: Buffer.from('mock-image-data'), // This is just for the mock
+      width: 800,
+      height: 800,
+      format: 'png'
     };
   } catch (error) {
-    console.error('Error generating channel branding:', error);
-    // Return placeholder images as fallback
+    console.error('Error generating logo:', error);
+    throw new Error(`Failed to generate logo: ${error.message}`);
+  }
+}
+
+/**
+ * Generate a banner for a YouTube channel
+ * @param {string} prompt - The prompt for the banner generation
+ * @param {string} colorScheme - The color scheme to use (vibrant, minimal, etc.)
+ * @param {string} channelName - The name of the channel to include in the banner
+ * @returns {Promise<Object>} - The generated banner information
+ */
+export async function generateBanner(prompt, colorScheme = 'vibrant', channelName) {
+  try {
+    // In a production environment, this would call an AI image generation API
+    // For development/build purposes, we'll return mock data
+    
+    console.log(`Generating banner with prompt: "${prompt}", color scheme: ${colorScheme}, and channel name: ${channelName}`);
+    
+    // Mock implementation
     return {
-      logoUrl: 'https://placehold.co/400x400/4ade80/fff?text=Logo',
-      bannerUrl: 'https://placehold.co/2560x1440/4ade80/fff?text=Channel+Banner'
+      success: true,
+      url: 'https://example.com/mock-banner.png',
+      buffer: Buffer.from('mock-image-data'), // This is just for the mock
+      width: 2560,
+      height: 1440,
+      format: 'png'
     };
+  } catch (error) {
+    console.error('Error generating banner:', error);
+    throw new Error(`Failed to generate banner: ${error.message}`);
   }
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import withAuth from '../../utils/with-auth';
 import DashboardHeader from '../../components/dashboard-header';
 import Link from 'next/link';
-import { useAuth } from '../../../lib/auth-context';
+import { useAuth } from '../../context/auth-context';
 // Updated import path to use the browser-compatible version
 import { validateYouTubeApiKey, uploadVideo, getChannelInfo } from '../../lib/youtube-api';
 
@@ -28,7 +28,6 @@ function ManualTopicsPage() {
   const [uploadError, setUploadError] = useState('');
   const [channelInfo, setChannelInfo] = useState(null);
   const [isValidatingApiKey, setIsValidatingApiKey] = useState(false);
-  const [previewMode, setPreviewMode] = useState(false);
   
   // Sample niches
   const niches = [
@@ -39,35 +38,26 @@ function ManualTopicsPage() {
   // Check for YouTube API key on component mount
   useEffect(() => {
     const checkApiKey = async () => {
-      try {
-        // Fetch API key from backend instead of localStorage
-        const response = await fetch('/api/api-keys?userId=' + user?.id);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.youtubeApiKey) {
-            setYoutubeApiKey(data.youtubeApiKey);
-            setYoutubeApiStatus('connected');
-            
-            // Get channel info if API key is available
-            try {
-              const result = await getChannelInfo(data.youtubeApiKey);
-              if (result.success) {
-                setChannelInfo(result.channel);
-              }
-            } catch (error) {
-              console.error('Error fetching channel info:', error);
-            }
+      // In a real app, this would fetch from user settings or backend
+      const storedApiKey = localStorage.getItem('youtube_api_key');
+      if (storedApiKey) {
+        setYoutubeApiKey(storedApiKey);
+        setYoutubeApiStatus('connected');
+        
+        // Get channel info if API key is available
+        try {
+          const result = await getChannelInfo(storedApiKey);
+          if (result.success) {
+            setChannelInfo(result.channel);
           }
+        } catch (error) {
+          console.error('Error fetching channel info:', error);
         }
-      } catch (error) {
-        console.error('Error checking API key:', error);
       }
     };
     
-    if (user) {
-      checkApiKey();
-    }
-  }, [user]);
+    checkApiKey();
+  }, []);
   
   // Mock function to generate topics
   const generateTopics = () => {
@@ -140,12 +130,6 @@ function ManualTopicsPage() {
     }, 3000);
   };
   
-  // Function to preview the video
-  const previewVideo = () => {
-    if (!videoData) return;
-    setPreviewMode(true);
-  };
-  
   // Function to upload to YouTube
   const uploadToYoutube = async () => {
     if (youtubeApiStatus !== 'connected') {
@@ -158,18 +142,6 @@ function ManualTopicsPage() {
     setUploadError('');
     
     try {
-      // Update progress periodically to simulate upload
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          const newProgress = prev + 10;
-          if (newProgress >= 100) {
-            clearInterval(progressInterval);
-            return 100;
-          }
-          return newProgress;
-        });
-      }, 800);
-      
       // Use the YouTube API helper to upload the video
       const result = await uploadVideo(
         youtubeApiKey, 
@@ -181,9 +153,6 @@ function ManualTopicsPage() {
         }
       );
       
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-      
       if (result.success) {
         setUploadSuccess(true);
         // Store the video ID and URL for future reference
@@ -191,22 +160,6 @@ function ManualTopicsPage() {
           ...videoData,
           youtubeVideoId: result.videoId,
           youtubeVideoUrl: result.url
-        });
-        
-        // Save the upload record to the backend
-        await fetch('/api/content', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'save-upload',
-            userId: user.id,
-            videoId: result.videoId,
-            videoUrl: result.url,
-            videoTitle: videoData.title,
-            videoDescription: videoData.description
-          }),
         });
       } else {
         setUploadError(result.error || 'Failed to upload to YouTube');
@@ -234,31 +187,14 @@ function ManualTopicsPage() {
       const validationResult = await validateYouTubeApiKey(youtubeApiKey);
       
       if (validationResult.valid) {
-        // Save the API key to the backend
-        const response = await fetch('/api/api-keys', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'save',
-            userId: user.id,
-            youtubeApiKey: youtubeApiKey
-          }),
-        });
+        // Save the API key
+        localStorage.setItem('youtube_api_key', youtubeApiKey);
+        setYoutubeApiStatus('connected');
         
-        const data = await response.json();
-        
-        if (data.success) {
-          setYoutubeApiStatus('connected');
-          
-          // Get channel info
-          const channelResult = await getChannelInfo(youtubeApiKey);
-          if (channelResult.success) {
-            setChannelInfo(channelResult.channel);
-          }
-        } else {
-          throw new Error(data.error || 'Failed to save API key');
+        // Get channel info
+        const channelResult = await getChannelInfo(youtubeApiKey);
+        if (channelResult.success) {
+          setChannelInfo(channelResult.channel);
         }
       } else {
         setUploadError(validationResult.message || 'Invalid API key');
@@ -268,13 +204,6 @@ function ManualTopicsPage() {
       setUploadError(error.message || 'Failed to validate API key');
     } finally {
       setIsValidatingApiKey(false);
-    }
-  };
-  
-  // Function to open YouTube video in new tab
-  const openYouTubeVideo = () => {
-    if (videoData?.youtubeVideoUrl) {
-      window.open(videoData.youtubeVideoUrl, '_blank');
     }
   };
   
@@ -400,7 +329,7 @@ function ManualTopicsPage() {
                   <div className="mt-4 text-sm text-gray-400">
                     <p>For testing purposes, you can use any API key that starts with "AIza" to simulate a successful connection.</p>
                     <p className="mt-2">
-                      <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                      <a href="#" className="text-blue-400 hover:underline" onClick={() => alert('This would open YouTube API documentation')}>
                         Learn how to get your YouTube API key →
                       </a>
                     </p>
@@ -435,26 +364,31 @@ function ManualTopicsPage() {
               {/* Generated Topics */}
               {generatedTopics.length > 0 && (
                 <div className="bg-gray-800 rounded-lg shadow-lg p-6 mb-8 border border-gray-700">
-                  <h2 className="text-xl font-semibold mb-4">Generated Topics</h2>
-                  <p className="text-gray-300 mb-6">
-                    Select a topic to create a video. Topics are ranked by potential engagement score.
-                  </p>
+                  <h2 className="text-xl font-semibold mb-6">Generated Topics</h2>
                   
                   <div className="space-y-4">
                     {generatedTopics.map((topic) => (
                       <div 
                         key={topic.id}
-                        className="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors cursor-pointer border border-gray-600"
+                        className="p-4 bg-gray-700 rounded-lg border border-gray-600 hover:border-green-500 transition-colors cursor-pointer"
                         onClick={() => setSelectedTopic(topic)}
                       >
                         <div className="flex justify-between items-start">
                           <h3 className="font-medium text-lg">{topic.title}</h3>
-                          <div className="bg-green-900/50 text-green-400 px-2 py-1 rounded-full text-xs flex items-center">
-                            <span className="mr-1">Score:</span>
-                            <span className="font-bold">{topic.score}</span>
-                          </div>
+                          <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded-full text-xs">
+                            Score: {topic.score}/100
+                          </span>
                         </div>
                         <p className="text-gray-300 mt-2">{topic.description}</p>
+                        <button 
+                          className="mt-4 py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md text-sm font-medium transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedTopic(topic);
+                          }}
+                        >
+                          Select Topic
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -464,18 +398,23 @@ function ManualTopicsPage() {
           ) : selectedTopic && !videoCreated ? (
             <div className="bg-gray-800 rounded-lg shadow-lg p-6 mb-8 border border-gray-700">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">Create Video from Topic</h2>
-                <button
+                <h2 className="text-xl font-semibold">Create Video</h2>
+                <button 
+                  className="text-sm text-gray-400 hover:text-white"
                   onClick={() => setSelectedTopic(null)}
-                  className="text-gray-400 hover:text-white transition-colors"
                 >
                   ← Back to Topics
                 </button>
               </div>
               
-              <div className="mb-6">
-                <h3 className="font-medium text-lg mb-2">{selectedTopic.title}</h3>
-                <p className="text-gray-300">{selectedTopic.description}</p>
+              <div className="mb-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
+                <div className="flex justify-between items-start">
+                  <h3 className="font-medium text-lg">{selectedTopic.title}</h3>
+                  <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded-full text-xs">
+                    Score: {selectedTopic.score}/100
+                  </span>
+                </div>
+                <p className="text-gray-300 mt-2">{selectedTopic.description}</p>
               </div>
               
               <div className="space-y-6">
@@ -490,6 +429,7 @@ function ManualTopicsPage() {
                     placeholder={selectedTopic.title}
                     className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
+                  <p className="mt-1 text-xs text-gray-400">Leave blank to use the topic title</p>
                 </div>
                 
                 <div>
@@ -503,231 +443,280 @@ function ManualTopicsPage() {
                     rows={4}
                     className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   ></textarea>
+                  <p className="mt-1 text-xs text-gray-400">Leave blank to use the topic description</p>
                 </div>
                 
-                <div className="pt-4">
-                  <button
-                    onClick={createVideo}
-                    disabled={creatingVideo}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-md font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {creatingVideo ? (
-                      <span className="flex items-center justify-center">
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Creating Video...
-                      </span>
-                    ) : 'Create Video'}
-                  </button>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Video Style
+                    </label>
+                    <select
+                      className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="educational">Educational</option>
+                      <option value="entertaining">Entertaining</option>
+                      <option value="tutorial">Tutorial</option>
+                      <option value="vlog">Vlog Style</option>
+                      <option value="news">News Format</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Video Length
+                    </label>
+                    <select
+                      className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="short">Short (3-5 min)</option>
+                      <option value="medium">Medium (8-12 min)</option>
+                      <option value="long">Long (15-20 min)</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Voice Style
+                    </label>
+                    <select
+                      className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="male1">Male - Professional</option>
+                      <option value="male2">Male - Casual</option>
+                      <option value="female1">Female - Professional</option>
+                      <option value="female2">Female - Casual</option>
+                      <option value="neutral">Gender Neutral</option>
+                    </select>
+                  </div>
                 </div>
+                
+                <button
+                  onClick={createVideo}
+                  disabled={creatingVideo}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-md font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {creatingVideo ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating Video...
+                    </span>
+                  ) : 'Create Video'}
+                </button>
               </div>
             </div>
-          ) : videoCreated && !previewMode ? (
+          ) : videoCreated && videoData && (
             <div className="bg-gray-800 rounded-lg shadow-lg p-6 mb-8 border border-gray-700">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold">Video Created</h2>
-                <button
+                <button 
+                  className="text-sm text-gray-400 hover:text-white"
                   onClick={() => {
                     setSelectedTopic(null);
                     setVideoCreated(false);
                     setVideoData(null);
-                    setUploadSuccess(false);
-                    setUploadError('');
                   }}
-                  className="text-gray-400 hover:text-white transition-colors"
                 >
                   ← Create Another Video
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                  <div className="bg-gray-900 rounded-lg overflow-hidden aspect-video relative">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden mb-4">
                     <img 
                       src={videoData.thumbnailUrl} 
                       alt="Video thumbnail" 
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <button 
-                        onClick={previewVideo}
-                        className="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full p-4 transition-colors"
-                      >
-                        <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                        </svg>
-                      </button>
-                    </div>
                   </div>
-                </div>
-                
-                <div>
+                  
                   <h3 className="font-medium text-lg mb-2">{videoData.title}</h3>
                   <p className="text-gray-300 mb-4">{videoData.description}</p>
                   
-                  <div className="space-y-3 mb-6">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Duration:</span>
-                      <span>{videoData.duration}</span>
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-gray-700 p-3 rounded-lg">
+                      <p className="text-xs text-gray-400">Duration</p>
+                      <p className="font-medium">{videoData.duration}</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Format:</span>
-                      <span>{videoData.format}</span>
+                    <div className="bg-gray-700 p-3 rounded-lg">
+                      <p className="text-xs text-gray-400">File Size</p>
+                      <p className="font-medium">{videoData.fileSize}</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">File Size:</span>
-                      <span>{videoData.fileSize}</span>
+                    <div className="bg-gray-700 p-3 rounded-lg">
+                      <p className="text-xs text-gray-400">Format</p>
+                      <p className="font-medium">{videoData.format}</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Created:</span>
-                      <span>{new Date(videoData.createdAt).toLocaleString()}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Preview Button */}
-                  <button
-                    onClick={previewVideo}
-                    className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium transition-colors mb-3"
-                  >
-                    Preview Video
-                  </button>
-                  
-                  {/* Upload to YouTube Button */}
-                  {!uploadSuccess ? (
-                    <button
-                      onClick={uploadToYoutube}
-                      disabled={isUploading || youtubeApiStatus !== 'connected'}
-                      className={`w-full py-2 px-4 rounded-md font-medium transition-colors mb-3 ${
-                        youtubeApiStatus !== 'connected'
-                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                          : 'bg-red-600 hover:bg-red-700'
-                      }`}
-                    >
-                      {isUploading ? (
-                        <span className="flex items-center justify-center">
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Uploading to YouTube...
-                        </span>
-                      ) : (
-                        'Upload to YouTube'
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={openYouTubeVideo}
-                      className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md font-medium transition-colors mb-3"
-                    >
-                      View on YouTube
-                    </button>
-                  )}
-                  
-                  {/* Upload Progress */}
-                  {isUploading && (
-                    <div className="mt-4">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Upload Progress</span>
-                        <span>{uploadProgress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2.5">
-                        <div 
-                          className="bg-green-600 h-2.5 rounded-full" 
-                          style={{ width: `${uploadProgress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Upload Success Message */}
-                  {uploadSuccess && (
-                    <div className="mt-3 p-3 bg-green-900/30 border border-green-800 rounded-md">
-                      <p className="text-green-400 text-sm">
-                        Video successfully uploaded to YouTube! It may take a few minutes to process.
-                      </p>
-                    </div>
-                  )}
-                  
-                  {/* Upload Error Message */}
-                  {uploadError && (
-                    <div className="mt-3 p-3 bg-red-900/30 border border-red-800 rounded-md">
-                      <p className="text-red-400 text-sm">{uploadError}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : previewMode && videoData ? (
-            <div className="bg-gray-800 rounded-lg shadow-lg p-6 mb-8 border border-gray-700">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">Video Preview</h2>
-                <button
-                  onClick={() => setPreviewMode(false)}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  ← Back to Video Details
-                </button>
-              </div>
-              
-              <div className="mb-6">
-                <div className="bg-black rounded-lg overflow-hidden aspect-video">
-                  {/* Video player - in a real app, this would be an actual video player */}
-                  <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                    <div className="text-center p-8">
-                      <svg className="w-16 h-16 mx-auto text-gray-600 mb-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                      </svg>
-                      <h3 className="text-xl font-medium text-gray-400 mb-2">Video Preview</h3>
-                      <p className="text-gray-500">
-                        This is a simulated preview. In the actual application, this would be a real video player showing your generated content.
-                      </p>
+                    <div className="bg-gray-700 p-3 rounded-lg">
+                      <p className="text-xs text-gray-400">Created</p>
+                      <p className="font-medium">{new Date(videoData.createdAt).toLocaleDateString()}</p>
                     </div>
                   </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-medium text-lg mb-2">{videoData.title}</h3>
-                  <p className="text-gray-300">{videoData.description}</p>
                 </div>
                 
-                <div className="space-y-4">
-                  {/* Upload to YouTube Button */}
-                  {!uploadSuccess ? (
-                    <button
-                      onClick={uploadToYoutube}
-                      disabled={isUploading || youtubeApiStatus !== 'connected'}
-                      className={`w-full py-2 px-4 rounded-md font-medium transition-colors ${
-                        youtubeApiStatus !== 'connected'
-                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                          : 'bg-red-600 hover:bg-red-700'
-                      }`}
-                    >
-                      {isUploading ? 'Uploading...' : 'Upload to YouTube'}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={openYouTubeVideo}
-                      className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 rounded-md font-medium transition-colors"
-                    >
-                      View on YouTube
-                    </button>
-                  )}
+                <div>
+                  <div className="bg-gray-700 rounded-lg p-6 mb-6">
+                    <h3 className="font-medium text-lg mb-4">Upload to YouTube</h3>
+                    
+                    {youtubeApiStatus !== 'connected' ? (
+                      <div>
+                        <p className="text-gray-300 mb-4">
+                          To upload this video to YouTube, you need to connect your YouTube API key.
+                        </p>
+                        
+                        <div className="flex flex-col space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              YouTube API Key
+                            </label>
+                            <input
+                              type="text"
+                              value={youtubeApiKey}
+                              onChange={(e) => setYoutubeApiKey(e.target.value)}
+                              placeholder="Enter your YouTube API Key"
+                              className="w-full px-4 py-2 rounded-md bg-gray-600 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            />
+                          </div>
+                          <button
+                            onClick={saveYoutubeApiKey}
+                            disabled={isValidatingApiKey}
+                            className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded-md font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                          >
+                            {isValidatingApiKey ? 'Connecting...' : 'Connect YouTube API'}
+                          </button>
+                        </div>
+                        
+                        {uploadError && (
+                          <p className="mt-3 text-red-400 text-sm">{uploadError}</p>
+                        )}
+                      </div>
+                    ) : !isUploading && !uploadSuccess ? (
+                      <div>
+                        <p className="text-gray-300 mb-4">
+                          Your YouTube account is connected. You can now upload this video directly to YouTube.
+                        </p>
+                        
+                        <button
+                          onClick={uploadToYoutube}
+                          className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 rounded-md font-medium transition-colors"
+                        >
+                          Upload to YouTube
+                        </button>
+                        
+                        {uploadError && (
+                          <p className="mt-3 text-red-400 text-sm">{uploadError}</p>
+                        )}
+                      </div>
+                    ) : isUploading ? (
+                      <div>
+                        <p className="text-gray-300 mb-4">
+                          Uploading your video to YouTube...
+                        </p>
+                        
+                        <div className="mb-4">
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Upload Progress</span>
+                            <span>{uploadProgress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-600 rounded-full h-2.5">
+                            <div 
+                              className="bg-red-600 h-2.5 rounded-full" 
+                              style={{ width: `${uploadProgress}%` }}
+                            ></div>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">This may take several minutes depending on your connection speed</p>
+                        </div>
+                      </div>
+                    ) : uploadSuccess && videoData.youtubeVideoId ? (
+                      <div>
+                        <div className="bg-green-900/30 border border-green-800 rounded-lg p-4 mb-4">
+                          <div className="flex items-center">
+                            <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+                            </svg>
+                            <p className="font-medium text-green-400">Upload Successful!</p>
+                          </div>
+                          <p className="text-gray-300 mt-2">
+                            Your video has been successfully uploaded to YouTube and is now being processed.
+                          </p>
+                        </div>
+                        
+                        <div className="bg-gray-600 rounded-lg p-4 mb-4">
+                          <p className="text-sm font-medium mb-2">YouTube Video ID</p>
+                          <p className="font-mono text-gray-300">{videoData.youtubeVideoId}</p>
+                        </div>
+                        
+                        <a 
+                          href={videoData.youtubeVideoUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="block w-full py-2 px-4 bg-red-600 hover:bg-red-700 rounded-md font-medium transition-colors text-center"
+                        >
+                          View on YouTube
+                        </a>
+                      </div>
+                    ) : null}
+                  </div>
                   
-                  <button
-                    onClick={() => setPreviewMode(false)}
-                    className="w-full py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md font-medium transition-colors"
-                  >
-                    Back to Details
-                  </button>
+                  <div className="bg-gray-700 rounded-lg p-6">
+                    <h3 className="font-medium text-lg mb-4">Next Steps</h3>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 h-5 w-5 relative mt-1">
+                          <div className="absolute inset-0 bg-green-500 rounded-full"></div>
+                          <svg className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <p className="ml-3 text-gray-300">Video created successfully</p>
+                      </div>
+                      
+                      {uploadSuccess ? (
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0 h-5 w-5 relative mt-1">
+                            <div className="absolute inset-0 bg-green-500 rounded-full"></div>
+                            <svg className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <p className="ml-3 text-gray-300">Uploaded to YouTube</p>
+                        </div>
+                      ) : (
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0 h-5 w-5 relative mt-1">
+                            <div className="absolute inset-0 bg-gray-500 rounded-full"></div>
+                            <div className="h-5 w-5 flex items-center justify-center">
+                              <span className="text-white text-xs">2</span>
+                            </div>
+                          </div>
+                          <p className="ml-3 text-gray-300">Upload to YouTube</p>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 h-5 w-5 relative mt-1">
+                          <div className="absolute inset-0 bg-gray-500 rounded-full"></div>
+                          <div className="h-5 w-5 flex items-center justify-center">
+                            <span className="text-white text-xs">3</span>
+                          </div>
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-gray-300">Schedule more videos</p>
+                          <Link href="/dashboard/topic-scheduler" className="text-blue-400 text-sm hover:underline">
+                            Go to scheduler →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
         </div>
       </main>
     </div>

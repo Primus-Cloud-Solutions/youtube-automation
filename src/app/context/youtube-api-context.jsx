@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from '../../lib/auth-context';
+import { useAuth } from './auth-context';
 
 // Create YouTube API context
 const YouTubeApiContext = createContext(null);
@@ -198,52 +198,6 @@ export function YouTubeApiProvider({ children }) {
     }
   };
   
-  // Create YouTube channel automatically (for premium users)
-  const createYouTubeChannel = async (channelData) => {
-    try {
-      setLoading(true);
-      
-      const response = await fetch('/api/channel-creator', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          action: 'create-channel', 
-          userId: user?.id,
-          channelName: channelData.name,
-          channelEmail: channelData.email,
-          channelDescription: channelData.description
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to create YouTube channel');
-      }
-      
-      // Update API keys with the newly created channel's API key
-      if (data.youtubeApiKey) {
-        setApiKeys(prev => ({
-          ...prev,
-          youtube: data.youtubeApiKey
-        }));
-      }
-      
-      return { 
-        success: true, 
-        channel: data.channel,
-        apiKey: data.youtubeApiKey
-      };
-    } catch (error) {
-      console.error('Channel creation error:', error);
-      return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
-    }
-  };
-  
   // YouTube API context value
   const value = {
     apiKeys,
@@ -252,8 +206,7 @@ export function YouTubeApiProvider({ children }) {
     loadApiKeys,
     testYouTubeApiKey,
     testOpenAIApiKey,
-    testElevenLabsApiKey,
-    createYouTubeChannel
+    testElevenLabsApiKey
   };
   
   return <YouTubeApiContext.Provider value={value}>{children}</YouTubeApiContext.Provider>;
@@ -275,8 +228,7 @@ export function useYouTubeApi() {
       loadApiKeys: async () => ({ success: false, error: 'YouTubeApiProvider not found' }),
       testYouTubeApiKey: async () => ({ success: false, error: 'YouTubeApiProvider not found' }),
       testOpenAIApiKey: async () => ({ success: false, error: 'YouTubeApiProvider not found' }),
-      testElevenLabsApiKey: async () => ({ success: false, error: 'YouTubeApiProvider not found' }),
-      createYouTubeChannel: async () => ({ success: false, error: 'YouTubeApiProvider not found' })
+      testElevenLabsApiKey: async () => ({ success: false, error: 'YouTubeApiProvider not found' })
     };
   }
   return context;

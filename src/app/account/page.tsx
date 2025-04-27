@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useAuth } from '../../lib/auth-context';
+import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
 import DashboardHeader from '../components/dashboard-header';
 
 export default function AccountPage() {
-  const { user, isLoading, updateUserProfile } = useAuth();
+  const { user, isLoading, updateUserProfile, subscription, loadingSubscription } = useAuth();
   const router = useRouter();
   const [fullName, setFullName] = React.useState('');
   const [contentNiche, setContentNiche] = React.useState('');
@@ -204,17 +204,70 @@ export default function AccountPage() {
           <div>
             <div className="bg-gray-800 rounded-lg p-6 shadow-lg mb-6">
               <h2 className="text-xl font-semibold mb-4">Subscription</h2>
-              <div className="p-4 bg-blue-900/30 border border-blue-800 rounded-md">
-                <div className="font-medium text-blue-300">Free Trial</div>
-                <div className="text-sm text-gray-300 mt-1">3 videos remaining</div>
-                <div className="text-sm text-gray-300">Expires in 30 days</div>
-                <button
-                  className="mt-4 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-                  onClick={() => router.push('/pricing')}
-                >
-                  Upgrade Plan
-                </button>
-              </div>
+              {loadingSubscription ? (
+                <div className="animate-pulse space-y-3">
+                  <div className="h-6 bg-gray-700 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-700 rounded w-1/3"></div>
+                  <div className="h-4 bg-gray-700 rounded w-2/3"></div>
+                  <div className="h-10 bg-gray-700 rounded"></div>
+                </div>
+              ) : subscription ? (
+                <div className={`p-4 rounded-md border ${
+                  subscription.planId === 'enterprise' 
+                    ? 'bg-purple-900/30 border-purple-800 text-purple-300' 
+                    : subscription.planId === 'pro' 
+                    ? 'bg-blue-900/30 border-blue-800 text-blue-300' 
+                    : subscription.planId === 'basic' 
+                    ? 'bg-green-900/30 border-green-800 text-green-300'
+                    : 'bg-gray-800/80 border-gray-700 text-gray-300'
+                }`}>
+                  <div className="font-medium">{subscription.planName}</div>
+                  {subscription.status === 'trialing' ? (
+                    <>
+                      <div className="text-sm text-gray-300 mt-1">
+                        {subscription.trialDaysRemaining} days remaining in trial
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        {subscription.limits.videosPerMonth} videos included
+                      </div>
+                    </>
+                  ) : subscription.status === 'active' ? (
+                    <>
+                      <div className="text-sm text-gray-300 mt-1">
+                        {subscription.limits.videosPerMonth === 999999 
+                          ? 'Unlimited videos' 
+                          : `${subscription.limits.videosPerMonth} videos per month`}
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        Renews: {new Date(subscription.currentPeriodEnd * 1000).toLocaleDateString()}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-gray-300 mt-1">
+                      No active subscription
+                    </div>
+                  )}
+                  <button
+                    className="mt-4 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors text-white"
+                    onClick={() => router.push('/pricing')}
+                  >
+                    {subscription.status === 'active' 
+                      ? 'Change Plan' 
+                      : 'Upgrade Plan'}
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 bg-gray-800/80 border border-gray-700 rounded-md">
+                  <div className="font-medium text-gray-300">No Subscription</div>
+                  <div className="text-sm text-gray-400 mt-1">Choose a plan to get started</div>
+                  <button
+                    className="mt-4 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors text-white"
+                    onClick={() => router.push('/pricing')}
+                  >
+                    View Plans
+                  </button>
+                </div>
+              )}
             </div>
             
             <div className="bg-gray-800 rounded-lg p-6 shadow-lg">

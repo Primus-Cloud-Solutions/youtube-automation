@@ -4,6 +4,7 @@ import * as openaiApi from '../openai-api';
 import * as elevenlabsApi from '../elevenlabs-api';
 import * as trendAnalyzer from '../../../lib/trend-analyzer';
 import { uploadToS3, getSignedUrl, deleteFromS3, listS3Objects, getStorageUsage } from '../s3-storage';
+import { analyzeMonetizationPotential } from '../../../lib/monetization-analyzer';
 
 // Helper functions for API responses
 const createApiResponse = (data) => {
@@ -111,17 +112,34 @@ export async function POST(request) {
       }
       
       try {
-        const result = await trendAnalyzer.predictViralPotential(topic, category, []);
+        // Get viral potential analysis
+        const viralResult = await trendAnalyzer.predictViralPotential(topic, category, []);
         
-        if (!result.success) {
-          return createApiError(result.error || 'Failed to analyze content potential', 500);
+        if (!viralResult.success) {
+          return createApiError(viralResult.error || 'Failed to analyze content potential', 500);
         }
+        
+        // Get monetization potential analysis
+        const monetizationResult = await analyzeMonetizationPotential({
+          topic,
+          category,
+          region: region || 'global'
+        });
+        
+        // Calculate potential viewership
+        const viewershipEstimate = {
+          low: Math.round(viralResult.score * 100),
+          medium: Math.round(viralResult.score * 500),
+          high: Math.round(viralResult.score * 2000)
+        };
         
         return createApiResponse({ 
           analysis: {
-            score: result.score,
-            potential: result.score > 80 ? 'high' : result.score > 60 ? 'medium' : 'low',
-            insights: result.insights
+            viralScore: viralResult.score,
+            potential: viralResult.score > 80 ? 'high' : viralResult.score > 60 ? 'medium' : 'low',
+            insights: viralResult.insights,
+            monetization: monetizationResult.success ? monetizationResult.analysis : null,
+            potentialViewership: viewershipEstimate
           } 
         });
       } catch (error) {
@@ -196,15 +214,24 @@ export async function POST(request) {
           return createApiError(result.error || 'Failed to generate speech', 500);
         }
         
-        // In a real implementation, you would save this to S3
+        // Save the audio to S3
         const audioId = `audio-${Date.now()}`;
         const s3Key = `audio/${userId || 'demo'}/${audioId}.mp3`;
         
-        // Mock S3 upload for demo purposes
-        const uploadResult = { success: true, key: s3Key };
+        // Convert audio data to Buffer if it's not already
+        const audioBuffer = result.audioData instanceof Buffer 
+          ? result.audioData 
+          : Buffer.from(result.audioData || 'Mock audio data');
+        
+        // Upload to S3
+        const uploadResult = await uploadToS3(s3Key, audioBuffer, 'audio/mpeg');
+        
+        if (!uploadResult.success) {
+          throw new Error(uploadResult.error || 'Failed to upload audio to S3');
+        }
         
         // Get a signed URL for the audio
-        const urlResult = { success: true, url: result.audioUrl || `https://example.com/${s3Key}` };
+        const urlResult = await getSignedUrl(s3Key);
         
         return createApiResponse({ 
           audioId,
@@ -270,17 +297,29 @@ export async function POST(request) {
         // In a real implementation, this would be the actual video file
         const mockVideoBuffer = Buffer.from('Mock video data');
         
-        // Upload to S3 (or mock it)
-        const uploadResult = { success: true, key: s3Key };
+        // Upload to S3
+        const uploadResult = await uploadToS3(s3Key, mockVideoBuffer, 'video/mp4');
         
-        // Get a signed URL for the video (or mock it)
-        const urlResult = { success: true, url: `https://example.com/${s3Key}` };
+        if (!uploadResult.success) {
+          throw new Error(uploadResult.error || 'Failed to upload video to S3');
+        }
+        
+        // Get a signed URL for the video
+        const urlResult = await getSignedUrl(s3Key);
         
         // Generate a thumbnail
         const thumbnailKey = `thumbnails/${userId || 'demo'}/${videoId}.jpg`;
         
-        // Mock thumbnail URL
-        const thumbnailUrlResult = { success: true, url: `https://example.com/${thumbnailKey}` };
+        // Create a mock thumbnail and upload to S3
+        const mockThumbnailBuffer = Buffer.from('Mock thumbnail data');
+        const thumbnailUploadResult = await uploadToS3(thumbnailKey, mockThumbnailBuffer, 'image/jpeg');
+        
+        if (!thumbnailUploadResult.success) {
+          console.warn('Failed to upload thumbnail to S3:', thumbnailUploadResult.error);
+        }
+        
+        // Get a signed URL for the thumbnail
+        const thumbnailUrlResult = await getSignedUrl(thumbnailKey);
         
         return createApiResponse({ 
           videoId,
@@ -353,12 +392,36 @@ export async function POST(request) {
       }
       
       try {
-        // In a real implementation, this would use the YouTube API to upload the video
-        // For demo purposes, we'll return mock data
+        // Import the YouTube upload functionality
+        const { processVideoUpload } = await import('../youtube-upload');
+        
+        // Get the video from S3
+        const s3Key = `videos/${userId || 'demo'}/${videoId}.mp4`;
+        
+        // Get user email from request or use a default
+        const userEmail = email || (userId ? `${userId}@example.com` : null);
+        
+        // Process the upload
+        const uploadResult = await processVideoUpload({
+          s3Key,
+          title: title || `Video ${videoId}`,
+          description: description || 'Uploaded from YouTube Automation platform',
+          tags: tags || ['automated', 'youtube', 'content'],
+          categoryId: categoryId || '22', // People & Blogs
+          privacyStatus: visibility || 'public',
+          apiKey: youtubeApiKey,
+          userId,
+          userEmail, // Use the email from above
+          channelId
+        });
+        
+        if (!uploadResult.success) {
+          throw new Error(uploadResult.error || 'Failed to upload video to YouTube');
+        }
         
         return createApiResponse({
-          youtubeVideoId: `yt-${Date.now()}`,
-          youtubeVideoUrl: `https://youtube.com/watch?v=yt-${Date.now()}`,
+          youtubeVideoId: uploadResult.videoId,
+          youtubeVideoUrl: uploadResult.videoUrl,
           status: 'uploaded',
           message: 'Video uploaded to YouTube successfully'
         });
