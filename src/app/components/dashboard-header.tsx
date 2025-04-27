@@ -1,85 +1,21 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export default function DashboardHeader() {
-  const { user, logout } = useAuth();
-  const router = useRouter();
-
-  // Check session storage to maintain login state
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isLoggedIn = window.sessionStorage.getItem('isLoggedIn');
-      const userEmail = window.sessionStorage.getItem('userEmail');
-      
-      if (!isLoggedIn || !userEmail) {
-        // If no session data, redirect to login
-        router.push('/login');
-      }
-    }
-  }, [router]);
+  const { user, signOut } = useAuth();
 
   const handleSignOut = async () => {
-    try {
-      await logout();
-      
-      // Clear session storage
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.removeItem('isLoggedIn');
-        window.sessionStorage.removeItem('userEmail');
-        window.sessionStorage.removeItem('provider');
-      }
-      
-      // Redirect to login page
-      router.push('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-      
-      // Force logout even on error
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.removeItem('isLoggedIn');
-        window.sessionStorage.removeItem('userEmail');
-        window.sessionStorage.removeItem('provider');
-      }
-      
-      router.push('/login');
+    const result = await signOut();
+    if (result.success) {
+      // Redirect happens automatically via auth state change in auth-context
+      console.log('Signed out successfully');
+    } else {
+      console.error('Error signing out:', result.error);
     }
   };
-
-  // Get user info from session storage as fallback
-  const getUserInfo = () => {
-    if (user) {
-      return {
-        name: user.name || user.email || 'User',
-        email: user.email || 'user@example.com',
-        initial: (user.name || user.email || 'U').charAt(0).toUpperCase()
-      };
-    }
-    
-    // Fallback to session storage
-    if (typeof window !== 'undefined') {
-      const userEmail = window.sessionStorage.getItem('userEmail') || 'user@example.com';
-      const name = userEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
-      const formattedName = name.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-      
-      return {
-        name: formattedName,
-        email: userEmail,
-        initial: formattedName.charAt(0).toUpperCase()
-      };
-    }
-    
-    return {
-      name: 'User',
-      email: 'user@example.com',
-      initial: 'U'
-    };
-  };
-
-  const userInfo = getUserInfo();
 
   return (
     <header className="bg-gray-800 border-b border-gray-700">
@@ -111,9 +47,9 @@ export default function DashboardHeader() {
             <div className="relative group">
               <button className="flex items-center space-x-2 text-sm focus:outline-none">
                 <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white">
-                  {userInfo.initial}
+                  {user?.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0).toUpperCase() : 'U'}
                 </div>
-                <span className="hidden md:inline-block">{userInfo.email}</span>
+                <span className="hidden md:inline-block">{user?.user_metadata?.full_name || user?.email || 'User'}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>

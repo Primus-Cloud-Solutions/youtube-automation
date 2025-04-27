@@ -1,32 +1,23 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import DashboardHeader from '@/app/components/dashboard-header';
 
 export default function DashboardPage() {
-  const { user, loading, subscription } = useAuth();
+  const { user, isLoading, subscription, subscriptionLoading } = useAuth();
   const router = useRouter();
-  const [isSessionValid, setIsSessionValid] = useState(false);
 
-  // Check session storage to maintain login state
+  // Redirect to login if not authenticated
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isLoggedIn = window.sessionStorage.getItem('isLoggedIn');
-      const userEmail = window.sessionStorage.getItem('userEmail');
-      
-      if (isLoggedIn && userEmail) {
-        setIsSessionValid(true);
-      } else if (!loading && !user) {
-        console.log('User not authenticated, redirecting to login');
-        router.push('/login');
-      }
+    if (!isLoading && !user) {
+      console.log('User not authenticated, redirecting to login');
+      router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, isLoading, router]);
 
-  // Loading state
-  if (loading && !isSessionValid) {
+  if (isLoading || subscriptionLoading) {
     return (
       <div className="min-h-screen bg-gray-900 text-white">
         <DashboardHeader />
@@ -42,37 +33,12 @@ export default function DashboardPage() {
     );
   }
 
-  // Get user info from context or session storage
-  const getUserInfo = () => {
-    if (user) {
-      return {
-        name: user.name || user.email || 'User',
-        email: user.email || 'user@example.com'
-      };
-    }
-    
-    // Fallback to session storage
-    if (typeof window !== 'undefined') {
-      const userEmail = window.sessionStorage.getItem('userEmail') || 'user@example.com';
-      const name = userEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
-      const formattedName = name.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-      
-      return {
-        name: formattedName,
-        email: userEmail
-      };
-    }
-    
-    return {
-      name: 'User',
-      email: 'user@example.com'
-    };
-  };
-
-  const userInfo = getUserInfo();
+  if (!user) {
+    return null; // Will redirect in useEffect
+  }
 
   // Calculate remaining videos based on subscription
-  const videosRemaining = subscription?.limits?.videosPerMonth || 5;
+  const videosRemaining = subscription?.limits?.videosPerMonth || 3;
   const videosTotal = subscription?.limits?.videosPerMonth || 5;
   
   // Calculate trial expiration if applicable
@@ -85,7 +51,7 @@ export default function DashboardPage() {
       <DashboardHeader />
       
       <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">Welcome, {userInfo.name}</h1>
+        <h1 className="text-3xl font-bold mb-8">Welcome, {user.user_metadata?.full_name || 'User'}</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
@@ -127,7 +93,7 @@ export default function DashboardPage() {
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-gray-400">Current Plan</p>
-                <p className="font-medium">{subscription?.planName || 'Free'}</p>
+                <p className="font-medium">{subscription?.planName || 'Free Trial'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-400">Videos Remaining</p>

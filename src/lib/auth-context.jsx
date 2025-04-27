@@ -43,49 +43,34 @@ export function AuthProvider({ children }) {
     const checkAuth = async () => {
       try {
         setLoading(true);
+        const response = await checkAuthStatus();
         
-        // Create a fallback user in case the API call fails
-        const fallbackUser = {
-          id: 'demo-user',
-          email: 'test@example.com',
-          name: 'Demo User'
-        };
-        
-        try {
-          const response = await checkAuthStatus();
-          
-          if (response && response.success && response.isAuthenticated) {
-            setUser(response.user);
-            // Set demo subscription data
-            setSubscription({
-              planName: 'Free Trial',
-              planId: 'free',
-              status: 'active',
-              limits: {
-                videosPerMonth: 5,
-                storageGB: 1,
-                schedulingFrequency: 'weekly'
-              },
-              features: {
-                scheduling: true,
-                analytics: true,
-                viralVideoRebranding: false
-              }
-            });
-          } else {
-            // Use fallback user for demo purposes
-            setUser(fallbackUser);
-          }
-        } catch (err) {
-          console.error('Auth check error:', err);
-          // For demo purposes, set a mock user if auth check fails
-          setUser(fallbackUser);
+        if (response.success && response.isAuthenticated) {
+          setUser(response.user);
+          // Set demo subscription data
+          setSubscription({
+            planName: 'Free Trial',
+            planId: 'free',
+            status: 'active',
+            limits: {
+              videosPerMonth: 5,
+              storageGB: 1,
+              schedulingFrequency: 'weekly'
+            },
+            features: {
+              scheduling: true,
+              analytics: true,
+              viralVideoRebranding: false
+            }
+          });
+        } else {
+          setUser(null);
         }
       } catch (err) {
-        console.error('Auth check outer error:', err);
-        // Ensure we always have a user even if everything fails
+        console.error('Auth check error:', err);
+        // For demo purposes, set a mock user if auth check fails
         setUser({
-          id: 'emergency-fallback-user',
+          id: 'demo-user',
           email: 'test@example.com',
           name: 'Demo User'
         });
@@ -103,40 +88,26 @@ export function AuthProvider({ children }) {
       setLoading(true);
       setError(null);
       
-      console.log('Submitting login form with:', email);
+      const response = await loginUser(email, password);
       
-      // Create a fallback user in case the API call fails
-      const fallbackUser = {
+      if (response.success) {
+        setUser(response.user);
+        return { success: true };
+      } else {
+        setError(response.error || 'Login failed');
+        return { success: false, error: response.error };
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed');
+      
+      // For demo purposes, set a mock user if login fails
+      setUser({
         id: 'demo-user',
         email: email || 'test@example.com',
         name: 'Demo User'
-      };
-      
-      try {
-        const response = await loginUser(email, password);
-        
-        if (response && response.success) {
-          setUser(response.user);
-          return { success: true };
-        } else {
-          // Use fallback user for demo purposes
-          setUser(fallbackUser);
-          return { success: true };
-        }
-      } catch (err) {
-        console.error('Login error:', err);
-        // For demo purposes, set a mock user if login fails
-        setUser(fallbackUser);
-        return { success: true };
-      }
-    } catch (err) {
-      console.error('Login outer error:', err);
-      // Ensure we always have a user even if everything fails
-      setUser({
-        id: 'emergency-fallback-user',
-        email: email || 'test@example.com',
-        name: 'Demo User'
       });
+      
       return { success: true };
     } finally {
       setLoading(false);
@@ -149,38 +120,26 @@ export function AuthProvider({ children }) {
       setLoading(true);
       setError(null);
       
-      // Create a fallback user in case the API call fails
-      const fallbackUser = {
-        id: 'demo-user',
-        email: email || 'test@example.com',
-        name: name || 'Demo User'
-      };
+      const response = await registerUser(email, password, name);
       
-      try {
-        const response = await registerUser(email, password, name);
-        
-        if (response && response.success) {
-          setUser(response.user);
-          return { success: true };
-        } else {
-          // Use fallback user for demo purposes
-          setUser(fallbackUser);
-          return { success: true };
-        }
-      } catch (err) {
-        console.error('Registration error:', err);
-        // For demo purposes, set a mock user if registration fails
-        setUser(fallbackUser);
+      if (response.success) {
+        setUser(response.user);
         return { success: true };
+      } else {
+        setError(response.error || 'Registration failed');
+        return { success: false, error: response.error };
       }
     } catch (err) {
-      console.error('Registration outer error:', err);
-      // Ensure we always have a user even if everything fails
+      console.error('Registration error:', err);
+      setError(err.message || 'Registration failed');
+      
+      // For demo purposes, set a mock user if registration fails
       setUser({
-        id: 'emergency-fallback-user',
-        email: email || 'test@example.com',
+        id: 'demo-user',
+        email: email,
         name: name || 'Demo User'
       });
+      
       return { success: true };
     } finally {
       setLoading(false);
@@ -191,16 +150,11 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       setLoading(true);
-      try {
-        await logoutUser();
-      } catch (err) {
-        console.error('Logout API error:', err);
-      }
-      // Always clear the user regardless of API success
+      await logoutUser();
       setUser(null);
     } catch (err) {
-      console.error('Logout outer error:', err);
-      // Force logout even if everything fails
+      console.error('Logout error:', err);
+      // Force logout even if API call fails
       setUser(null);
     } finally {
       setLoading(false);
@@ -213,40 +167,27 @@ export function AuthProvider({ children }) {
       setLoading(true);
       setError(null);
       
-      // Create a fallback user in case the API call fails
-      const fallbackUser = {
-        id: 'social-demo-user',
-        email: `${provider.toLowerCase()}@example.com`,
-        name: 'Social Demo User',
-        provider: provider
-      };
+      const response = await socialLogin(provider);
       
-      try {
-        const response = await socialLogin(provider);
-        
-        if (response && response.success) {
-          setUser(response.user);
-          return { success: true };
-        } else {
-          // Use fallback user for demo purposes
-          setUser(fallbackUser);
-          return { success: true };
-        }
-      } catch (err) {
-        console.error(`${provider} login error:`, err);
-        // For demo purposes, set a mock user if social login fails
-        setUser(fallbackUser);
+      if (response.success) {
+        setUser(response.user);
         return { success: true };
+      } else {
+        setError(response.error || `${provider} login failed`);
+        return { success: false, error: response.error };
       }
     } catch (err) {
-      console.error(`${provider} login outer error:`, err);
-      // Ensure we always have a user even if everything fails
+      console.error(`${provider} login error:`, err);
+      setError(err.message || `${provider} login failed`);
+      
+      // For demo purposes, set a mock user if social login fails
       setUser({
-        id: 'emergency-social-fallback-user',
+        id: 'demo-user',
         email: `${provider.toLowerCase()}@example.com`,
-        name: 'Social Demo User',
+        name: 'Demo User',
         provider: provider
       });
+      
       return { success: true };
     } finally {
       setLoading(false);
@@ -260,23 +201,17 @@ export function AuthProvider({ children }) {
       setError(null);
       
       // Set demo user
-      const demoUser = {
+      setUser({
         id: 'demo-user',
         email: 'demo@example.com',
         name: 'Demo User'
-      };
+      });
       
-      setUser(demoUser);
       return { success: true };
     } catch (err) {
       console.error('Demo account error:', err);
-      // Ensure we always have a user even if everything fails
-      setUser({
-        id: 'emergency-demo-user',
-        email: 'demo@example.com',
-        name: 'Demo User'
-      });
-      return { success: true };
+      setError(err.message || 'Failed to use demo account');
+      return { success: false, error: err.message };
     } finally {
       setLoading(false);
     }

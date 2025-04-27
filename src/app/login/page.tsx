@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const { login, user, loading: authLoading, useDemoAccount } = useAuth();
+  const { signIn, user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   // Check if user is already logged in
@@ -40,15 +40,10 @@ export default function LoginPage() {
 
     try {
       console.log('Submitting login form with:', email);
-      const result = await login(email, password);
+      const result = await signIn(email, password);
       
       if (result.success) {
         console.log('Login successful, redirecting to dashboard');
-        // Set session storage to maintain login state
-        if (typeof window !== 'undefined') {
-          window.sessionStorage.setItem('isLoggedIn', 'true');
-          window.sessionStorage.setItem('userEmail', email);
-        }
         // Redirect to dashboard on successful login
         router.push('/dashboard');
       } else {
@@ -58,13 +53,6 @@ export default function LoginPage() {
     } catch (error) {
       console.error('Login error:', error);
       setErrorMessage('An unexpected error occurred. Please try again.');
-      
-      // Fallback login for demo purposes
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem('isLoggedIn', 'true');
-        window.sessionStorage.setItem('userEmail', email || 'test@example.com');
-      }
-      router.push('/dashboard');
     } finally {
       setIsLoading(false);
     }
@@ -79,69 +67,19 @@ export default function LoginPage() {
 
     try {
       console.log('Attempting demo login');
-      const result = await useDemoAccount();
+      const result = await signIn('test@example.com', 'Password123!');
       
       if (result.success) {
         console.log('Demo login successful, redirecting to dashboard');
-        // Set session storage to maintain login state
-        if (typeof window !== 'undefined') {
-          window.sessionStorage.setItem('isLoggedIn', 'true');
-          window.sessionStorage.setItem('userEmail', 'test@example.com');
-        }
         // Redirect to dashboard on successful login
         router.push('/dashboard');
       } else {
         console.error('Demo login failed:', result.error);
         setErrorMessage(result.error || 'Demo login failed');
-        
-        // Fallback for demo login
-        if (typeof window !== 'undefined') {
-          window.sessionStorage.setItem('isLoggedIn', 'true');
-          window.sessionStorage.setItem('userEmail', 'test@example.com');
-        }
-        router.push('/dashboard');
       }
     } catch (error) {
       console.error('Demo login error:', error);
       setErrorMessage('An unexpected error occurred with demo login');
-      
-      // Fallback for demo login even on error
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem('isLoggedIn', 'true');
-        window.sessionStorage.setItem('userEmail', 'test@example.com');
-      }
-      router.push('/dashboard');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle social login
-  const handleSocialLogin = async (provider) => {
-    setIsLoading(true);
-    setErrorMessage('');
-    
-    try {
-      // Set session storage for social login
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem('isLoggedIn', 'true');
-        window.sessionStorage.setItem('userEmail', `${provider.toLowerCase()}@example.com`);
-        window.sessionStorage.setItem('provider', provider);
-      }
-      
-      // Redirect to dashboard
-      router.push('/dashboard');
-    } catch (error) {
-      console.error(`${provider} login error:`, error);
-      setErrorMessage(`An error occurred with ${provider} login`);
-      
-      // Fallback for social login
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem('isLoggedIn', 'true');
-        window.sessionStorage.setItem('userEmail', `${provider.toLowerCase()}@example.com`);
-        window.sessionStorage.setItem('provider', provider);
-      }
-      router.push('/dashboard');
     } finally {
       setIsLoading(false);
     }
@@ -241,14 +179,14 @@ export default function LoginPage() {
               <button
                 type="button"
                 className="py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium transition-colors"
-                onClick={() => handleSocialLogin('Google')}
+                onClick={() => alert('Google login not implemented in demo')}
               >
                 Google
               </button>
               <button
                 type="button"
                 className="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md font-medium transition-colors"
-                onClick={() => handleSocialLogin('GitHub')}
+                onClick={() => alert('GitHub login not implemented in demo')}
               >
                 GitHub
               </button>

@@ -57,41 +57,40 @@ exports.handler = async (event, context) => {
 
     // Extract the path from the request body or event
     const apiPath = requestBody.path || '';
-    const urlPath = event.path.replace('/.netlify/functions/api', '');
-    const effectivePath = apiPath || urlPath || '/';
-    
-    console.log('API request:', { 
-      method: event.httpMethod,
-      path: event.path,
-      apiPath,
-      urlPath,
-      effectivePath,
-      body: typeof event.body === 'string' ? event.body.substring(0, 100) : null
-    });
     
     // Route the request based on the API path
-    if (effectivePath.startsWith('/payment') || effectivePath.includes('payment')) {
+    if (apiPath.startsWith('/payment')) {
       return handlePaymentRequest(event, requestBody);
-    } else if (effectivePath.startsWith('/auth') || effectivePath.includes('auth')) {
-      return handleAuthRequest(event, effectivePath, requestBody);
-    } else if (effectivePath.startsWith('/storage') || effectivePath.includes('storage')) {
+    } else if (apiPath.startsWith('/auth')) {
+      return handleAuthRequest(event, apiPath);
+    } else if (apiPath.startsWith('/storage')) {
       return handleStorageRequest(event, requestBody);
-    } else if (effectivePath.startsWith('/youtube') || effectivePath.includes('youtube')) {
+    } else if (apiPath.startsWith('/youtube')) {
       return handleYoutubeRequest(event, requestBody);
-    } else if (effectivePath.startsWith('/viral-video') || effectivePath.includes('viral-video')) {
+    } else if (apiPath.startsWith('/viral-video')) {
       return handleViralVideoRequest(event, requestBody);
-    } else if (effectivePath.startsWith('/pricing') || effectivePath.includes('pricing')) {
+    } else if (apiPath.startsWith('/pricing')) {
       return handlePricingRequest(event);
     } else {
-      // Default fallback - return mock data instead of 404
-      console.log('No specific handler found, using fallback response');
-      return createApiResponse({
-        message: 'API request processed with fallback handler',
-        data: {
-          requestPath: effectivePath,
-          timestamp: new Date().toISOString()
-        }
-      });
+      // If no path is specified in the body, try to determine from the URL
+      const urlPath = event.path.replace('/.netlify/functions/api', '');
+      
+      if (urlPath.startsWith('/payment')) {
+        return handlePaymentRequest(event, requestBody);
+      } else if (urlPath.startsWith('/auth')) {
+        return handleAuthRequest(event, urlPath);
+      } else if (urlPath.startsWith('/storage')) {
+        return handleStorageRequest(event, requestBody);
+      } else if (urlPath.startsWith('/youtube')) {
+        return handleYoutubeRequest(event, requestBody);
+      } else if (urlPath.startsWith('/viral-video')) {
+        return handleViralVideoRequest(event, requestBody);
+      } else if (urlPath.startsWith('/pricing')) {
+        return handlePricingRequest(event);
+      } else {
+        // Default response for unknown API routes
+        return createApiError('API route not found', 404);
+      }
     }
   } catch (error) {
     console.error('API route error:', error);
@@ -105,7 +104,7 @@ exports.handler = async (event, context) => {
 const handlePaymentRequest = async (event, requestBody) => {
   try {
     // Extract action from request body
-    const { action, userId } = requestBody || {};
+    const { action, userId } = requestBody;
     
     // Handle different payment actions
     if (action === 'get-plans') {
@@ -187,8 +186,7 @@ const handlePaymentRequest = async (event, requestBody) => {
     } else {
       // Default response for other payment actions
       return createApiResponse({
-        message: 'Payment action processed successfully',
-        action: action || 'default'
+        message: 'Payment action processed successfully'
       });
     }
   } catch (error) {
@@ -198,9 +196,9 @@ const handlePaymentRequest = async (event, requestBody) => {
 };
 
 // Handle authentication-related requests
-const handleAuthRequest = async (event, apiPath, requestBody) => {
+const handleAuthRequest = async (event, apiPath) => {
   // For direct API calls, return mock auth data instead of redirecting
-  if (apiPath.includes('/auth/check') || apiPath.includes('check')) {
+  if (apiPath.includes('/auth/check')) {
     return createApiResponse({
       isAuthenticated: true,
       user: {
@@ -210,27 +208,10 @@ const handleAuthRequest = async (event, apiPath, requestBody) => {
         createdAt: new Date().toISOString()
       }
     });
-  } else if (apiPath.includes('/auth/login') || apiPath.includes('login')) {
+  } else if (apiPath.includes('/auth/login')) {
     try {
-      let email, password;
-      
-      if (event.body) {
-        try {
-          const body = JSON.parse(event.body);
-          email = body.email;
-          password = body.password;
-        } catch (e) {
-          console.error('Error parsing login body:', e);
-        }
-      }
-      
-      // Use values from requestBody if not found in event.body
-      if (!email && requestBody) {
-        email = requestBody.email;
-      }
-      if (!password && requestBody) {
-        password = requestBody.password;
-      }
+      const body = JSON.parse(event.body || '{}');
+      const { email, password } = body;
       
       // Simple validation
       if (!email || !password) {
@@ -250,31 +231,10 @@ const handleAuthRequest = async (event, apiPath, requestBody) => {
     } catch (error) {
       return createApiError('Login failed: ' + error.message);
     }
-  } else if (apiPath.includes('/auth/register') || apiPath.includes('register')) {
+  } else if (apiPath.includes('/auth/register')) {
     try {
-      let email, password, name;
-      
-      if (event.body) {
-        try {
-          const body = JSON.parse(event.body);
-          email = body.email;
-          password = body.password;
-          name = body.name;
-        } catch (e) {
-          console.error('Error parsing register body:', e);
-        }
-      }
-      
-      // Use values from requestBody if not found in event.body
-      if (!email && requestBody) {
-        email = requestBody.email;
-      }
-      if (!password && requestBody) {
-        password = requestBody.password;
-      }
-      if (!name && requestBody) {
-        name = requestBody.name;
-      }
+      const body = JSON.parse(event.body || '{}');
+      const { email, password, name } = body;
       
       // Simple validation
       if (!email || !password || !name) {
@@ -294,37 +254,26 @@ const handleAuthRequest = async (event, apiPath, requestBody) => {
     } catch (error) {
       return createApiError('Registration failed: ' + error.message);
     }
-  } else if (apiPath.includes('/auth/logout') || apiPath.includes('logout')) {
+  } else if (apiPath.includes('/auth/logout')) {
     return createApiResponse({
       message: 'Logged out successfully'
     });
-  } else if (apiPath.includes('/auth/social-login') || apiPath.includes('social-login')) {
+  } else if (apiPath.includes('/auth/social-login')) {
     try {
-      let provider;
+      const body = JSON.parse(event.body || '{}');
+      const { provider } = body;
       
-      if (event.body) {
-        try {
-          const body = JSON.parse(event.body);
-          provider = body.provider;
-        } catch (e) {
-          console.error('Error parsing social login body:', e);
-        }
+      // Simple validation
+      if (!provider) {
+        return createApiError('Provider is required');
       }
-      
-      // Use values from requestBody if not found in event.body
-      if (!provider && requestBody) {
-        provider = requestBody.provider;
-      }
-      
-      // Default to 'google' if no provider specified
-      provider = provider || 'google';
       
       // Mock successful social login
       return createApiResponse({
         token: 'mock-jwt-token',
         user: {
           id: 'user123',
-          email: `${provider}@example.com`,
+          email: 'social@example.com',
           name: 'Social User',
           provider: provider,
           createdAt: new Date().toISOString()
@@ -334,11 +283,7 @@ const handleAuthRequest = async (event, apiPath, requestBody) => {
       return createApiError('Social login failed: ' + error.message);
     }
   } else {
-    // Default auth response instead of error
-    return createApiResponse({
-      message: 'Auth request processed with fallback handler',
-      path: apiPath
-    });
+    return createApiError('Auth endpoint not found', 404);
   }
 };
 
