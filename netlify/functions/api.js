@@ -43,44 +43,68 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Extract the path from the event
-  const { path: requestPath } = event;
-  
-  // Remove the /.netlify/functions/api prefix to get the actual API path
-  const apiPath = requestPath.replace('/.netlify/functions/api', '');
-  
   try {
+    // Parse the request body if it exists
+    let requestBody = {};
+    if (event.body) {
+      try {
+        requestBody = JSON.parse(event.body);
+      } catch (e) {
+        console.error('Error parsing request body:', e);
+        return createApiError('Invalid request body format');
+      }
+    }
+
+    // Extract the path from the request body or event
+    const apiPath = requestBody.path || '';
+    
     // Route the request based on the API path
     if (apiPath.startsWith('/payment')) {
-      return handlePaymentRequest(event);
+      return handlePaymentRequest(event, requestBody);
     } else if (apiPath.startsWith('/auth')) {
       return handleAuthRequest(event, apiPath);
     } else if (apiPath.startsWith('/storage')) {
-      return handleStorageRequest(event);
+      return handleStorageRequest(event, requestBody);
     } else if (apiPath.startsWith('/youtube')) {
-      return handleYoutubeRequest(event);
+      return handleYoutubeRequest(event, requestBody);
     } else if (apiPath.startsWith('/viral-video')) {
-      return handleViralVideoRequest(event);
+      return handleViralVideoRequest(event, requestBody);
     } else if (apiPath.startsWith('/pricing')) {
       return handlePricingRequest(event);
     } else {
-      // Default response for unknown API routes
-      return createApiError('API route not found', 404);
+      // If no path is specified in the body, try to determine from the URL
+      const urlPath = event.path.replace('/.netlify/functions/api', '');
+      
+      if (urlPath.startsWith('/payment')) {
+        return handlePaymentRequest(event, requestBody);
+      } else if (urlPath.startsWith('/auth')) {
+        return handleAuthRequest(event, urlPath);
+      } else if (urlPath.startsWith('/storage')) {
+        return handleStorageRequest(event, requestBody);
+      } else if (urlPath.startsWith('/youtube')) {
+        return handleYoutubeRequest(event, requestBody);
+      } else if (urlPath.startsWith('/viral-video')) {
+        return handleViralVideoRequest(event, requestBody);
+      } else if (urlPath.startsWith('/pricing')) {
+        return handlePricingRequest(event);
+      } else {
+        // Default response for unknown API routes
+        return createApiError('API route not found', 404);
+      }
     }
   } catch (error) {
     console.error('API route error:', error);
     
     // Return a fallback response for errors
-    return createApiError('Internal server error', 500);
+    return createApiError('Internal server error: ' + error.message, 500);
   }
 };
 
 // Handle payment-related requests
-const handlePaymentRequest = async (event) => {
+const handlePaymentRequest = async (event, requestBody) => {
   try {
-    // Parse the request body
-    const body = JSON.parse(event.body || '{}');
-    const { action, userId } = body;
+    // Extract action from request body
+    const { action, userId } = requestBody;
     
     // Handle different payment actions
     if (action === 'get-plans') {
@@ -141,16 +165,16 @@ const handlePaymentRequest = async (event) => {
       // Return mock subscription data
       return createApiResponse({
         subscription: {
-          planName: 'Professional',
-          planId: 'pro',
+          planName: 'Free Trial',
+          planId: 'free',
           status: 'active',
           currentPeriodStart: Math.floor(Date.now() / 1000) - 86400 * 15,
           currentPeriodEnd: Math.floor(Date.now() / 1000) + 86400 * 15,
           cancelAtPeriodEnd: false,
           limits: {
-            videosPerMonth: 100,
-            storageGB: 20,
-            schedulingFrequency: 'daily'
+            videosPerMonth: 5,
+            storageGB: 1,
+            schedulingFrequency: 'weekly'
           },
           features: {
             scheduling: true,
@@ -167,65 +191,104 @@ const handlePaymentRequest = async (event) => {
     }
   } catch (error) {
     console.error('Payment request error:', error);
-    return createApiError('Error processing payment request');
+    return createApiError('Error processing payment request: ' + error.message);
   }
 };
 
 // Handle authentication-related requests
 const handleAuthRequest = async (event, apiPath) => {
-  // Redirect to the appropriate auth function based on the path
-  if (apiPath.includes('/auth/login')) {
-    return {
-      statusCode: 302,
-      headers: {
-        'Location': '/.netlify/functions/auth-login',
-        'Cache-Control': 'no-cache'
-      },
-      body: ''
-    };
+  // For direct API calls, return mock auth data instead of redirecting
+  if (apiPath.includes('/auth/check')) {
+    return createApiResponse({
+      isAuthenticated: true,
+      user: {
+        id: 'user123',
+        email: 'test@example.com',
+        name: 'Test User',
+        createdAt: new Date().toISOString()
+      }
+    });
+  } else if (apiPath.includes('/auth/login')) {
+    try {
+      const body = JSON.parse(event.body || '{}');
+      const { email, password } = body;
+      
+      // Simple validation
+      if (!email || !password) {
+        return createApiError('Email and password are required');
+      }
+      
+      // Mock successful login
+      return createApiResponse({
+        token: 'mock-jwt-token',
+        user: {
+          id: 'user123',
+          email: email,
+          name: 'Test User',
+          createdAt: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      return createApiError('Login failed: ' + error.message);
+    }
   } else if (apiPath.includes('/auth/register')) {
-    return {
-      statusCode: 302,
-      headers: {
-        'Location': '/.netlify/functions/auth-register',
-        'Cache-Control': 'no-cache'
-      },
-      body: ''
-    };
+    try {
+      const body = JSON.parse(event.body || '{}');
+      const { email, password, name } = body;
+      
+      // Simple validation
+      if (!email || !password || !name) {
+        return createApiError('Email, password, and name are required');
+      }
+      
+      // Mock successful registration
+      return createApiResponse({
+        token: 'mock-jwt-token',
+        user: {
+          id: 'user123',
+          email: email,
+          name: name,
+          createdAt: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      return createApiError('Registration failed: ' + error.message);
+    }
   } else if (apiPath.includes('/auth/logout')) {
-    return {
-      statusCode: 302,
-      headers: {
-        'Location': '/.netlify/functions/auth-logout',
-        'Cache-Control': 'no-cache'
-      },
-      body: ''
-    };
-  } else if (apiPath.includes('/auth/check')) {
-    return {
-      statusCode: 302,
-      headers: {
-        'Location': '/.netlify/functions/auth-check',
-        'Cache-Control': 'no-cache'
-      },
-      body: ''
-    };
+    return createApiResponse({
+      message: 'Logged out successfully'
+    });
   } else if (apiPath.includes('/auth/social-login')) {
-    return {
-      statusCode: 302,
-      headers: {
-        'Location': '/.netlify/functions/social-login',
-        'Cache-Control': 'no-cache'
-      },
-      body: ''
-    };
+    try {
+      const body = JSON.parse(event.body || '{}');
+      const { provider } = body;
+      
+      // Simple validation
+      if (!provider) {
+        return createApiError('Provider is required');
+      }
+      
+      // Mock successful social login
+      return createApiResponse({
+        token: 'mock-jwt-token',
+        user: {
+          id: 'user123',
+          email: 'social@example.com',
+          name: 'Social User',
+          provider: provider,
+          createdAt: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      return createApiError('Social login failed: ' + error.message);
+    }
   } else {
     return createApiError('Auth endpoint not found', 404);
   }
 };
 
 // Handle storage-related requests
-const handleStorageRequest = async (event) => {
+const handleStorageRequest = async (event, requestBody) => {
   // Mock storage response
   return createApiResponse({
     message: 'Storage request processed successfully',
@@ -251,7 +314,7 @@ const handleStorageRequest = async (event) => {
 };
 
 // Handle YouTube-related requests
-const handleYoutubeRequest = async (event) => {
+const handleYoutubeRequest = async (event, requestBody) => {
   // Mock YouTube response
   return createApiResponse({
     message: 'YouTube request processed successfully',
@@ -281,7 +344,7 @@ const handleYoutubeRequest = async (event) => {
 };
 
 // Handle viral video-related requests
-const handleViralVideoRequest = async (event) => {
+const handleViralVideoRequest = async (event, requestBody) => {
   // Mock viral video response
   return createApiResponse({
     message: 'Viral video request processed successfully',

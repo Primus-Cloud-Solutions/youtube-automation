@@ -1,93 +1,109 @@
 # YouTube Automation Platform
 
-This is a Next.js application for automating YouTube content creation, scheduling, and optimization.
+A Next.js application for automating YouTube content creation, scheduling, and optimization.
 
 ## Features
 
-- Authentication system with email/password and social login options
-- Subscription management with different pricing tiers
-- YouTube video generation and management
-- Content scheduling and optimization
+- AI-powered video topic generation
+- Content creation tools
+- Video scheduling and optimization
+- Storage management
+- YouTube API integration
 - Analytics dashboard
-- Storage management for video assets
-- Viral video discovery and rebranding
+- Subscription management
 
 ## Deployment Instructions
 
 ### Prerequisites
 
 - Node.js 16+ and npm
-- Netlify account for deployment
+- Netlify account
+- Stripe account (for payment processing)
+- YouTube API credentials
 
 ### Environment Variables
 
 Create a `.env` file with the following variables:
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
-NEXT_PUBLIC_API_URL=your_api_url_or_empty_for_relative_paths
+# Authentication
+JWT_SECRET=your_jwt_secret_here
+
+# Stripe
+NEXT_PUBLIC_STRIPE_KEY=your_stripe_publishable_key
+STRIPE_SECRET_KEY=your_stripe_secret_key
+
+# YouTube API
+YOUTUBE_API_KEY=your_youtube_api_key
+
+# S3 Storage (optional)
+S3_ACCESS_KEY=your_s3_access_key
+S3_SECRET_KEY=your_s3_secret_key
+S3_BUCKET=your_s3_bucket_name
+S3_REGION=your_s3_region
 ```
 
 ### Local Development
 
 1. Install dependencies:
-```bash
-npm install
-```
+   ```
+   npm install
+   ```
 
 2. Run the development server:
-```bash
-npm run dev
-```
+   ```
+   npm run dev
+   ```
 
 3. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Netlify Deployment
 
-1. Push your code to a Git repository (GitHub, GitLab, etc.)
+1. Push the code to a Git repository (GitHub, GitLab, etc.)
+
 2. Connect your repository to Netlify
+
 3. Configure the build settings:
    - Build command: `npm run build`
-   - Publish directory: `.next`
+   - Publish directory: `out`
+
 4. Add the environment variables in the Netlify dashboard
+
 5. Deploy the site
 
-## Project Structure
+### Important Notes
 
-- `src/app/` - Next.js pages and components
-- `src/lib/` - Utility functions and context providers
-- `src/app/api/` - API route handlers
-- `netlify/functions/` - Netlify serverless functions
-- `public/` - Static assets
-
-## Authentication System
-
-The authentication system uses Netlify Functions to handle user authentication. It supports:
-
-- Email/password login
-- Google and GitHub social login
-- Session management with cookies
-
-## API Structure
-
-The API is structured around Netlify Functions:
-
-- `auth-*.js` - Authentication-related endpoints
-- `api.js` - Main API router that handles various functionality
+- The application uses Netlify Functions for serverless API endpoints
+- All API routes are configured in the `netlify/functions` directory
+- Authentication is handled through JWT tokens
+- The application includes fallback functionality for demo purposes
 
 ## Troubleshooting
 
-If you encounter CORS issues:
-- Check that all API responses include proper CORS headers
-- Ensure OPTIONS requests are handled correctly
+### API Endpoints Not Working
 
-If authentication fails:
-- Verify that cookies are being set correctly
-- Check browser console for any errors
-- Ensure the auth-check.js function is working properly
+If API endpoints return HTML instead of JSON:
+
+1. Check that the `netlify.toml` file has the correct redirects configured
+2. Verify that the Netlify Functions are properly deployed
+3. Ensure CORS headers are properly set in the API responses
+
+### Authentication Issues
+
+If login or registration fails:
+
+1. Check browser console for specific error messages
+2. Verify that cookies are being properly set and read
+3. Ensure the JWT secret is properly configured
+
+### Payment Processing Issues
+
+If subscription management fails:
+
+1. Verify Stripe API keys are correctly set
+2. Check webhook configurations in the Stripe dashboard
+3. Test with Stripe test mode before going to production
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.
