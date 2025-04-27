@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useAuth } from '../context/auth-context';
+import { useAuth } from '../../lib/auth-context';
 import { useRouter } from 'next/navigation';
 import DashboardHeader from '../components/dashboard-header';
 

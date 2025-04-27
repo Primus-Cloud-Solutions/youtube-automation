@@ -1,162 +1,211 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/auth-context';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../context/auth-context';
-import { withAuth } from '../../utils/with-auth';
-import DashboardHeader from '../../components/dashboard-header';
+import DashboardHeader from '../components/dashboard-header';
 
-const TopicScheduler = () => {
-  const { user, subscription } = useAuth();
+export default function TopicSchedulerPage() {
+  const { user, isLoading, subscription } = useAuth();
   const router = useRouter();
-  
-  // State for scheduling settings
-  const [frequency, setFrequency] = useState('weekly');
+  const [topics, setTopics] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [category, setCategory] = useState('technology');
-  const [endDate, setEndDate] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [schedules, setSchedules] = useState([]);
-  const [isLoadingSchedules, setIsLoadingSchedules] = useState(true);
+  const [frequency, setFrequency] = useState('weekly');
   const [categories, setCategories] = useState([]);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  
-  // Fetch categories on component mount
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [scheduledTopics, setScheduledTopics] = useState([]);
+  const [loadingScheduled, setLoadingScheduled] = useState(true);
+
+  // Redirect to login if not authenticated
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch('/api/content', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'get-categories'
-          }),
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          setCategories(data.categories);
-        } else {
-          console.error('Error fetching categories:', data.error);
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    };
-    
-    fetchCategories();
-  }, []);
-  
-  // Fetch existing schedules on component mount
-  useEffect(() => {
-    const fetchSchedules = async () => {
-      if (!user?.id) return;
-      
-      try {
-        const response = await fetch('/api/scheduler', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'get-recurring-schedules',
-            userId: user.id
-          }),
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          setSchedules(data.recurringSchedules);
-        } else {
-          console.error('Error fetching schedules:', data.error);
-        }
-      } catch (error) {
-        console.error('Error fetching schedules:', error);
-      } finally {
-        setIsLoadingSchedules(false);
-      }
-    };
-    
-    fetchSchedules();
-  }, [user]);
-  
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!user?.id) {
-      setMessage('You must be logged in to create a schedule');
-      return;
+    if (!isLoading && !user) {
+      router.push('/login');
+    } else if (user) {
+      fetchCategories();
+      fetchTrendingTopics();
+      fetchScheduledTopics();
     }
-    
-    // Check subscription limits
-    if (subscription && subscription.planId === 'free' && frequency !== 'weekly') {
-      setMessage('Free plan only supports weekly scheduling. Please upgrade to use more frequent scheduling options.');
-      return;
-    }
-    
-    setIsLoading(true);
-    setMessage('');
-    
+  }, [user, isLoading, router]);
+
+  // Fetch categories
+  const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/scheduler', {
+      setLoadingCategories(true);
+      
+      const response = await fetch('/api/content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'create-recurring-schedule',
-          userId: user.id,
-          frequency,
-          category,
-          endDate: endDate || null
+          action: 'get-categories'
         }),
       });
       
       const data = await response.json();
       
-      if (data.success) {
-        setMessage('Schedule created successfully!');
-        
-        // Add the new schedule to the list
-        setSchedules([
-          ...schedules,
-          {
-            scheduleId: data.scheduleId,
-            category,
-            frequency,
-            nextGenerationDate: data.metadata.nextGenerationDate,
-            status: 'active',
-            createdAt: data.metadata.createdAt,
-            endDate: data.metadata.endDate
-          }
-        ]);
-        
-        // Reset form
-        setFrequency('weekly');
-        setCategory('technology');
-        setEndDate('');
-      } else {
-        setMessage(`Error: ${data.error}`);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch categories');
       }
-    } catch (error) {
-      console.error('Error creating schedule:', error);
-      setMessage('An error occurred while creating the schedule');
+      
+      setCategories(data.categories);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      setError(err.message);
     } finally {
-      setIsLoading(false);
+      setLoadingCategories(false);
     }
   };
-  
-  // Handle schedule cancellation
-  const handleCancelSchedule = async (scheduleId) => {
-    if (!user?.id) {
-      setMessage('You must be logged in to cancel a schedule');
+
+  // Fetch trending topics
+  const fetchTrendingTopics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'get-trending-topics',
+          category,
+          limit: 10
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch trending topics');
+      }
+      
+      setTopics(data.topics);
+    } catch (err) {
+      console.error('Error fetching trending topics:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch scheduled topics
+  const fetchScheduledTopics = async () => {
+    try {
+      setLoadingScheduled(true);
+      
+      const response = await fetch('/api/scheduler', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'get-scheduled-topics',
+          userId: user.id
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch scheduled topics');
+      }
+      
+      setScheduledTopics(data.topics);
+    } catch (err) {
+      console.error('Error fetching scheduled topics:', err);
+      // Don't set error for this one, as it's not critical
+    } finally {
+      setLoadingScheduled(false);
+    }
+  };
+
+  // Schedule a topic
+  const scheduleTopic = async (topic) => {
+    try {
+      setError(null);
+      
+      // Check if user has reached their limit
+      if (scheduledTopics.length >= (subscription?.limits?.videosPerMonth || 3)) {
+        throw new Error('You have reached your monthly limit for scheduled videos. Please upgrade your plan to schedule more videos.');
+      }
+      
+      const response = await fetch('/api/scheduler', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'schedule-topic',
+          userId: user.id,
+          topic: topic.title,
+          category: topic.category || category,
+          frequency,
+          metadata: {
+            trend_score: topic.trend_score,
+            potential_views: topic.potential_views,
+            monetization_score: topic.monetization_score
+          }
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to schedule topic');
+      }
+      
+      // Refresh scheduled topics
+      fetchScheduledTopics();
+      
+      // Show success message
+      alert(`Topic "${topic.title}" scheduled successfully!`);
+    } catch (err) {
+      console.error('Error scheduling topic:', err);
+      setError(err.message);
+    }
+  };
+
+  // Generate new trending topics
+  const generateTrendingTopics = async () => {
+    try {
+      setGenerating(true);
+      setError(null);
+      
+      const response = await fetch('/api/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'analyze-trends',
+          category,
+          userId: user.id
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to generate trending topics');
+      }
+      
+      setTopics(data.topics);
+    } catch (err) {
+      console.error('Error generating trending topics:', err);
+      setError(err.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Delete a scheduled topic
+  const deleteScheduledTopic = async (topicId) => {
+    if (!confirm('Are you sure you want to delete this scheduled topic?')) {
       return;
     }
     
@@ -167,271 +216,317 @@ const TopicScheduler = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'cancel-recurring-schedule',
+          action: 'delete-scheduled-topic',
           userId: user.id,
-          scheduleId
+          topicId
         }),
       });
       
       const data = await response.json();
       
-      if (data.success) {
-        // Update the schedule status in the list
-        setSchedules(
-          schedules.map(schedule => 
-            schedule.scheduleId === scheduleId 
-              ? { ...schedule, status: 'cancelled' } 
-              : schedule
-          )
-        );
-        
-        setMessage('Schedule cancelled successfully!');
-      } else {
-        setMessage(`Error: ${data.error}`);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to delete scheduled topic');
       }
-    } catch (error) {
-      console.error('Error cancelling schedule:', error);
-      setMessage('An error occurred while cancelling the schedule');
+      
+      // Refresh scheduled topics
+      fetchScheduledTopics();
+    } catch (err) {
+      console.error('Error deleting scheduled topic:', err);
+      setError(err.message);
     }
   };
-  
-  // Format frequency for display
-  const formatFrequency = (freq) => {
-    switch (freq) {
-      case 'daily':
-        return 'Daily';
-      case 'every3days':
-        return 'Every 3 Days';
-      case 'weekly':
-        return 'Weekly';
-      case 'biweekly':
-        return 'Bi-Weekly';
-      case 'monthly':
-        return 'Monthly';
-      default:
-        return freq;
-    }
-  };
-  
-  // Format date for display
+
+  // Format date
   const formatDate = (dateString) => {
-    if (!dateString) return 'No end date';
-    
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
-  
+
+  // Get available frequencies based on subscription
+  const getAvailableFrequencies = () => {
+    const frequencies = subscription?.limits?.schedulingFrequency || ['weekly'];
+    
+    const frequencyOptions = {
+      daily: 'Daily',
+      every3days: 'Every 3 Days',
+      weekly: 'Weekly',
+      biweekly: 'Bi-Weekly',
+      monthly: 'Monthly'
+    };
+    
+    return frequencies.map(freq => ({
+      value: freq,
+      label: frequencyOptions[freq] || freq
+    }));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white">
+        <DashboardHeader />
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mx-auto"></div>
+              <p className="mt-4 text-gray-400">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <DashboardHeader />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto p-6">
         <h1 className="text-3xl font-bold mb-8">Topic Scheduler</h1>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Create Schedule Form */}
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6">Create Automated Schedule</h2>
-            
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Content Category</label>
-                {isLoadingCategories ? (
-                  <div className="animate-pulse h-10 bg-gray-700 rounded"></div>
-                ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg mb-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                <h2 className="text-xl font-semibold">Trending Topics</h2>
+                
+                <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mt-2 md:mt-0">
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
+                    className="px-3 py-1 bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    disabled={loading || loadingCategories || generating}
                   >
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    {loadingCategories ? (
+                      <option>Loading...</option>
+                    ) : (
+                      categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  
+                  <button
+                    onClick={() => fetchTrendingTopics()}
+                    disabled={loading || generating}
+                    className={`px-3 py-1 rounded-md transition-colors ${
+                      loading || generating
+                        ? 'bg-gray-600 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                  >
+                    {loading ? 'Loading...' : 'Refresh'}
+                  </button>
+                  
+                  <button
+                    onClick={() => generateTrendingTopics()}
+                    disabled={generating || loading}
+                    className={`px-3 py-1 rounded-md transition-colors ${
+                      generating || loading
+                        ? 'bg-gray-600 cursor-not-allowed'
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}
+                  >
+                    {generating ? 'Analyzing...' : 'Analyze New Trends'}
+                  </button>
+                </div>
+              </div>
+              
+              {error && (
+                <div className="bg-red-900 text-white p-4 rounded-md mb-6">
+                  {error}
+                </div>
+              )}
+              
+              {loading || generating ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-400">
+                      {generating ? 'Analyzing trends...' : 'Loading trending topics...'}
+                    </p>
+                  </div>
+                </div>
+              ) : topics.length === 0 ? (
+                <div className="bg-gray-700 rounded-lg p-6 text-center">
+                  <p className="text-gray-400 mb-4">No trending topics found for this category.</p>
+                  <button
+                    onClick={() => generateTrendingTopics()}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-md transition-colors"
+                  >
+                    Generate Trending Topics
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3">Topic</th>
+                        <th className="px-6 py-3">Trend Score</th>
+                        <th className="px-6 py-3">Potential Views</th>
+                        <th className="px-6 py-3">Monetization</th>
+                        <th className="px-6 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topics.map((topic, index) => (
+                        <tr key={index} className="border-b border-gray-700">
+                          <td className="px-6 py-4">{topic.title}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <div className="w-16 bg-gray-600 rounded-full h-2.5 mr-2">
+                                <div 
+                                  className="bg-green-600 h-2.5 rounded-full" 
+                                  style={{ width: `${topic.trend_score * 10}%` }}
+                                ></div>
+                              </div>
+                              <span>{topic.trend_score}/10</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">{topic.potential_views}K</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <div className="w-16 bg-gray-600 rounded-full h-2.5 mr-2">
+                                <div 
+                                  className="bg-yellow-500 h-2.5 rounded-full" 
+                                  style={{ width: `${topic.monetization_score * 10}%` }}
+                                ></div>
+                              </div>
+                              <span>{topic.monetization_score}/10</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => scheduleTopic(topic)}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors text-xs"
+                            >
+                              Schedule
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+              <h2 className="text-xl font-semibold mb-6">Scheduled Content</h2>
+              
+              {loadingScheduled ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mx-auto"></div>
+                    <p className="mt-2 text-gray-400">Loading scheduled content...</p>
+                  </div>
+                </div>
+              ) : scheduledTopics.length === 0 ? (
+                <div className="bg-gray-700 rounded-lg p-6 text-center">
+                  <p className="text-gray-400">You haven't scheduled any content yet.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3">Topic</th>
+                        <th className="px-6 py-3">Category</th>
+                        <th className="px-6 py-3">Frequency</th>
+                        <th className="px-6 py-3">Next Scheduled</th>
+                        <th className="px-6 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scheduledTopics.map((topic) => (
+                        <tr key={topic.id} className="border-b border-gray-700">
+                          <td className="px-6 py-4">{topic.topic}</td>
+                          <td className="px-6 py-4">{topic.category}</td>
+                          <td className="px-6 py-4">{topic.frequency}</td>
+                          <td className="px-6 py-4">{formatDate(topic.next_scheduled)}</td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => deleteScheduledTopic(topic.id)}
+                              className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-md transition-colors text-xs"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div>
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg mb-6">
+              <h2 className="text-xl font-semibold mb-4">Schedule Settings</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Frequency</label>
+                  <select
+                    value={frequency}
+                    onChange={(e) => setFrequency(e.target.value)}
+                    className="w-full px-4 py-2 bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    {getAvailableFrequencies().map((freq) => (
+                      <option key={freq.value} value={freq.value}>
+                        {freq.label}
                       </option>
                     ))}
                   </select>
-                )}
-                <p className="text-sm text-gray-400 mt-1">
-                  Select the category of content you want to generate
-                </p>
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Frequency</label>
-                <select
-                  value={frequency}
-                  onChange={(e) => setFrequency(e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                >
-                  {/* Filter frequency options based on subscription plan */}
-                  {subscription && subscription.limits && subscription.limits.schedulingFrequency.includes('daily') && (
-                    <option value="daily">Daily</option>
-                  )}
-                  {subscription && subscription.limits && subscription.limits.schedulingFrequency.includes('every3days') && (
-                    <option value="every3days">Every 3 Days</option>
-                  )}
-                  <option value="weekly">Weekly</option>
-                  {subscription && subscription.limits && subscription.limits.schedulingFrequency.includes('biweekly') && (
-                    <option value="biweekly">Bi-Weekly</option>
-                  )}
-                  {subscription && subscription.limits && subscription.limits.schedulingFrequency.includes('monthly') && (
-                    <option value="monthly">Monthly</option>
-                  )}
-                </select>
-                <p className="text-sm text-gray-400 mt-1">
-                  How often should new videos be generated and scheduled
-                  {subscription && subscription.planId === 'free' && (
-                    <span className="block mt-1 text-yellow-400">
-                      Upgrade to Pro or Enterprise for more scheduling options
-                    </span>
-                  )}
-                </p>
-              </div>
-              
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">End Date (Optional)</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  min={new Date().toISOString().split('T')[0]}
-                />
-                <p className="text-sm text-gray-400 mt-1">
-                  Leave blank for indefinite scheduling
-                </p>
-              </div>
-              
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-300 flex items-center justify-center"
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Creating Schedule...
-                  </>
-                ) : (
-                  'Create Automated Schedule'
-                )}
-              </button>
-              
-              {message && (
-                <div className={`mt-4 p-3 rounded-md ${message.includes('Error') ? 'bg-red-900/50 text-red-200' : 'bg-green-900/50 text-green-200'}`}>
-                  {message}
+                  <p className="mt-1 text-xs text-gray-400">
+                    How often you want to publish videos
+                  </p>
                 </div>
-              )}
-            </form>
-          </div>
-          
-          {/* Active Schedules */}
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6">Active Schedules</h2>
-            
-            {isLoadingSchedules ? (
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse bg-gray-700 h-24 rounded-md"></div>
-                ))}
-              </div>
-            ) : schedules.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
-                <svg className="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p className="mt-2">No active schedules</p>
-                <p className="text-sm mt-1">Create a schedule to start automating your content</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {schedules.map((schedule) => (
-                  <div key={schedule.scheduleId} className="bg-gray-700 rounded-md p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-lg capitalize">{schedule.category}</h3>
-                        <p className="text-gray-400 text-sm">
-                          {formatFrequency(schedule.frequency)} • Next: {formatDate(schedule.nextGenerationDate)}
-                        </p>
-                        {schedule.endDate && (
-                          <p className="text-gray-400 text-sm">
-                            Ends: {formatDate(schedule.endDate)}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          schedule.status === 'active' ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'
-                        }`}>
-                          {schedule.status === 'active' ? 'Active' : 'Cancelled'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {schedule.status === 'active' && (
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          onClick={() => handleCancelSchedule(schedule.scheduleId)}
-                          className="text-red-400 hover:text-red-300 text-sm font-medium"
-                        >
-                          Cancel Schedule
-                        </button>
-                      </div>
-                    )}
+                
+                <div>
+                  <p className="text-sm text-gray-400">Scheduled Videos</p>
+                  <p className="font-medium">{scheduledTopics.length} / {subscription?.limits?.videosPerMonth || 3}</p>
+                  <div className="w-full bg-gray-700 rounded-full h-2.5 mt-1">
+                    <div 
+                      className="bg-blue-600 h-2.5 rounded-full" 
+                      style={{ width: `${(scheduledTopics.length / (subscription?.limits?.videosPerMonth || 3)) * 100}%` }}
+                    ></div>
                   </div>
-                ))}
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Information Section */}
-        <div className="mt-8 bg-gray-800 rounded-lg p-6 shadow-lg">
-          <h2 className="text-2xl font-semibold mb-4">How Automated Scheduling Works</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-            <div className="bg-gray-700 p-4 rounded-md">
-              <div className="text-green-400 text-xl font-bold mb-2">1. Create Schedule</div>
-              <p className="text-gray-300">
-                Select a content category and frequency. Our system will automatically generate trending video topics in your chosen category.
-              </p>
             </div>
             
-            <div className="bg-gray-700 p-4 rounded-md">
-              <div className="text-green-400 text-xl font-bold mb-2">2. AI Content Creation</div>
-              <p className="text-gray-300">
-                Our AI will create high-quality scripts, generate voiceovers, and produce complete videos based on trending topics.
-              </p>
-            </div>
-            
-            <div className="bg-gray-700 p-4 rounded-md">
-              <div className="text-green-400 text-xl font-bold mb-2">3. YouTube Upload</div>
-              <p className="text-gray-300">
-                Videos will be automatically uploaded to your YouTube channel at optimal times for maximum engagement.
-              </p>
-            </div>
-          </div>
-          
-          <div className="mt-6 bg-gray-700 p-4 rounded-md border border-yellow-600/30">
-            <div className="flex items-start">
-              <svg className="h-6 w-6 text-yellow-500 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
-                <h3 className="font-medium text-yellow-400">Important Note</h3>
-                <p className="text-gray-300 mt-1">
-                  You must connect your YouTube API key in the Account Settings to enable automatic uploads. 
-                  The system will generate and store videos even without an API key, but uploads will be paused until a valid key is provided.
-                </p>
+            <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">Your Plan</h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-400">Current Plan</p>
+                  <p className="font-medium">{subscription?.planName || 'Free Trial'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Videos Per Month</p>
+                  <p className="font-medium">{subscription?.limits?.videosPerMonth || 3} videos</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Available Frequencies</p>
+                  <p className="font-medium">
+                    {getAvailableFrequencies().map(f => f.label).join(', ')}
+                  </p>
+                </div>
+                <button 
+                  className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors w-full"
+                  onClick={() => router.push('/pricing')}
+                >
+                  {subscription?.planId === 'free' ? 'Upgrade Plan' : 'Manage Subscription'}
+                </button>
               </div>
             </div>
           </div>
@@ -439,6 +534,4 @@ const TopicScheduler = () => {
       </div>
     </div>
   );
-};
-
-export default withAuth(TopicScheduler);
+}

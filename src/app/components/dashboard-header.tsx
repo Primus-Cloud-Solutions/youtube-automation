@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { useAuth } from '../context/auth-context';
+import { useAuth } from '../../lib/auth-context';
 import Link from 'next/link';
 
 export default function DashboardHeader() {
-  const { user, signOut, subscription } = useAuth();
+  const { user, signOut } = useAuth();
 
   const handleSignOut = async () => {
     const result = await signOut();
@@ -44,23 +44,6 @@ export default function DashboardHeader() {
           </div>
           
           <div className="flex items-center space-x-4">
-            {/* Subscription Badge */}
-            {subscription && (
-              <div className="hidden md:block">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  subscription.planId === 'enterprise' 
-                    ? 'bg-purple-900/50 text-purple-300 border border-purple-700' 
-                    : subscription.planId === 'pro' 
-                    ? 'bg-blue-900/50 text-blue-300 border border-blue-700' 
-                    : subscription.planId === 'basic' 
-                    ? 'bg-green-900/50 text-green-300 border border-green-700'
-                    : 'bg-gray-800 text-gray-300 border border-gray-700'
-                }`}>
-                  {subscription.planName}
-                </span>
-              </div>
-            )}
-            
             <div className="relative group">
               <button className="flex items-center space-x-2 text-sm focus:outline-none">
                 <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white">

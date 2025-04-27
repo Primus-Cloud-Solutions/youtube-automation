@@ -1,194 +1,225 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/auth-context';
-import { withAuth } from '../../utils/with-auth';
-import DashboardHeader from '../../components/dashboard-header';
+import { useAuth } from '../context/auth-context';
+import { useRouter } from 'next/navigation';
+import DashboardHeader from '../components/dashboard-header';
 
-const StorageManager = () => {
-  const { user } = useAuth();
+export default function StoragePage() {
+  const { user, isLoading, subscription } = useAuth();
+  const router = useRouter();
   const [files, setFiles] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [storageUsage, setStorageUsage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [storageUsage, setStorageUsage] = useState({ bytes: 0, megabytes: "0", gigabytes: "0", fileCount: 0 });
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
-  
-  // Fetch user's files and storage usage on component mount
+
+  // Redirect to login if not authenticated
   useEffect(() => {
-    if (!user?.id) return;
-    
-    const fetchStorageData = async () => {
-      try {
-        // Fetch storage usage
-        const usageResponse = await fetch('/api/storage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'get-storage-usage',
-            userId: user.id
-          }),
-        });
-        
-        const usageData = await usageResponse.json();
-        
-        if (usageData.success) {
-          setStorageUsage(usageData.usage);
-        } else {
-          console.error('Error fetching storage usage:', usageData.error);
-        }
-        
-        // Fetch file list - include videos, audio, and thumbnails
-        const filesResponse = await fetch('/api/storage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'list-files',
-            prefix: `users/${user.id}/`
-          }),
-        });
-        
-        const filesData = await filesResponse.json();
-        
-        if (filesData.success) {
-          // Filter out any files that might be in the process of being deleted
-          // (after YouTube upload)
-          const activeFiles = filesData.objects.filter(file => 
-            !file.key.includes('_deleting_')
-          );
-          setFiles(activeFiles);
-        } else {
-          console.error('Error fetching files:', filesData.error);
-        }
-      } catch (error) {
-        console.error('Error fetching storage data:', error);
-      } finally {
-        setIsLoading(false);
+    if (!isLoading && !user) {
+      router.push('/login');
+    } else if (user) {
+      fetchFiles();
+      fetchStorageUsage();
+    }
+  }, [user, isLoading, router]);
+
+  // Fetch files from S3
+  const fetchFiles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/storage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'list-files',
+          prefix: `users/${user.id}/`
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch files');
       }
-    };
-    
-    fetchStorageData();
-  }, [user]);
-  
-  // Handle file selection
-  const handleFileChange = (e) => {
-    if (e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
+      
+      // Group files by type
+      const groupedFiles = {
+        videos: [],
+        images: [],
+        audio: [],
+        other: []
+      };
+      
+      data.objects.forEach(file => {
+        const key = file.key;
+        const extension = key.split('.').pop().toLowerCase();
+        
+        if (['mp4', 'mov', 'avi', 'webm'].includes(extension)) {
+          groupedFiles.videos.push(file);
+        } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+          groupedFiles.images.push(file);
+        } else if (['mp3', 'wav', 'ogg', 'm4a'].includes(extension)) {
+          groupedFiles.audio.push(file);
+        } else {
+          groupedFiles.other.push(file);
+        }
+      });
+      
+      setFiles(groupedFiles);
+    } catch (err) {
+      console.error('Error fetching files:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
-  
+
+  // Fetch storage usage
+  const fetchStorageUsage = async () => {
+    try {
+      const response = await fetch('/api/storage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'get-storage-usage',
+          userId: user.id
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch storage usage');
+      }
+      
+      setStorageUsage(data.usage);
+    } catch (err) {
+      console.error('Error fetching storage usage:', err);
+    }
+  };
+
   // Handle file upload
-  const handleUpload = async () => {
-    if (!selectedFile || !user?.id) return;
-    
-    setIsUploading(true);
-    setUploadProgress(0);
-    setMessage('');
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
     
     try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      // Get file extension and type
+      const extension = file.name.split('.').pop().toLowerCase();
+      const contentType = file.type;
+      
+      // Determine file category
+      let category = 'other';
+      if (['mp4', 'mov', 'avi', 'webm'].includes(extension)) {
+        category = 'videos';
+      } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+        category = 'images';
+      } else if (['mp3', 'wav', 'ogg', 'm4a'].includes(extension)) {
+        category = 'audio';
+      }
+      
+      // Generate a unique key for the file
+      const timestamp = Date.now();
+      const key = `users/${user.id}/${category}/${timestamp}_${file.name}`;
+      
       // Get a pre-signed URL for upload
-      const urlResponse = await fetch('/api/storage', {
+      const response = await fetch('/api/storage', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           action: 'get-upload-url',
-          key: `users/${user.id}/uploads/${Date.now()}-${selectedFile.name}`,
-          fileType: selectedFile.type
+          key,
+          fileType: contentType
         }),
       });
       
-      const urlData = await urlResponse.json();
+      const data = await response.json();
       
-      if (!urlData.success) {
-        throw new Error(urlData.error || 'Failed to get upload URL');
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get upload URL');
       }
       
-      // Upload the file directly to S3 using the pre-signed URL
+      // Upload the file to S3
       const xhr = new XMLHttpRequest();
+      xhr.open('PUT', data.url);
+      xhr.setRequestHeader('Content-Type', contentType);
       
-      // Track upload progress
-      xhr.upload.addEventListener('progress', (event) => {
+      xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
-          const percentComplete = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(percentComplete);
+          const progress = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(progress);
         }
-      });
+      };
       
-      // Handle upload completion
-      xhr.addEventListener('load', async () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          setMessage('File uploaded successfully!');
-          
-          // Refresh file list and storage usage
-          const [filesResponse, usageResponse] = await Promise.all([
-            fetch('/api/storage', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                action: 'list-files',
-                prefix: `users/${user.id}/`
-              }),
-            }),
-            fetch('/api/storage', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                action: 'get-storage-usage',
-                userId: user.id
-              }),
-            })
-          ]);
-          
-          const filesData = await filesResponse.json();
-          const usageData = await usageResponse.json();
-          
-          if (filesData.success) {
-            setFiles(filesData.objects);
-          }
-          
-          if (usageData.success) {
-            setStorageUsage(usageData.usage);
-          }
-          
-          setSelectedFile(null);
+      xhr.onload = async () => {
+        if (xhr.status === 200) {
+          // Refresh files and storage usage
+          await fetchFiles();
+          await fetchStorageUsage();
+          setIsUploading(false);
         } else {
-          setMessage(`Upload failed: ${xhr.statusText}`);
+          throw new Error(`Upload failed with status ${xhr.status}`);
         }
-        
-        setIsUploading(false);
-      });
+      };
       
-      // Handle upload error
-      xhr.addEventListener('error', () => {
-        setMessage('Upload failed due to a network error');
-        setIsUploading(false);
-      });
+      xhr.onerror = () => {
+        throw new Error('Upload failed');
+      };
       
-      // Start the upload
-      xhr.open('PUT', urlData.url);
-      xhr.setRequestHeader('Content-Type', selectedFile.type);
-      xhr.send(selectedFile);
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      setMessage(`Error: ${error.message}`);
+      xhr.send(file);
+    } catch (err) {
+      console.error('Error uploading file:', err);
+      setError(err.message);
       setIsUploading(false);
     }
   };
-  
-  // Handle file deletion
-  const handleDelete = async (key) => {
-    if (!user?.id) return;
+
+  // Get download URL for a file
+  const getDownloadUrl = async (key) => {
+    try {
+      const response = await fetch('/api/storage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'get-download-url',
+          key
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get download URL');
+      }
+      
+      // Open the URL in a new tab
+      window.open(data.url, '_blank');
+    } catch (err) {
+      console.error('Error getting download URL:', err);
+      setError(err.message);
+    }
+  };
+
+  // Delete a file
+  const deleteFile = async (key) => {
+    if (!confirm('Are you sure you want to delete this file?')) {
+      return;
+    }
     
     try {
       const response = await fetch('/api/storage', {
@@ -204,69 +235,34 @@ const StorageManager = () => {
       
       const data = await response.json();
       
-      if (data.success) {
-        setMessage('File deleted successfully!');
-        
-        // Remove the file from the list
-        setFiles(files.filter(file => file.key !== key));
-        
-        // Update storage usage
-        const usageResponse = await fetch('/api/storage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'get-storage-usage',
-            userId: user.id
-          }),
-        });
-        
-        const usageData = await usageResponse.json();
-        
-        if (usageData.success) {
-          setStorageUsage(usageData.usage);
-        }
-      } else {
-        setMessage(`Error: ${data.error}`);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to delete file');
       }
-    } catch (error) {
-      console.error('Error deleting file:', error);
-      setMessage(`Error: ${error.message}`);
+      
+      // Refresh files and storage usage
+      await fetchFiles();
+      await fetchStorageUsage();
+    } catch (err) {
+      console.error('Error deleting file:', err);
+      setError(err.message);
     }
   };
-  
-  // Get a download URL for a file
-  const handleDownload = async (key) => {
-    if (!user?.id) return;
-    
+
+  // Upload to YouTube
+  const uploadToYouTube = async (key) => {
     try {
-      const response = await fetch('/api/storage', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'get-download-url',
-          key
-        }),
-      });
+      // Get file name without extension
+      const fileName = key.split('/').pop().split('.')[0];
       
-      const data = await response.json();
-      
-      if (data.success) {
-        // Open the download URL in a new tab
-        window.open(data.url, '_blank');
-      } else {
-        setMessage(`Error: ${data.error}`);
-      }
-    } catch (error) {
-      console.error('Error getting download URL:', error);
-      setMessage(`Error: ${error.message}`);
+      // Navigate to the video creation page with the file key
+      router.push(`/dashboard/manual-topics?videoKey=${encodeURIComponent(key)}&title=${encodeURIComponent(fileName)}`);
+    } catch (err) {
+      console.error('Error navigating to video creation:', err);
+      setError(err.message);
     }
   };
-  
-  // Format file size for display
+
+  // Format file size
   const formatFileSize = (bytes) => {
     if (bytes < 1024) {
       return `${bytes} B`;
@@ -278,311 +274,293 @@ const StorageManager = () => {
       return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
     }
   };
-  
-  // Format date for display
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+
+  // Format date
+  const formatDate = (date) => {
+    return new Date(date).toLocaleString();
   };
-  
-  // Get file type icon
-  const getFileTypeIcon = (key) => {
-    const extension = key.split('.').pop().toLowerCase();
-    
-    switch (extension) {
-      case 'mp4':
-      case 'mov':
-      case 'avi':
-      case 'webm':
-        return (
-          <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-        );
-      case 'mp3':
-      case 'wav':
-      case 'ogg':
-        return (
-          <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-          </svg>
-        );
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return (
-          <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        );
-      default:
-        return (
-          <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-        );
-    }
-  };
-  
+
+  // Calculate storage limit based on subscription
+  const storageLimit = subscription?.limits?.storageGB || 1;
+  const storageUsedPercentage = (parseFloat(storageUsage.gigabytes) / storageLimit) * 100;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white">
+        <DashboardHeader />
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mx-auto"></div>
+              <p className="mt-4 text-gray-400">Loading your storage...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <DashboardHeader />
       
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Storage Manager</h1>
+      <div className="container mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-8">Storage</h1>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Storage Usage */}
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6">Storage Usage</h2>
-            
-            {isLoading ? (
-              <div className="animate-pulse space-y-4">
-                <div className="h-4 bg-gray-700 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-700 rounded w-1/2"></div>
-                <div className="h-32 bg-gray-700 rounded"></div>
-              </div>
-            ) : storageUsage ? (
-              <div>
-                <div className="mb-4">
-                  <p className="text-gray-400 text-sm">Total Storage Used</p>
-                  <p className="text-2xl font-bold text-green-400">{storageUsage.gigabytes} GB</p>
-                </div>
-                
-                <div className="mb-4">
-                  <p className="text-gray-400 text-sm">Files Stored</p>
-                  <p className="text-2xl font-bold text-green-400">{storageUsage.fileCount}</p>
-                </div>
-                
-                <div className="mt-6">
-                  <div className="relative pt-1">
-                    <div className="flex mb-2 items-center justify-between">
-                      <div>
-                        <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-green-200 bg-green-900">
-                          Storage Quota
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xs font-semibold inline-block text-green-200">
-                          {Math.min(Math.round((parseFloat(storageUsage.gigabytes) / 10) * 100), 100)}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-700">
-                      <div 
-                        style={{ width: `${Math.min(Math.round((parseFloat(storageUsage.gigabytes) / 10) * 100), 100)}%` }} 
-                        className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500"
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-400">10 GB total storage available</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-400">No storage data available</p>
-            )}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-gray-800 rounded-lg p-6 shadow-lg lg:col-span-3">
+            <h2 className="text-xl font-semibold mb-4">Storage Usage</h2>
+            <div className="mb-2 flex justify-between">
+              <span>{storageUsage.megabytes} MB used</span>
+              <span>{storageLimit} GB limit</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2.5">
+              <div 
+                className={`h-2.5 rounded-full ${storageUsedPercentage > 90 ? 'bg-red-600' : 'bg-green-600'}`} 
+                style={{ width: `${Math.min(storageUsedPercentage, 100)}%` }}
+              ></div>
+            </div>
+            <div className="mt-4 text-sm text-gray-400">
+              {storageUsage.fileCount} files stored
+            </div>
           </div>
           
-          {/* Upload File */}
           <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6">Upload File</h2>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Select File</label>
+            <h2 className="text-xl font-semibold mb-4">Upload File</h2>
+            <div className="space-y-4">
               <input
                 type="file"
-                onChange={handleFileChange}
-                className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600"
-                disabled={isUploading}
+                id="file-upload"
+                className="hidden"
+                onChange={handleFileUpload}
               />
-            </div>
-            
-            {selectedFile && (
-              <div className="mb-4 p-3 bg-gray-700 rounded-md">
-                <p className="text-sm font-medium">{selectedFile.name}</p>
-                <p className="text-xs text-gray-400">{formatFileSize(selectedFile.size)}</p>
-              </div>
-            )}
-            
-            {isUploading && (
-              <div className="mb-4">
-                <div className="relative pt-1">
-                  <div className="flex mb-2 items-center justify-between">
-                    <div>
-                      <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-green-200 bg-green-900">
-                        Uploading
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs font-semibold inline-block text-green-200">
-                        {uploadProgress}%
-                      </span>
-                    </div>
+              <label
+                htmlFor="file-upload"
+                className="block w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors text-center cursor-pointer"
+              >
+                Select File
+              </label>
+              
+              {isUploading && (
+                <div className="mt-4">
+                  <div className="mb-2 flex justify-between">
+                    <span>Uploading...</span>
+                    <span>{uploadProgress}%</span>
                   </div>
-                  <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-700">
+                  <div className="w-full bg-gray-700 rounded-full h-2.5">
                     <div 
-                      style={{ width: `${uploadProgress}%` }} 
-                      className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500"
+                      className="h-2.5 rounded-full bg-blue-600" 
+                      style={{ width: `${uploadProgress}%` }}
                     ></div>
                   </div>
                 </div>
-              </div>
-            )}
-            
-            <button
-              onClick={handleUpload}
-              disabled={!selectedFile || isUploading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isUploading ? 'Uploading...' : 'Upload File'}
-            </button>
-            
-            {message && (
-              <div className={`mt-4 p-3 rounded-md ${message.includes('Error') ? 'bg-red-900/50 text-red-200' : 'bg-green-900/50 text-green-200'}`}>
-                {message}
-              </div>
-            )}
-          </div>
-          
-          {/* Storage Info */}
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6">Storage Information</h2>
-            
-            <div className="space-y-4">
-              <div className="p-4 bg-gray-700 rounded-md">
-                <h3 className="font-medium mb-2">Supported File Types</h3>
-                <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                  <li>Videos: MP4, MOV, AVI, WEBM</li>
-                  <li>Audio: MP3, WAV, OGG</li>
-                  <li>Images: JPG, PNG, GIF</li>
-                  <li>Documents: PDF, DOCX, TXT</li>
-                </ul>
-              </div>
-              
-              <div className="p-4 bg-gray-700 rounded-md">
-                <h3 className="font-medium mb-2">File Size Limits</h3>
-                <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                  <li>Videos: Up to 2 GB</li>
-                  <li>Audio: Up to 500 MB</li>
-                  <li>Images: Up to 50 MB</li>
-                  <li>Documents: Up to 100 MB</li>
-                </ul>
-              </div>
-              
-              <div className="p-4 bg-gray-700 rounded-md">
-                <h3 className="font-medium mb-2">Storage Tips</h3>
-                <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                  <li>Compress videos before uploading</li>
-                  <li>Use MP4 format for best compatibility</li>
-                  <li>Delete unused files to free up space</li>
-                  <li>Organize files with consistent naming</li>
-                </ul>
-              </div>
+              )}
             </div>
           </div>
         </div>
         
-        {/* File List */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-semibold mb-6">Your Files</h2>
-          
-          {isLoading ? (
-            <div className="animate-pulse space-y-4">
-              <div className="h-12 bg-gray-800 rounded"></div>
-              <div className="h-12 bg-gray-800 rounded"></div>
-              <div className="h-12 bg-gray-800 rounded"></div>
+        {error && (
+          <div className="bg-red-900 text-white p-4 rounded-md mb-6">
+            {error}
+          </div>
+        )}
+        
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mx-auto"></div>
+              <p className="mt-4 text-gray-400">Loading your files...</p>
             </div>
-          ) : files.length > 0 ? (
-            <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-700">
-                  <thead className="bg-gray-700">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        File
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Size
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Uploaded
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-gray-800 divide-y divide-gray-700">
-                    {files.map((file, index) => {
-                      // Extract filename from key
-                      const filename = file.key.split('/').pop();
-                      
-                      return (
-                        <tr key={index}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0">
-                                {getFileTypeIcon(file.key)}
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-white">{filename}</div>
-                                <div className="text-xs text-gray-400">{file.key}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-300">{formatFileSize(file.size)}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-300">{formatDate(file.lastModified)}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleDownload(file.key)}
-                                className="text-blue-400 hover:text-blue-300 transition duration-300"
-                              >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => handleDelete(file.key)}
-                                className="text-red-400 hover:text-red-300 transition duration-300"
-                              >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            </div>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Videos */}
+            {files.videos && files.videos.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Videos</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase bg-gray-800">
+                      <tr>
+                        <th className="px-6 py-3">Name</th>
+                        <th className="px-6 py-3">Size</th>
+                        <th className="px-6 py-3">Date</th>
+                        <th className="px-6 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {files.videos.map((file) => (
+                        <tr key={file.key} className="border-b border-gray-700">
+                          <td className="px-6 py-4">{file.key.split('/').pop()}</td>
+                          <td className="px-6 py-4">{formatFileSize(file.size)}</td>
+                          <td className="px-6 py-4">{formatDate(file.lastModified)}</td>
+                          <td className="px-6 py-4 flex space-x-2">
+                            <button 
+                              onClick={() => getDownloadUrl(file.key)}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors text-xs"
+                            >
+                              Download
+                            </button>
+                            <button 
+                              onClick={() => uploadToYouTube(file.key)}
+                              className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-md transition-colors text-xs"
+                            >
+                              Upload to YouTube
+                            </button>
+                            <button 
+                              onClick={() => deleteFile(file.key)}
+                              className="px-3 py-1 bg-gray-600 hover:bg-gray-700 rounded-md transition-colors text-xs"
+                            >
+                              Delete
+                            </button>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="bg-gray-800 rounded-lg p-8 text-center">
-              <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-              </svg>
-              <h3 className="text-xl font-medium text-gray-300 mb-2">No files uploaded yet</h3>
-              <p className="text-gray-400">Upload your first file to get started</p>
-            </div>
-          )}
-        </div>
+            )}
+            
+            {/* Images */}
+            {files.images && files.images.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Images</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {files.images.map((file) => (
+                    <div key={file.key} className="bg-gray-800 rounded-lg overflow-hidden">
+                      <div className="aspect-w-16 aspect-h-9 bg-gray-700">
+                        <img 
+                          src={`/api/storage?action=get-download-url&key=${encodeURIComponent(file.key)}`}
+                          alt={file.key.split('/').pop()}
+                          className="object-cover w-full h-full"
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/150?text=Image';
+                          }}
+                        />
+                      </div>
+                      <div className="p-2">
+                        <p className="text-xs truncate">{file.key.split('/').pop()}</p>
+                        <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
+                        <div className="flex space-x-1 mt-2">
+                          <button 
+                            onClick={() => getDownloadUrl(file.key)}
+                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors text-xs flex-1"
+                          >
+                            Download
+                          </button>
+                          <button 
+                            onClick={() => deleteFile(file.key)}
+                            className="px-2 py-1 bg-gray-600 hover:bg-gray-700 rounded-md transition-colors text-xs flex-1"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Audio */}
+            {files.audio && files.audio.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Audio</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase bg-gray-800">
+                      <tr>
+                        <th className="px-6 py-3">Name</th>
+                        <th className="px-6 py-3">Size</th>
+                        <th className="px-6 py-3">Date</th>
+                        <th className="px-6 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {files.audio.map((file) => (
+                        <tr key={file.key} className="border-b border-gray-700">
+                          <td className="px-6 py-4">{file.key.split('/').pop()}</td>
+                          <td className="px-6 py-4">{formatFileSize(file.size)}</td>
+                          <td className="px-6 py-4">{formatDate(file.lastModified)}</td>
+                          <td className="px-6 py-4 flex space-x-2">
+                            <button 
+                              onClick={() => getDownloadUrl(file.key)}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors text-xs"
+                            >
+                              Download
+                            </button>
+                            <button 
+                              onClick={() => deleteFile(file.key)}
+                              className="px-3 py-1 bg-gray-600 hover:bg-gray-700 rounded-md transition-colors text-xs"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            
+            {/* Other Files */}
+            {files.other && files.other.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Other Files</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase bg-gray-800">
+                      <tr>
+                        <th className="px-6 py-3">Name</th>
+                        <th className="px-6 py-3">Size</th>
+                        <th className="px-6 py-3">Date</th>
+                        <th className="px-6 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {files.other.map((file) => (
+                        <tr key={file.key} className="border-b border-gray-700">
+                          <td className="px-6 py-4">{file.key.split('/').pop()}</td>
+                          <td className="px-6 py-4">{formatFileSize(file.size)}</td>
+                          <td className="px-6 py-4">{formatDate(file.lastModified)}</td>
+                          <td className="px-6 py-4 flex space-x-2">
+                            <button 
+                              onClick={() => getDownloadUrl(file.key)}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors text-xs"
+                            >
+                              Download
+                            </button>
+                            <button 
+                              onClick={() => deleteFile(file.key)}
+                              className="px-3 py-1 bg-gray-600 hover:bg-gray-700 rounded-md transition-colors text-xs"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            
+            {Object.values(files).every(arr => arr.length === 0) && (
+              <div className="bg-gray-800 rounded-lg p-6 shadow-lg text-center">
+                <p className="text-gray-400 mb-4">You haven't uploaded any files yet.</p>
+                <label
+                  htmlFor="file-upload"
+                  className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors cursor-pointer"
+                >
+                  Upload Your First File
+                </label>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default withAuth(StorageManager);
+}

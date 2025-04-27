@@ -10,6 +10,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [subscription, setSubscription] = useState(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const router = useRouter();
 
   // Initialize auth state
@@ -22,13 +24,17 @@ export function AuthProvider({ children }) {
         
         if (data.success && data.user) {
           setUser(data.user);
+          // Fetch subscription data after user is authenticated
+          fetchSubscription(data.user.id);
         } else {
           setUser(null);
+          setSubscription(null);
         }
       } catch (err) {
         console.error('Session check error:', err);
         setError('Failed to check authentication status');
         setUser(null);
+        setSubscription(null);
       } finally {
         setLoading(false);
       }
@@ -36,6 +42,66 @@ export function AuthProvider({ children }) {
     
     checkSession();
   }, []);
+  
+  // Fetch subscription data
+  const fetchSubscription = async (userId) => {
+    if (!userId) return;
+    
+    try {
+      setSubscriptionLoading(true);
+      const response = await fetch('/api/payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'get-subscription',
+          userId
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.subscription) {
+        setSubscription(data.subscription);
+      } else {
+        // If no subscription is found, set to free trial by default
+        setSubscription({
+          id: 'free_trial',
+          status: 'active',
+          planId: 'free',
+          planName: 'Free Trial',
+          limits: {
+            videosPerMonth: 3,
+            storageGB: 1,
+            schedulingFrequency: ['weekly'],
+            voiceOptions: 2,
+            analyticsRetention: 7,
+            trialDays: 7
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Subscription fetch error:', err);
+      // Set default free trial on error
+      setSubscription({
+        id: 'free_trial',
+        status: 'active',
+        planId: 'free',
+        planName: 'Free Trial',
+        limits: {
+          videosPerMonth: 3,
+          storageGB: 1,
+          schedulingFrequency: ['weekly'],
+          voiceOptions: 2,
+          analyticsRetention: 7,
+          trialDays: 7
+        }
+      });
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
   
   // Sign up function
   const signUp = async (email, password, fullName) => {
@@ -63,6 +129,12 @@ export function AuthProvider({ children }) {
       }
       
       setUser(data.user);
+      
+      // Start free trial for new users
+      if (data.user && data.user.id) {
+        await startFreeTrial(data.user.id, email);
+      }
+      
       router.push('/dashboard');
       return { success: true, user: data.user };
     } catch (err) {
@@ -71,6 +143,43 @@ export function AuthProvider({ children }) {
       return { success: false, error: err.message };
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Start free trial
+  const startFreeTrial = async (userId, email) => {
+    try {
+      const response = await fetch('/api/payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'start-trial',
+          userId,
+          email,
+          trialDays: 7
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.plan) {
+        setSubscription({
+          id: 'free_trial',
+          status: 'trialing',
+          planId: 'free',
+          planName: 'Free Trial',
+          trialEndDate: data.trialEndDate,
+          limits: data.plan.limits
+        });
+        return { success: true };
+      } else {
+        throw new Error(data.error || 'Failed to start free trial');
+      }
+    } catch (err) {
+      console.error('Free trial error:', err);
+      return { success: false, error: err.message };
     }
   };
   
@@ -99,6 +208,12 @@ export function AuthProvider({ children }) {
       }
       
       setUser(data.user);
+      
+      // Fetch subscription after login
+      if (data.user && data.user.id) {
+        fetchSubscription(data.user.id);
+      }
+      
       router.push('/dashboard');
       return { success: true, user: data.user };
     } catch (err) {
@@ -144,74 +259,6 @@ export function AuthProvider({ children }) {
     }
   };
   
-  // Sign in with GitHub
-  const signInWithGitHub = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'github'
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to sign in with GitHub');
-      }
-      
-      // Redirect to GitHub OAuth URL
-      window.location.href = data.url;
-      return { success: true };
-    } catch (err) {
-      console.error('GitHub sign in error:', err);
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Sign in with demo account
-  const signInWithDemo = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'demo'
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to sign in with demo account');
-      }
-      
-      setUser(data.user);
-      router.push('/dashboard');
-      return { success: true, user: data.user };
-    } catch (err) {
-      console.error('Demo sign in error:', err);
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
-    }
-  };
-  
   // Sign out function
   const signOut = async () => {
     try {
@@ -235,6 +282,7 @@ export function AuthProvider({ children }) {
       }
       
       setUser(null);
+      setSubscription(null);
       router.push('/login');
       return { success: true };
     } catch (err) {
@@ -246,71 +294,67 @@ export function AuthProvider({ children }) {
     }
   };
   
-  // State for subscription information
-  const [subscription, setSubscription] = useState(null);
-  const [loadingSubscription, setLoadingSubscription] = useState(false);
-
-  // Fetch subscription information when user is logged in
-  useEffect(() => {
-    const fetchSubscription = async () => {
-      if (!user || !user.id) return;
-      
-      try {
-        setLoadingSubscription(true);
-        const response = await fetch('/api/payment', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'get-subscription',
-            userId: user.id
-          }),
-        });
-        
-        const data = await response.json();
-        
-        if (data.success && data.subscription) {
-          setSubscription(data.subscription);
-        } else {
-          // If no subscription found, set to free plan
-          setSubscription({
-            id: null,
-            status: 'inactive',
-            planId: 'free',
-            planName: 'Free Trial',
-            limits: {
-              videosPerMonth: 3,
-              storageGB: 1,
-              schedulingFrequency: ['weekly'],
-              voiceOptions: 2,
-              analyticsRetention: 7
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching subscription:', error);
-      } finally {
-        setLoadingSubscription(false);
-      }
-    };
+  // Update subscription (after payment or plan change)
+  const updateSubscription = async () => {
+    if (!user || !user.id) return { success: false, error: 'User not authenticated' };
     
-    fetchSubscription();
-  }, [user]);
-
+    try {
+      await fetchSubscription(user.id);
+      return { success: true };
+    } catch (err) {
+      console.error('Update subscription error:', err);
+      return { success: false, error: err.message };
+    }
+  };
+  
+  // Change subscription plan
+  const changePlan = async (planId) => {
+    if (!user || !user.id) return { success: false, error: 'User not authenticated' };
+    
+    try {
+      setSubscriptionLoading(true);
+      
+      const response = await fetch('/api/payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'change-plan',
+          userId: user.id,
+          planId
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to change plan');
+      }
+      
+      setSubscription(data.subscription);
+      return { success: true, subscription: data.subscription };
+    } catch (err) {
+      console.error('Change plan error:', err);
+      return { success: false, error: err.message };
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
+  
   // Auth context value
   const value = {
     user,
     loading,
     error,
     subscription,
-    loadingSubscription,
+    subscriptionLoading,
     signUp,
     signIn,
     signInWithGoogle,
-    signInWithGitHub,
-    signInWithDemo,
-    signOut
+    signOut,
+    updateSubscription,
+    changePlan
   };
   
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

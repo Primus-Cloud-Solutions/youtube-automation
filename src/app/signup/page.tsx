@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/auth-context';
+import { useAuth } from '../../lib/auth-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -18,7 +18,7 @@ export default function SignupPage() {
     hasNumber: false,
     hasSpecial: false
   });
-  const { signUp, signInWithGoogle, signInWithGitHub, signInWithDemo, user, loading: authLoading } = useAuth();
+  const { signUp, user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   // Check if user is already logged in
@@ -84,51 +84,6 @@ export default function SignupPage() {
     } catch (error) {
       console.error('Signup error:', error);
       setErrorMessage('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignup = async () => {
-    try {
-      setIsLoading(true);
-      setErrorMessage('');
-      await signInWithGoogle();
-      // No need to redirect here as the OAuth flow will handle it
-    } catch (error) {
-      console.error('Google signup error:', error);
-      setErrorMessage('Failed to sign up with Google. Please try again.');
-      setIsLoading(false);
-    }
-  };
-
-  const handleGitHubSignup = async () => {
-    try {
-      setIsLoading(true);
-      setErrorMessage('');
-      await signInWithGitHub();
-      // No need to redirect here as the OAuth flow will handle it
-    } catch (error) {
-      console.error('GitHub signup error:', error);
-      setErrorMessage('Failed to sign up with GitHub. Please try again.');
-      setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    try {
-      setIsLoading(true);
-      setErrorMessage('');
-      const result = await signInWithDemo();
-      
-      if (result.success) {
-        router.push('/dashboard');
-      } else {
-        setErrorMessage(result.error || 'Demo login failed');
-      }
-    } catch (error) {
-      console.error('Demo login error:', error);
-      setErrorMessage('An unexpected error occurred with demo login');
     } finally {
       setIsLoading(false);
     }
@@ -283,16 +238,14 @@ export default function SignupPage() {
               <button
                 type="button"
                 className="py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium transition-colors"
-                onClick={handleGoogleSignup}
-                disabled={isLoading}
+                onClick={() => alert('Google signup not implemented in demo')}
               >
                 Google
               </button>
               <button
                 type="button"
                 className="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md font-medium transition-colors"
-                onClick={handleGitHubSignup}
-                disabled={isLoading}
+                onClick={() => alert('GitHub signup not implemented in demo')}
               >
                 GitHub
               </button>
@@ -305,13 +258,9 @@ export default function SignupPage() {
             <p className="text-xs text-gray-300">Email: test@example.com</p>
             <p className="text-xs text-gray-300">Password: Password123!</p>
             <div className="mt-2">
-              <button
-                onClick={handleDemoLogin}
-                disabled={isLoading}
-                className="text-xs text-blue-400 hover:text-blue-300"
-              >
+              <Link href="/login" className="text-xs text-blue-400 hover:text-blue-300">
                 Sign in with demo account →
-              </button>
+              </Link>
             </div>
           </div>
           

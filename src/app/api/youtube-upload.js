@@ -1,288 +1,220 @@
 'use server';
 
 import { google } from 'googleapis';
+import { deleteFromS3, getSignedUrl } from './s3-storage';
 import fs from 'fs';
 import path from 'path';
-import { deleteFromS3, getSignedUrl } from './s3-storage';
-import { sendVideoPublishedNotification, sendVideoFailedNotification } from './email/sendgrid';
+import os from 'os';
+import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
+
+// YouTube API configuration
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
+const YOUTUBE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const YOUTUBE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const YOUTUBE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/auth/callback/google';
 
 /**
- * Upload a video to YouTube
- * @param {Object} options - Upload options
- * @param {string} options.videoPath - Path to the video file
- * @param {string} options.title - Video title
- * @param {string} options.description - Video description
- * @param {Array<string>} options.tags - Video tags
- * @param {string} options.categoryId - Video category ID
- * @param {string} options.privacyStatus - Privacy status (private, unlisted, public)
- * @param {string} options.apiKey - YouTube API key
- * @param {string} options.accessToken - OAuth2 access token
- * @param {string} options.refreshToken - OAuth2 refresh token
- * @param {string} options.userId - User ID
- * @param {string} options.userEmail - User email for notifications
- * @param {string} options.s3Key - S3 key of the video file
- * @returns {Promise<{success: boolean, videoId: string|null, videoUrl: string|null, error: string|null}>}
+ * Create OAuth2 client for YouTube API
+ * @param {string} accessToken - OAuth access token
+ * @returns {OAuth2Client} - Google OAuth2 client
  */
-export async function uploadToYouTube({
-  videoPath,
-  title,
-  description,
-  tags = [],
-  categoryId = '22', // People & Blogs
-  privacyStatus = 'public',
-  apiKey,
-  accessToken,
-  refreshToken,
-  userId,
-  userEmail,
-  s3Key
-}) {
+function createOAuth2Client(accessToken) {
+  const oauth2Client = new google.auth.OAuth2(
+    YOUTUBE_CLIENT_ID,
+    YOUTUBE_CLIENT_SECRET,
+    YOUTUBE_REDIRECT_URI
+  );
+  
+  oauth2Client.setCredentials({
+    access_token: accessToken
+  });
+  
+  return oauth2Client;
+}
+
+/**
+ * Download file from S3 to temporary local storage
+ * @param {string} key - S3 object key
+ * @returns {Promise<string>} - Path to downloaded file
+ */
+async function downloadFromS3ToTemp(key) {
+  try {
+    // Get signed URL for the S3 object
+    const result = await getSignedUrl(key);
+    
+    if (!result.success) {
+      throw new Error(`Failed to get signed URL: ${result.error}`);
+    }
+    
+    // Create temporary file path
+    const tempDir = os.tmpdir();
+    const fileName = path.basename(key);
+    const tempFilePath = path.join(tempDir, fileName);
+    
+    // Download file from signed URL
+    const response = await fetch(result.url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.statusText}`);
+    }
+    
+    // Create write stream to temporary file
+    const fileStream = fs.createWriteStream(tempFilePath);
+    
+    // Use stream pipeline to download file
+    await pipeline(
+      Readable.fromWeb(response.body),
+      fileStream
+    );
+    
+    return tempFilePath;
+  } catch (error) {
+    console.error('Error downloading file from S3:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upload video to YouTube
+ * @param {Object} videoData - Video data
+ * @param {string} videoData.title - Video title
+ * @param {string} videoData.description - Video description
+ * @param {string} videoData.tags - Video tags
+ * @param {string} videoData.categoryId - Video category ID
+ * @param {string} videoData.privacyStatus - Video privacy status
+ * @param {string} videoData.videoKey - S3 key for video file
+ * @param {string} videoData.thumbnailKey - S3 key for thumbnail image
+ * @param {string} accessToken - OAuth access token
+ * @returns {Promise<Object>} - Upload result
+ */
+export async function uploadVideoToYouTube(videoData, accessToken) {
   try {
     // Check if we're in a build/SSG environment
-    if (process.env.NODE_ENV === 'production' && !apiKey) {
-      console.warn('YouTube API key not available, returning mock data');
+    if (process.env.NODE_ENV === 'production' && !process.env.YOUTUBE_API_KEY) {
+      console.warn('YouTube API key not available during build, returning mock data');
       return { 
         success: true, 
-        videoId: `mock-video-${Date.now()}`,
-        videoUrl: `https://youtube.com/watch?v=mock-video-${Date.now()}`
+        videoId: 'mock_video_id',
+        url: 'https://youtube.com/watch?v=mock_video_id'
       };
     }
-
-    // Set up OAuth2 client
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-
-    // Set credentials
-    if (accessToken && refreshToken) {
-      oauth2Client.setCredentials({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      });
-    } else {
-      // Use API key if OAuth credentials are not available
-      oauth2Client.apiKey = apiKey;
-    }
-
+    
+    // Create OAuth2 client
+    const oauth2Client = createOAuth2Client(accessToken);
+    
     // Initialize YouTube API
     const youtube = google.youtube({
       version: 'v3',
       auth: oauth2Client
     });
-
-    // Create a readable stream from the video file
-    const fileStream = fs.createReadStream(videoPath);
-
-    // Upload the video
-    const res = await youtube.videos.insert({
-      part: 'snippet,status',
-      requestBody: {
-        snippet: {
-          title,
-          description,
-          tags,
-          categoryId
-        },
-        status: {
-          privacyStatus
-        }
+    
+    // Download video file from S3
+    const videoFilePath = await downloadFromS3ToTemp(videoData.videoKey);
+    
+    // Download thumbnail image from S3 if provided
+    let thumbnailFilePath = null;
+    if (videoData.thumbnailKey) {
+      thumbnailFilePath = await downloadFromS3ToTemp(videoData.thumbnailKey);
+    }
+    
+    // Prepare video metadata
+    const videoMetadata = {
+      snippet: {
+        title: videoData.title,
+        description: videoData.description,
+        tags: videoData.tags ? videoData.tags.split(',').map(tag => tag.trim()) : [],
+        categoryId: videoData.categoryId || '22' // People & Blogs category by default
       },
+      status: {
+        privacyStatus: videoData.privacyStatus || 'private',
+        selfDeclaredMadeForKids: false
+      }
+    };
+    
+    // Upload video
+    const videoUploadResponse = await youtube.videos.insert({
+      part: 'snippet,status',
+      requestBody: videoMetadata,
       media: {
-        body: fileStream
+        body: fs.createReadStream(videoFilePath)
       }
     });
-
-    // Get the uploaded video ID
-    const videoId = res.data.id;
-    const videoUrl = `https://youtube.com/watch?v=${videoId}`;
-
-    // Delete the video from S3 after successful upload
-    if (s3Key) {
-      try {
-        // First rename the file to indicate it's being deleted (in case of concurrent access)
-        const deletingKey = s3Key.replace('.mp4', `_deleting_${Date.now()}.mp4`);
-        
-        // Get the file content
-        const fileResult = await getSignedUrl(s3Key);
-        if (fileResult.success) {
-          // Download the file
-          const response = await fetch(fileResult.url);
-          if (response.ok) {
-            const fileBuffer = await response.arrayBuffer();
-            
-            // Upload to the new "deleting" location
-            await uploadToS3(deletingKey, Buffer.from(fileBuffer), 'video/mp4');
-            
-            // Now delete both files (original and the marked-for-deletion copy)
-            await deleteFromS3(s3Key);
-            await deleteFromS3(deletingKey);
-            
-            console.log(`Successfully deleted video from S3: ${s3Key}`);
-          } else {
-            // If we can't download, just try to delete the original
-            await deleteFromS3(s3Key);
-            console.log(`Deleted original video from S3: ${s3Key}`);
-          }
-        } else {
-          // If we can't get the URL, just try to delete the original
-          await deleteFromS3(s3Key);
-          console.log(`Deleted original video from S3: ${s3Key}`);
+    
+    // Get video ID
+    const videoId = videoUploadResponse.data.id;
+    
+    // Upload thumbnail if provided
+    if (thumbnailFilePath) {
+      await youtube.thumbnails.set({
+        videoId,
+        media: {
+          body: fs.createReadStream(thumbnailFilePath)
         }
-      } catch (error) {
-        console.error(`Error deleting video from S3: ${error.message}`);
-        // Continue even if S3 deletion fails
-      }
-    }
-
-    // Send email notification
-    if (userEmail) {
-      await sendVideoPublishedNotification({
-        to: userEmail,
-        videoTitle: title,
-        videoUrl,
-        thumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
       });
     }
-
+    
+    // Clean up temporary files
+    fs.unlinkSync(videoFilePath);
+    if (thumbnailFilePath) {
+      fs.unlinkSync(thumbnailFilePath);
+    }
+    
+    // Clean up S3 files if upload was successful
+    if (videoData.cleanupS3 !== false) {
+      await deleteFromS3(videoData.videoKey);
+      if (videoData.thumbnailKey) {
+        await deleteFromS3(videoData.thumbnailKey);
+      }
+    }
+    
     return {
       success: true,
       videoId,
-      videoUrl
+      url: `https://youtube.com/watch?v=${videoId}`
     };
   } catch (error) {
-    console.error('Error uploading to YouTube:', error);
-
-    // Send failure notification
-    if (userEmail) {
-      await sendVideoFailedNotification({
-        to: userEmail,
-        videoTitle: title,
-        errorMessage: error.message || 'Unknown error occurred during upload'
-      });
-    }
-
+    console.error('Error uploading video to YouTube:', error);
     return {
       success: false,
-      videoId: null,
-      videoUrl: null,
       error: error.message || 'Failed to upload video to YouTube'
     };
   }
 }
 
 /**
- * Download a video from S3 to a temporary file
- * @param {string} s3Key - S3 key of the video file
- * @returns {Promise<{success: boolean, filePath: string|null, error: string|null}>}
+ * API route handler for YouTube video uploads
  */
-export async function downloadFromS3ToTemp(s3Key) {
+export async function POST(request) {
   try {
-    // Get a signed URL for the video
-    const urlResult = await getSignedUrl(s3Key);
+    const { videoData, accessToken } = await request.json();
     
-    if (!urlResult.success) {
-      throw new Error(urlResult.error || 'Failed to get signed URL');
+    if (!videoData || !accessToken) {
+      return Response.json({ 
+        success: false, 
+        error: 'Video data and access token are required' 
+      }, { status: 400 });
     }
     
-    // Create a temporary file path
-    const tempDir = path.join(process.cwd(), 'tmp');
+    const result = await uploadVideoToYouTube(videoData, accessToken);
     
-    // Ensure the temp directory exists
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
+    if (!result.success) {
+      return Response.json({ 
+        success: false, 
+        error: result.error 
+      }, { status: 500 });
     }
     
-    const filePath = path.join(tempDir, `video-${Date.now()}.mp4`);
-    
-    // Download the file
-    const response = await fetch(urlResult.url);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to download file: ${response.statusText}`);
-    }
-    
-    const fileStream = fs.createWriteStream(filePath);
-    
-    // In Node.js environment, we would use streams
-    // For this example, we'll use a simplified approach
-    const buffer = await response.arrayBuffer();
-    fs.writeFileSync(filePath, Buffer.from(buffer));
-    
-    return {
-      success: true,
-      filePath
-    };
-  } catch (error) {
-    console.error('Error downloading from S3:', error);
-    return {
-      success: false,
-      filePath: null,
-      error: error.message || 'Failed to download video from S3'
-    };
-  }
-}
-
-/**
- * Process video upload to YouTube from S3
- * @param {Object} options - Upload options
- * @param {string} options.s3Key - S3 key of the video file
- * @param {string} options.title - Video title
- * @param {string} options.description - Video description
- * @param {Array<string>} options.tags - Video tags
- * @param {string} options.categoryId - Video category ID
- * @param {string} options.privacyStatus - Privacy status (private, unlisted, public)
- * @param {string} options.apiKey - YouTube API key
- * @param {string} options.accessToken - OAuth2 access token
- * @param {string} options.refreshToken - OAuth2 refresh token
- * @param {string} options.userId - User ID
- * @param {string} options.userEmail - User email for notifications
- * @returns {Promise<{success: boolean, videoId: string|null, videoUrl: string|null, error: string|null}>}
- */
-export async function processVideoUpload(options) {
-  try {
-    // Download the video from S3
-    const downloadResult = await downloadFromS3ToTemp(options.s3Key);
-    
-    if (!downloadResult.success) {
-      throw new Error(downloadResult.error || 'Failed to download video from S3');
-    }
-    
-    // Upload the video to YouTube
-    const uploadResult = await uploadToYouTube({
-      ...options,
-      videoPath: downloadResult.filePath
+    return Response.json({ 
+      success: true, 
+      videoId: result.videoId,
+      url: result.url
     });
-    
-    // Clean up the temporary file
-    try {
-      if (downloadResult.filePath && fs.existsSync(downloadResult.filePath)) {
-        fs.unlinkSync(downloadResult.filePath);
-      }
-    } catch (error) {
-      console.error('Error cleaning up temporary file:', error);
-      // Continue even if cleanup fails
-    }
-    
-    return uploadResult;
   } catch (error) {
-    console.error('Error processing video upload:', error);
-    
-    // Send failure notification
-    if (options.userEmail) {
-      await sendVideoFailedNotification({
-        to: options.userEmail,
-        videoTitle: options.title,
-        errorMessage: error.message || 'Unknown error occurred during processing'
-      });
-    }
-    
-    return {
-      success: false,
-      videoId: null,
-      videoUrl: null,
-      error: error.message || 'Failed to process video upload'
-    };
+    console.error('YouTube upload API error:', error);
+    return Response.json({ 
+      success: false, 
+      error: 'Internal server error' 
+    }, { status: 500 });
   }
 }

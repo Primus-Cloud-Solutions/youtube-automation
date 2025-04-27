@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AuthProvider } from "./context/auth-context";
-import { PaymentProvider } from "./context/payment-context";
+import { AuthProvider } from "../lib/auth-context";
+import { PaymentProvider } from "../lib/payment-context";
 import { YouTubeApiProvider } from "./context/youtube-api-context";
 
 export const metadata: Metadata = {

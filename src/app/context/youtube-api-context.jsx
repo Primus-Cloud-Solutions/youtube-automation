@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './auth-context';
+import { useAuth } from '../../lib/auth-context';
 
 // Create YouTube API context
 const YouTubeApiContext = createContext(null);

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/auth-context';
+import { useAuth } from '../../lib/auth-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const { signIn, signInWithGoogle, signInWithGitHub, signInWithDemo, user, loading: authLoading } = useAuth();
+  const { signIn, user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   // Check if user is already logged in
@@ -58,40 +58,16 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setIsLoading(true);
-      setErrorMessage('');
-      await signInWithGoogle();
-      // No need to redirect here as the OAuth flow will handle it
-    } catch (error) {
-      console.error('Google login error:', error);
-      setErrorMessage('Failed to sign in with Google. Please try again.');
-      setIsLoading(false);
-    }
-  };
-
-  const handleGitHubLogin = async () => {
-    try {
-      setIsLoading(true);
-      setErrorMessage('');
-      await signInWithGitHub();
-      // No need to redirect here as the OAuth flow will handle it
-    } catch (error) {
-      console.error('GitHub login error:', error);
-      setErrorMessage('Failed to sign in with GitHub. Please try again.');
-      setIsLoading(false);
-    }
-  };
-
   const handleDemoLogin = async () => {
+    setEmail('test@example.com');
+    setPassword('Password123!');
     setIsLoading(true);
     setErrorMessage('');
     setSuccessMessage('');
 
     try {
       console.log('Attempting demo login');
-      const result = await signInWithDemo();
+      const result = await signIn('test@example.com', 'Password123!');
       
       if (result.success) {
         console.log('Demo login successful, redirecting to dashboard');
@@ -203,16 +179,14 @@ export default function LoginPage() {
               <button
                 type="button"
                 className="py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium transition-colors"
-                onClick={handleGoogleLogin}
-                disabled={isLoading}
+                onClick={() => alert('Google login not implemented in demo')}
               >
                 Google
               </button>
               <button
                 type="button"
                 className="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md font-medium transition-colors"
-                onClick={handleGitHubLogin}
-                disabled={isLoading}
+                onClick={() => alert('GitHub login not implemented in demo')}
               >
                 GitHub
               </button>
@@ -222,7 +196,6 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleDemoLogin}
-                disabled={isLoading}
                 className="text-green-500 hover:text-green-400 font-medium"
               >
                 Use Demo Account

@@ -3,7 +3,7 @@
 import React from 'react';
 import withAuth from '../../utils/with-auth';
 import DashboardHeader from '../../components/dashboard-header';
-import { useAuth } from '../../context/auth-context';
+import { useAuth } from '../../../lib/auth-context';
 
 function AnalyticsPage() {
   const { user } = useAuth();
